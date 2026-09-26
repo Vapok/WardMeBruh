@@ -1,0 +1,11 @@
+{
+  "name": "WardMeBruh",
+  "version_number": "1.0.0",
+  "website_url": "https://github.com/Vapok/WardMeBruh",
+  "description": "A Valheim Quality of Life Mod for ward interaction and management. Ward me Bruh!",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350",
+    "ValheimModding-Jotunn-2.30.2",
+    "ValheimModding-YamlDotNet-16.3.1"
+  ]
+}

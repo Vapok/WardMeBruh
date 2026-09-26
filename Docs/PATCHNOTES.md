@@ -1,4 +1,4 @@
-# 1.0.0 - Initial Release
+# 0.0.0 - Development Inception
 * **Initial Project Architecture**:
   * Established modular BepInEx plugin architecture utilizing `Vapok.Common` 3.21.1015 and `JotunnLib` 2.30.2.
   * Implemented synchronized configuration pipeline inheriting from `ConfigSyncBase`.

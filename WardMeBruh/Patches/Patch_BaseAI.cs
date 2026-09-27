@@ -14,6 +14,9 @@ internal static class Patch_BaseAI
         if (target == null)
             return true;
 
+        if (!WardQueryService.HasAnyActiveGhostBase())
+            return true;
+
         if (WardQueryService.HasFeatureEnabled(target.GetCenter(), WardZdoKeys.GhostBase))
         {
             __result = false;

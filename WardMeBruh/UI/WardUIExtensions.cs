@@ -88,6 +88,15 @@ public static class WardUIExtensions
         Transform label = dropdownObj.transform.Find("Label");
         if (label != null)
         {
+            RectTransform labelRt = label.GetComponent<RectTransform>();
+            if (labelRt != null)
+            {
+                labelRt.anchorMin = Vector2.zero;
+                labelRt.anchorMax = Vector2.one;
+                labelRt.offsetMin = new Vector2(10f, 0f);
+                labelRt.offsetMax = new Vector2(-28f, 0f);
+            }
+
             Text labelText = label.GetComponent<Text>();
             if (labelText != null)
             {
@@ -95,6 +104,9 @@ public static class WardUIExtensions
                 labelText.fontSize = 13;
                 labelText.color = WardColorPalette.ValheimBeige;
                 labelText.alignment = TextAnchor.MiddleLeft;
+                labelText.verticalOverflow = VerticalWrapMode.Overflow;
+                labelText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                dropdown.captionText = labelText;
             }
         }
 
@@ -111,6 +123,12 @@ public static class WardUIExtensions
         Transform template = dropdownObj.transform.Find("Template");
         if (template != null)
         {
+            RectTransform templateRt = template.GetComponent<RectTransform>();
+            if (templateRt != null)
+            {
+                templateRt.sizeDelta = new Vector2(templateRt.sizeDelta.x, 160f);
+            }
+
             Image templateBg = template.GetComponent<Image>();
             if (templateBg != null)
             {
@@ -130,6 +148,12 @@ public static class WardUIExtensions
             Transform item = template.Find("Viewport/Content/Item");
             if (item != null)
             {
+                RectTransform itemRt = item.GetComponent<RectTransform>();
+                if (itemRt != null)
+                {
+                    itemRt.sizeDelta = new Vector2(itemRt.sizeDelta.x, 26f);
+                }
+
                 Toggle toggle = item.GetComponent<Toggle>();
                 if (toggle != null)
                 {
@@ -164,6 +188,15 @@ public static class WardUIExtensions
                 Transform itemLabel = item.Find("Item Label");
                 if (itemLabel != null)
                 {
+                    RectTransform ilRt = itemLabel.GetComponent<RectTransform>();
+                    if (ilRt != null)
+                    {
+                        ilRt.anchorMin = Vector2.zero;
+                        ilRt.anchorMax = Vector2.one;
+                        ilRt.offsetMin = new Vector2(25f, 0f);
+                        ilRt.offsetMax = new Vector2(-10f, 0f);
+                    }
+
                     Text ilText = itemLabel.GetComponent<Text>();
                     if (ilText != null)
                     {
@@ -171,6 +204,9 @@ public static class WardUIExtensions
                         ilText.fontSize = 13;
                         ilText.color = WardColorPalette.ValheimBeige;
                         ilText.alignment = TextAnchor.MiddleLeft;
+                        ilText.verticalOverflow = VerticalWrapMode.Overflow;
+                        ilText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                        dropdown.itemText = ilText;
                     }
                 }
             }

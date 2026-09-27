@@ -44,19 +44,36 @@ public class AutoFuelService : MonoBehaviour
             if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
                 continue;
 
+            List<PrivateArea> activeFuelWards = null;
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea ward = PrivateArea.m_allAreas[i];
+                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                    continue;
+
+                ZDO zdo = ward.m_nview.GetZDO();
+                if (zdo != null && zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false))
+                {
+                    activeFuelWards ??= new List<PrivateArea>();
+                    activeFuelWards.Add(ward);
+                }
+            }
+
+            if (activeFuelWards == null || activeFuelWards.Count == 0)
+                continue;
+
             List<Container> allContainers = Patch_Container.AllContainers;
             List<Fireplace> allFireplaces = Patch_Fireplace.AllFireplaces;
             List<Smelter> allSmelters = Patch_Smelter.AllSmelters;
 
-            for (int wardIndex = 0; wardIndex < PrivateArea.m_allAreas.Count; wardIndex++)
+            for (int wardIndex = 0; wardIndex < activeFuelWards.Count; wardIndex++)
             {
-                PrivateArea ward = PrivateArea.m_allAreas[wardIndex];
+                PrivateArea ward = activeFuelWards[wardIndex];
                 if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
                     continue;
 
                 ZDO wardZdo = ward.m_nview.GetZDO();
-                bool autoFuelEnabled = wardZdo.GetBool(WardZdoKeys.AutoFuelEnabled, false);
-                if (!autoFuelEnabled)
+                if (wardZdo == null)
                     continue;
 
                 float radius = WardQueryService.GetWardRadius(ward);

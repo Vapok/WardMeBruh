@@ -42,7 +42,7 @@ public class RemoteWardSelectorModal
         titleRt.sizeDelta = new Vector2(450f, 32f);
 
         Text titleText = titleObj.GetComponent<Text>();
-        titleText.text = "YOUR WARD'S BRUH";
+        titleText.text = "$wmb_modal_territory_registry".Localize();
         titleText.font = GUIManager.Instance.AveriaSerifBold;
         titleText.fontSize = 18;
         titleText.color = WardColorPalette.ValheimOrange;
@@ -96,12 +96,12 @@ public class RemoteWardSelectorModal
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         List<KnownWard> wards = WardRegistryManager.Instance.GetPlayerOwnedWards(playerId);
 
-        Transform card = WardUIFactory.CreateCard(_listContainer, $"Registered Territories ({wards.Count})");
+        Transform card = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_modal_registered_territories".Localize()} ({wards.Count})");
         _itemCards.Add(card.parent.parent.gameObject);
 
         if (wards.Count == 0)
         {
-            WardUIFactory.CreateBadgeRow(card, "No owned wards found in this world", "-", WardColorPalette.TextMuted, out _);
+            WardUIFactory.CreateBadgeRow(card, "$wmb_modal_no_owned_wards".Localize(), "-", WardColorPalette.TextMuted, out _);
             return;
         }
 
@@ -116,13 +116,13 @@ public class RemoteWardSelectorModal
             bool isCurrent = ward.Id == currentWardId;
 
             float dist = Utils.DistanceXZ(playerPos, ward.Position);
-            string distStr = dist < 1000f ? $"{Mathf.RoundToInt(dist)}m away" : $"{dist / 1000f:F1}km away";
+            string distStr = dist < 1000f ? $"{Mathf.RoundToInt(dist)}{"$wmb_meters_away".Localize()}" : $"{dist / 1000f:F1}{"$wmb_km_away".Localize()}";
             if (isCurrent)
             {
-                distStr = "Current Location";
+                distStr = "$wmb_modal_current_location".Localize();
             }
 
-            string labelText = $"{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}m]</color>\n<size=11><color=#9ca3af>Owner: {ward.CreatorName}  •  {distStr}</color></size>";
+            string labelText = $"{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size=11><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
 
             WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, 44f);
 
@@ -132,7 +132,7 @@ public class RemoteWardSelectorModal
             statusBadgeObj.SetLayoutDimensions(100f, 28f);
 
             Text statusText = statusBadgeObj.GetComponent<Text>();
-            statusText.text = ward.IsEnabled ? "● ACTIVE" : "○ INACTIVE";
+            statusText.text = ward.IsEnabled ? $"● {"$wmb_active".Localize()}" : $"○ {"$wmb_inactive".Localize()}";
             statusText.font = GUIManager.Instance.AveriaSerifBold;
             statusText.fontSize = 12;
             statusText.color = ward.IsEnabled ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
@@ -146,7 +146,7 @@ public class RemoteWardSelectorModal
                 currentBadgeObj.SetLayoutDimensions(100f, 28f);
 
                 Text currentBadgeText = currentBadgeObj.GetComponent<Text>();
-                currentBadgeText.text = "[ CURRENT ]";
+                currentBadgeText.text = "$wmb_modal_current_badge".Localize();
                 currentBadgeText.font = GUIManager.Instance.AveriaSerifBold;
                 currentBadgeText.fontSize = 13;
                 currentBadgeText.color = WardColorPalette.GoldAmber;
@@ -155,7 +155,7 @@ public class RemoteWardSelectorModal
             else
             {
                 GameObject manageBtn = GUIManager.Instance.CreateButton(
-                    "MANAGE", 
+                    "$wmb_modal_manage_btn".Localize(), 
                     ctrlContainer, 
                     Vector2.zero, 
                     Vector2.zero, 

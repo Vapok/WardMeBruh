@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jotunn.Managers;
+using WardMeBruh.API;
 using WardMeBruh.Configuration;
 using WardMeBruh.Networking;
 using WardMeBruh.Services;
@@ -28,27 +29,26 @@ public static class WardPermissions
         if (wardZdo == null)
             return WardRole.Guest;
 
-        if (IsAdmin(playerId))
+        int roleId = WardRoleManager.GetPlayerRoleId(wardZdo, playerId);
+        if (roleId == (int)WardRole.Owner)
             return WardRole.Owner;
+        if (roleId == (int)WardRole.Manager)
+            return WardRole.Manager;
+        if (roleId == (int)WardRole.Resident)
+            return WardRole.Resident;
+        if (roleId == (int)WardRole.Guest)
+            return WardRole.Guest;
 
-        long creatorId = wardZdo.GetLong(ZDOVars.s_creator, 0L);
-        if (creatorId != 0L && creatorId == playerId)
-            return WardRole.Owner;
-
-        string managersData = wardZdo.GetString(WardZdoKeys.RolesManagers, string.Empty);
-        if (!string.IsNullOrEmpty(managersData))
+        List<WardRoleDefinition> roles = WardRoleManager.GetRoleDefinitions(wardZdo);
+        for (int i = 0; i < roles.Count; i++)
         {
-            WardRoster managersRoster = WardRoster.Deserialize(managersData);
-            if (managersRoster.Contains(playerId))
-                return WardRole.Manager;
-        }
-
-        string residentsData = wardZdo.GetString(WardZdoKeys.RolesResidents, string.Empty);
-        if (!string.IsNullOrEmpty(residentsData))
-        {
-            WardRoster residentsRoster = WardRoster.Deserialize(residentsData);
-            if (residentsRoster.Contains(playerId))
-                return WardRole.Resident;
+            if (roles[i].Id == roleId)
+            {
+                if (roles[i].Level >= 3) return WardRole.Owner;
+                if (roles[i].Level == 2) return WardRole.Manager;
+                if (roles[i].Level == 1) return WardRole.Resident;
+                return WardRole.Guest;
+            }
         }
 
         return WardRole.Guest;
@@ -56,8 +56,32 @@ public static class WardPermissions
 
     public static bool HasRequiredRole(ZDO wardZdo, long playerId, WardRole minimumRequiredRole)
     {
-        WardRole resolvedRole = GetPlayerRole(wardZdo, playerId);
-        return resolvedRole >= minimumRequiredRole;
+        if (wardZdo == null)
+            return true;
+
+        if (IsAdmin(playerId))
+            return true;
+
+        int playerRoleId = WardRoleManager.GetPlayerRoleId(wardZdo, playerId);
+        if (playerRoleId == (int)WardRole.Owner)
+            return true;
+
+        List<WardRoleDefinition> roles = WardRoleManager.GetRoleDefinitions(wardZdo);
+        WardRoleDefinition playerDef = null;
+        WardRoleDefinition minDef = null;
+
+        for (int i = 0; i < roles.Count; i++)
+        {
+            if (roles[i].Id == playerRoleId)
+                playerDef = roles[i];
+            if (roles[i].Id == (int)minimumRequiredRole)
+                minDef = roles[i];
+        }
+
+        int playerLevel = playerDef != null ? playerDef.Level : (int)GetPlayerRole(wardZdo, playerId);
+        int minLevel = minDef != null ? minDef.Level : (int)minimumRequiredRole;
+
+        return playerLevel >= minLevel;
     }
 
     public static bool HasRequiredRole(PrivateArea ward, long playerId, WardRole minimumRequiredRole)
@@ -91,7 +115,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        return WardRoleManager.CanPerform(wardZdo, playerId, "core.dome_access");
+        return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreDomeAccess);
     }
 
     public static bool HasWardAccess(PrivateArea ward, long playerId)
@@ -107,7 +131,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        return WardRoleManager.CanPerform(wardZdo, playerId, "core.benefits");
+        return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreBenefits);
     }
 
     public static bool HasBenefactorAccess(PrivateArea ward, long playerId)
@@ -123,7 +147,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        return WardRoleManager.CanPerform(wardZdo, playerId, "core.building");
+        return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreBuilding);
     }
 
     public static bool CanBuild(PrivateArea ward, long playerId)
@@ -139,7 +163,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        return WardRoleManager.CanPerform(wardZdo, playerId, "core.farming");
+        return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreFarming);
     }
 
     public static bool CanFarm(PrivateArea ward, long playerId)
@@ -155,7 +179,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        return WardRoleManager.CanPerform(wardZdo, playerId, "core.harvest");
+        return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreHarvest);
     }
 
     public static bool CanHarvest(PrivateArea ward, long playerId)

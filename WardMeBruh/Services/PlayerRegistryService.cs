@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
+using Jotunn.Managers;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
@@ -42,10 +44,13 @@ public static class PlayerRegistryService
 
         if (isNewOrChanged)
         {
-            SaveWorld();
-            if (broadcast && ZNet.instance != null && ZNet.instance.IsServer())
+            if (ZNet.instance == null || ZNet.instance.IsServer())
             {
-                WardNetworkRouter.BroadcastPlayer(playerId, playerName);
+                SaveWorld();
+                if (broadcast && ZNet.instance != null && ZNet.instance.IsServer())
+                {
+                    WardNetworkRouter.BroadcastPlayer(playerId, playerName);
+                }
             }
         }
     }
@@ -62,23 +67,52 @@ public static class PlayerRegistryService
 
         try
         {
-            string json = File.ReadAllText(filePath);
-            if (!string.IsNullOrEmpty(json))
+            string[] lines = File.ReadAllLines(filePath);
+            for (int i = 0; i < lines.Length; i++)
             {
-                SavedPlayerDatabase db = JsonUtility.FromJson<SavedPlayerDatabase>(json);
-                if (db != null && db.players != null)
+                string line = lines[i].Trim();
+                if (line.Contains("\"id\"") && line.Contains("\"name\""))
                 {
-                    for (int i = 0; i < db.players.Count; i++)
+                    long id = 0L;
+                    string name = string.Empty;
+
+                    int idIdx = line.IndexOf("\"id\"", StringComparison.OrdinalIgnoreCase);
+                    if (idIdx >= 0)
                     {
-                        SavedPlayerEntry entry = db.players[i];
-                        if (entry.id != 0L && !string.IsNullOrEmpty(entry.name))
+                        int colonIdx = line.IndexOf(':', idIdx);
+                        if (colonIdx >= 0)
                         {
-                            _knownPlayers[entry.id] = entry.name;
+                            int commaIdx = line.IndexOf(',', colonIdx);
+                            string idStr = (commaIdx >= 0 ? line.Substring(colonIdx + 1, commaIdx - colonIdx - 1) : line.Substring(colonIdx + 1)).Trim();
+                            long.TryParse(idStr, out id);
                         }
                     }
-                    WardMeBruh.Log.Debug($"[PlayerRegistry] Loaded {_knownPlayers.Count} known players for world '{worldName}'");
+
+                    int nameIdx = line.IndexOf("\"name\"", StringComparison.OrdinalIgnoreCase);
+                    if (nameIdx >= 0)
+                    {
+                        int colonIdx = line.IndexOf(':', nameIdx);
+                        if (colonIdx >= 0)
+                        {
+                            int quoteStart = line.IndexOf('"', colonIdx);
+                            if (quoteStart >= 0)
+                            {
+                                int quoteEnd = line.LastIndexOf('"');
+                                if (quoteEnd > quoteStart)
+                                {
+                                    name = line.Substring(quoteStart + 1, quoteEnd - quoteStart - 1).Replace("\\\"", "\"").Replace("\\\\", "\\");
+                                }
+                            }
+                        }
+                    }
+
+                    if (id != 0L && !string.IsNullOrEmpty(name))
+                    {
+                        _knownPlayers[id] = name;
+                    }
                 }
             }
+            WardMeBruh.Log.Debug($"[PlayerRegistry] Loaded {_knownPlayers.Count} known players for world '{worldName}'");
         }
         catch (Exception ex)
         {
@@ -88,6 +122,9 @@ public static class PlayerRegistryService
 
     public static void SaveWorld()
     {
+        if (_knownPlayers.Count == 0)
+            return;
+
         if (string.IsNullOrEmpty(_currentWorldName))
         {
             if (ZNet.instance != null && !string.IsNullOrEmpty(ZNet.instance.GetWorldName()))
@@ -109,14 +146,24 @@ public static class PlayerRegistryService
             }
 
             string filePath = GetStorageFilePath(_currentWorldName);
-            SavedPlayerDatabase db = new();
+            StringBuilder sb = new();
+            sb.AppendLine("{");
+            sb.AppendLine("  \"players\": [");
+            int count = 0;
             foreach (KeyValuePair<long, string> kvp in _knownPlayers)
             {
-                db.players.Add(new SavedPlayerEntry { id = kvp.Key, name = kvp.Value });
-            }
+                if (count > 0)
+                    sb.AppendLine(",");
 
-            string json = JsonUtility.ToJson(db, true);
-            File.WriteAllText(filePath, json);
+                string safeName = kvp.Value.Replace("\\", "\\\\").Replace("\"", "\\\"");
+                sb.Append($"    {{ \"id\": {kvp.Key}, \"name\": \"{safeName}\" }}");
+                count++;
+            }
+            sb.AppendLine();
+            sb.AppendLine("  ]");
+            sb.AppendLine("}");
+
+            File.WriteAllText(filePath, sb.ToString());
         }
         catch (Exception ex)
         {
@@ -213,6 +260,39 @@ public static class PlayerRegistryService
             }
         }
 
+        bool isServerOrLocal = ZNet.instance == null || ZNet.instance.IsServer();
+        if (isServerOrLocal && !GUIManager.IsHeadless())
+        {
+            try
+            {
+                List<PlayerProfile> profiles = SaveSystem.GetAllPlayerProfiles();
+                if (profiles != null)
+                {
+                    for (int i = 0; i < profiles.Count; i++)
+                    {
+                        PlayerProfile profile = profiles[i];
+                        if (profile != null)
+                        {
+                            long id = profile.GetPlayerID();
+                            string name = profile.GetName();
+                            if (id != 0L && !string.IsNullOrEmpty(name))
+                            {
+                                if (!_knownPlayers.TryGetValue(id, out string existing) || existing != name)
+                                {
+                                    _knownPlayers[id] = name;
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                WardMeBruh.Log.Warning($"[PlayerRegistry] Error loading player profiles: {ex.Message}");
+            }
+        }
+
         List<KnownWard> allWards = WardRegistryManager.Instance.GetAllWards();
         for (int i = 0; i < allWards.Count; i++)
         {
@@ -231,38 +311,16 @@ public static class PlayerRegistryService
                 ZDO wardZdo = ZDOMan.instance.GetZDO(ward.Id);
                 if (wardZdo != null)
                 {
-                    string mgrData = wardZdo.GetString(WardZdoKeys.RolesManagers, string.Empty);
-                    if (!string.IsNullOrEmpty(mgrData))
+                    WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(wardZdo);
+                    for (int a = 0; a < assignments.Entries.Count; a++)
                     {
-                        WardRoster mgrRoster = WardRoster.Deserialize(mgrData);
-                        for (int m = 0; m < mgrRoster.Entries.Count; m++)
+                        PlayerRoleAssignment entry = assignments.Entries[a];
+                        if (entry.PlayerId != 0L && !string.IsNullOrEmpty(entry.PlayerName))
                         {
-                            RosterEntry entry = mgrRoster.Entries[m];
-                            if (entry.PlayerId != 0L && !string.IsNullOrEmpty(entry.PlayerName))
+                            if (!_knownPlayers.TryGetValue(entry.PlayerId, out string existing) || existing != entry.PlayerName)
                             {
-                                if (!_knownPlayers.TryGetValue(entry.PlayerId, out string existing) || existing != entry.PlayerName)
-                                {
-                                    _knownPlayers[entry.PlayerId] = entry.PlayerName;
-                                    changed = true;
-                                }
-                            }
-                        }
-                    }
-
-                    string resData = wardZdo.GetString(WardZdoKeys.RolesResidents, string.Empty);
-                    if (!string.IsNullOrEmpty(resData))
-                    {
-                        WardRoster resRoster = WardRoster.Deserialize(resData);
-                        for (int r = 0; r < resRoster.Entries.Count; r++)
-                        {
-                            RosterEntry entry = resRoster.Entries[r];
-                            if (entry.PlayerId != 0L && !string.IsNullOrEmpty(entry.PlayerName))
-                            {
-                                if (!_knownPlayers.TryGetValue(entry.PlayerId, out string existing) || existing != entry.PlayerName)
-                                {
-                                    _knownPlayers[entry.PlayerId] = entry.PlayerName;
-                                    changed = true;
-                                }
+                                _knownPlayers[entry.PlayerId] = entry.PlayerName;
+                                changed = true;
                             }
                         }
                     }

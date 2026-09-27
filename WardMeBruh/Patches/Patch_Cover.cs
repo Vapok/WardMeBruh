@@ -17,8 +17,12 @@ internal static class Patch_Cover
         if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
             return;
 
-        if (WardQueryService.HasFeatureEnabled(startPos, WardZdoKeys.WeatherRoof) ||
-            WardQueryService.HasFeatureEnabled(startPos, WardZdoKeys.MaxComfort))
+        ZDO wardZdo = WardQueryService.GetCoveringWardZdo(startPos);
+        if (wardZdo == null || !wardZdo.GetBool(ZDOVars.s_enabled, true))
+            return;
+
+        if (wardZdo.GetBool(WardZdoKeys.WeatherRoof, false) ||
+            wardZdo.GetBool(WardZdoKeys.MaxComfort, false))
         {
             __result = true;
         }

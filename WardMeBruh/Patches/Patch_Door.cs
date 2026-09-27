@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 using WardMeBruh.Configuration;
@@ -11,6 +12,7 @@ namespace WardMeBruh.Patches;
 [HarmonyPatch(typeof(Door))]
 internal static class Patch_Door
 {
+    private static readonly Dictionary<ZDOID, float> _doorCloseTimestamps = new();
     public static event Action<Door> OnRenameDoorRequested;
 
     [HarmonyPatch(nameof(Door.Interact))]
@@ -98,6 +100,13 @@ internal static class Patch_Door
         if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
             return;
 
+        int currentState = __instance.m_nview.GetZDO().GetInt(ZDOVars.s_state, 0);
+        if (currentState == 0)
+        {
+            AutoDoorService.Instance.CancelDoorClose(__instance);
+            return;
+        }
+
         PrivateArea coveringWard = WardQueryService.GetCoveringWard(__instance.transform.position);
         if (coveringWard == null)
             return;
@@ -109,6 +118,57 @@ internal static class Patch_Door
             return;
 
         AutoDoorService.Instance.QueueDoorClose(__instance, coveringWard);
+    }
+
+    [HarmonyPatch("RPC_UseDoor")]
+    [HarmonyPrefix]
+    private static bool RPC_UseDoorPrefix(Door __instance, long uid, bool forward)
+    {
+        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
+            return true;
+
+        ZDO zdo = __instance.m_nview.GetZDO();
+        int currentState = zdo.GetInt(ZDOVars.s_state, 0);
+
+        if (currentState == 0)
+        {
+            if (_doorCloseTimestamps.TryGetValue(zdo.m_uid, out float closedTime))
+            {
+                if (Time.time - closedTime < 1.2f)
+                {
+                    WardMeBruh.Log.Debug($"[Door] Suppressed race-condition toggle on recently closed Door '{zdo.GetString(WardZdoKeys.DoorName, "Door")}' ({zdo.m_uid})");
+                    return false;
+                }
+            }
+        }
+        else
+        {
+            PruneOldTimestamps();
+            _doorCloseTimestamps[zdo.m_uid] = Time.time;
+            AutoDoorService.Instance.CancelDoorClose(__instance);
+        }
+
+        return true;
+    }
+
+    private static void PruneOldTimestamps()
+    {
+        if (_doorCloseTimestamps.Count < 50)
+            return;
+
+        float now = Time.time;
+        List<ZDOID> staleKeys = new();
+        foreach (KeyValuePair<ZDOID, float> kvp in _doorCloseTimestamps)
+        {
+            if (now - kvp.Value > 10f)
+            {
+                staleKeys.Add(kvp.Key);
+            }
+        }
+        for (int i = 0; i < staleKeys.Count; i++)
+        {
+            _doorCloseTimestamps.Remove(staleKeys[i]);
+        }
     }
 
     [HarmonyPatch(nameof(Door.GetHoverText))]
@@ -137,7 +197,7 @@ internal static class Patch_Door
             {
                 bool hasAccess = WardPermissions.CanOpenDoor(doorZdo, wardZdo, playerId);
                 string colorHex = hasAccess ? "#a3e635" : "#f87171";
-                prefix += $"<color={colorHex}>[{minRole} Clearance]</color>\n";
+                prefix += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>\n";
             }
 
             canRename = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
@@ -150,7 +210,7 @@ internal static class Patch_Door
 
         if (canRename)
         {
-            string renamePrompt = Localization.instance.Localize("\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] Configure Door");
+            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_door".Localize()}");
             __result += renamePrompt;
         }
 

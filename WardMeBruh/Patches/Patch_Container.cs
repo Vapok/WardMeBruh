@@ -120,7 +120,7 @@ internal static class Patch_Container
 
         if (isFuelDepot)
         {
-            prefix += "<color=#f97316>[Fuel Depot]</color> ";
+            prefix += $"<color=#f97316>[{"$wmb_access_fuel_depot".Localize()}]</color> ";
         }
 
         PrivateArea coveringWard = WardQueryService.GetCoveringWard(__instance.transform.position);
@@ -135,7 +135,7 @@ internal static class Patch_Container
             {
                 bool hasAccess = WardPermissions.CanAccessContainer(containerZdo, wardZdo, playerId);
                 string colorHex = hasAccess ? "#a3e635" : "#f87171";
-                prefix += $"<color={colorHex}>[{minRole} Clearance]</color>\n";
+                prefix += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>\n";
             }
 
             canRename = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
@@ -148,7 +148,7 @@ internal static class Patch_Container
 
         if (canRename)
         {
-            string renamePrompt = Localization.instance.Localize("\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] Configure Chest");
+            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_chest".Localize()}");
             __result += renamePrompt;
         }
 

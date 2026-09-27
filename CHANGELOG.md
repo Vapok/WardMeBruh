@@ -1,3 +1,9 @@
+# 0.0.2
+* Added developer API supporting custom roles and external mod permission registrations.
+* Automatic API documentation generated directly in repository documentation on build.
+* Resolved door closing race conditions and prevented doors from accidentally popping back open.
+* Optimized performance across shields, water physics, base repairs, and player checks to improve frame rates and eliminate micro-stutters in large bases.
+
 # 0.0.1 - Initial Release
 * **Centralized Ward Hub**: Interactive management window at the ward stone featuring Overview, Defenses, Upkeep, Access, Roster, and Management tabs.
 * **Base Extensions**: Placing an additional ward stone inside an active shield links it to the main base, sharing power, roles, and settings while expanding the total protected perimeter.

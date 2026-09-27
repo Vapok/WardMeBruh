@@ -20,11 +20,11 @@ internal static class Patch_PlayerFood
         if (forceUpdate)
             return;
 
-        if (!WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.FoodFreeze, __instance.GetPlayerID()))
-            return;
-
         float timer = s_foodTimerRef(__instance) + dt * Game.m_foodRate;
         if (timer < 1f)
+            return;
+
+        if (!WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.FoodFreeze, __instance.GetPlayerID()))
             return;
 
         List<Player.Food> foods = s_foodsRef(__instance);

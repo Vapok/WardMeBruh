@@ -50,26 +50,26 @@ public class TabDefenses
             maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
         }
 
-        Transform cardDomain = WardUIFactory.CreateCard(listContainer, "Territorial Domain & Coverage");
+        Transform cardDomain = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_domain");
         WardUIFactory.CreateSliderRow(
             cardDomain, 
-            "Perimeter Dome Radius", 
+            "$wmb_defenses_radius", 
             10f, 
             maxRadius, 
             30f, 
             true, 
-            "m", 
+            $"{"$wmb_meters".Localize()}", 
             OnRadiusChanged, 
             out _setRadiusSlider,
             out _setRadiusSliderInteractable,
             5f,
             true);
-        WardUIFactory.CreateBadgeRow(cardDomain, "Protected Land Coverage", "~2,827 m²", WardColorPalette.ValheimBeige, out _setAreaBadge);
+        WardUIFactory.CreateBadgeRow(cardDomain, "$wmb_defenses_land_coverage", "~2,827 m²", WardColorPalette.ValheimBeige, out _setAreaBadge);
 
-        Transform card1 = WardUIFactory.CreateCard(listContainer, "Intruder Repulsion & Electrical Shock");
+        Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_repulsion");
         WardUIFactory.CreateSliderRow(
             card1, 
-            "Pushback Impulse Force", 
+            "$wmb_defenses_pushback", 
             0f, 
             50f, 
             0f, 
@@ -80,7 +80,7 @@ public class TabDefenses
 
         WardUIFactory.CreateSliderRow(
             card1, 
-            "Creature Shock Damage", 
+            "$wmb_defenses_shock_creatures", 
             0f, 
             100f, 
             0f, 
@@ -91,7 +91,7 @@ public class TabDefenses
 
         WardUIFactory.CreateSliderRow(
             card1, 
-            "Intruder Player Shock Damage", 
+            "$wmb_defenses_shock_players", 
             0f, 
             100f, 
             0f, 
@@ -100,68 +100,68 @@ public class TabDefenses
             v => SetZdoFloat(WardZdoKeys.ShockPlayerDmg, v, "defenses.combat"), 
             out _setShockPlayerSlider);
 
-        Transform card2 = WardUIFactory.CreateCard(listContainer, "Base Camouflage & Territory Sanctuary");
+        Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_camouflage");
         WardUIFactory.CreateToggleRow(
             card2, 
-            "Ghost Base (Monster Camouflage)", 
+            "$wmb_defenses_ghost_base", 
             false, 
             v => SetZdoBool(WardZdoKeys.GhostBase, v, "defenses.camouflage"), 
             out _setGhostBase);
 
         WardUIFactory.CreateToggleRow(
             card2, 
-            "Raid Event Suppression", 
+            "$wmb_defenses_raid_suppression", 
             false, 
             v => SetZdoBool(WardZdoKeys.RaidSuppress, v, "defenses.camouflage"), 
             out _setRaidSuppress);
 
         WardUIFactory.CreateToggleRow(
             card2, 
-            "Monster Spawn Suppression", 
+            "$wmb_defenses_spawn_suppression", 
             false, 
             v => SetZdoBool(WardZdoKeys.SpawnSuppress, v, "defenses.camouflage"), 
             out _setSpawnSuppress);
 
-        Transform card3 = WardUIFactory.CreateCard(listContainer, "Player Sanctuary & Vitality Protections");
+        Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_sanctuary");
         WardUIFactory.CreateToggleRow(
             card3, 
-            "Territory Max Comfort Aura", 
+            "$wmb_defenses_max_comfort", 
             false, 
             v => SetZdoBool(WardZdoKeys.MaxComfort, v, "upkeep.perks"), 
             out _setMaxComfort);
 
         WardUIFactory.CreateToggleRow(
             card3,
-            "Sanctuary Vitality Boost (50% Regen)",
+            "$wmb_defenses_regen_boost",
             true,
             v => SetZdoBool(WardZdoKeys.RegenBoost, v, "upkeep.perks"),
             out _setRegenBoost);
 
         WardUIFactory.CreateToggleRow(
             card3,
-            "Death Skill Loss Protection",
+            "$wmb_defenses_death_skill",
             true,
             v => SetZdoBool(WardZdoKeys.DeathSkillShield, v, "upkeep.perks"),
             out _setDeathSkill);
 
         WardUIFactory.CreateToggleRow(
             card3,
-            "Food Duration Freeze",
+            "$wmb_defenses_food_freeze",
             true,
             v => SetZdoBool(WardZdoKeys.FoodFreeze, v, "upkeep.perks"),
             out _setFoodFreeze);
 
-        Transform card4 = WardUIFactory.CreateCard(listContainer, "Shield Visuals & Property Boundary");
+        Transform card4 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_visuals");
         WardUIFactory.CreateToggleRow(
             card4,
-            "Show 3D Forcefield Dome",
+            "$wmb_defenses_show_dome",
             true,
             v => SetZdoBool(WardZdoKeys.ShowShieldDome, v, "defenses.combat"),
             out _setShowDomeToggle);
 
         WardUIFactory.CreateToggleRow(
             card4,
-            "Show Ground Perimeter Ring",
+            "$wmb_defenses_show_ring",
             true,
             v => SetZdoBool(WardZdoKeys.ShowPerimeterRing, v, "defenses.combat"),
             out _setShowRingToggle);

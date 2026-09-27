@@ -511,7 +511,7 @@ internal static class Patch_PrivateArea
         string statusToken = isEnabled ? "$piece_guardstone_active" : "$piece_guardstone_inactive";
         if (isExtension)
         {
-            sb.Append($"{baseName} (Base Extension) ( {statusToken} )");
+            sb.Append($"{baseName} {"$wmb_base_extension".Localize()} ( {statusToken} )");
         }
         else
         {
@@ -526,14 +526,14 @@ internal static class Patch_PrivateArea
 
         WardRole role = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
         string roleColor = role >= WardRole.Manager ? "#fcd34d" : "#38bdf8";
-        sb.Append($"\nClearance: <color={roleColor}><b>[{role}]</b></color>");
+        sb.Append($"\n{"$wmb_clearance_label".Localize()} <color={roleColor}><b>[{WardRoleManager.GetRoleName(role).Localize()}]</b></color>");
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
             string hubKey = (ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
                 ? ConfigRegistry.OpenWardHubKey.Value.ToString()
                 : "E";
-            sb.Append($"\n[<color=yellow><b>{hubKey}</b></color>] Open Ward Hub");
+            sb.Append($"\n[<color=yellow><b>{hubKey}</b></color>] {"$wmb_open_ward_hub".Localize()}");
         }
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))

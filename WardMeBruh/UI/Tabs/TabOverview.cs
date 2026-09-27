@@ -52,31 +52,31 @@ public class TabOverview
 
         WardUIFactory.CreateScrollArea(_root.transform, out Transform listContainer);
 
-        Transform card1 = WardUIFactory.CreateCard(listContainer, "Ward Identity & Clearance");
-        WardUIFactory.CreateInputRow(card1, "Ward Designation", "Ward Stone", "SAVE", OnSaveNameClicked, out _setNameInput);
-        WardUIFactory.CreateBadgeRow(card1, "Owner & Creator", "-", WardColorPalette.ValheimBeige, out _setOwnerBadge);
-        WardUIFactory.CreateBadgeRow(card1, "Your Clearance Tier", "-", WardColorPalette.GoldAmber, out _setRoleBadge);
-        WardUIFactory.CreatePowerRow(card1, "Ward Power State", "...", WardColorPalette.RunicGreen, "TOGGLE", OnTogglePowerClicked, out _setPowerRow);
+        Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_identity");
+        WardUIFactory.CreateInputRow(card1, "$wmb_overview_designation", "$wmb_default_ward_name".Localize(), "$wmb_save".Localize(), OnSaveNameClicked, out _setNameInput);
+        WardUIFactory.CreateBadgeRow(card1, "$wmb_overview_owner", "-", WardColorPalette.ValheimBeige, out _setOwnerBadge);
+        WardUIFactory.CreateBadgeRow(card1, "$wmb_overview_clearance", "-", WardColorPalette.GoldAmber, out _setRoleBadge);
+        WardUIFactory.CreatePowerRow(card1, "$wmb_overview_power", "...", WardColorPalette.RunicGreen, "$wmb_toggle".Localize(), OnTogglePowerClicked, out _setPowerRow);
 
-        Transform card2 = WardUIFactory.CreateCard(listContainer, "Granted Role Capabilities");
+        Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_granted");
         _grantedContainer = card2;
         _grantedCardRoot = card2.parent.parent.gameObject;
 
-        Transform card3 = WardUIFactory.CreateCard(listContainer, "Active Sanctuary & Territorial Protections");
-        WardUIFactory.CreateBadgeRow(card3, "Weather Proofing (Rain Rot & Ash)", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Sanctuary Vitality Boost (50% Regen)", "...", WardColorPalette.TextMuted, out _setRegenBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Death Skill Loss Protection", "...", WardColorPalette.TextMuted, out _setDeathSkillBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Food Duration Freeze", "...", WardColorPalette.TextMuted, out _setFoodFreezeBadge);
+        Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_protections");
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_weather_roof", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_regen_boost", "...", WardColorPalette.TextMuted, out _setRegenBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_death_skill", "...", WardColorPalette.TextMuted, out _setDeathSkillBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_food_freeze", "...", WardColorPalette.TextMuted, out _setFoodFreezeBadge);
 
-        WardUIFactory.CreateBadgeRow(card3, "Ghost Base (Monster Camouflage)", "...", WardColorPalette.TextMuted, out _setGhostBaseBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Raid Event Suppression", "...", WardColorPalette.TextMuted, out _setRaidBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Monster Spawn Suppression", "...", WardColorPalette.TextMuted, out _setSpawnBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Tamed Creature Sanctuary", "...", WardColorPalette.TextMuted, out _setTamesBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Automated Area Repair", "...", WardColorPalette.TextMuted, out _setRepairBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Auto-Fuel Supply Depot", "...", WardColorPalette.TextMuted, out _setFuelBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Auto-Closing Doors", "...", WardColorPalette.TextMuted, out _setDoorBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Territory Max Comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
-        WardUIFactory.CreateBadgeRow(card3, "Portal Access Control", "...", WardColorPalette.TextMuted, out _setPortalBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_ghost_base", "...", WardColorPalette.TextMuted, out _setGhostBaseBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_raid_suppression", "...", WardColorPalette.TextMuted, out _setRaidBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_spawn_suppression", "...", WardColorPalette.TextMuted, out _setSpawnBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_tames", "...", WardColorPalette.TextMuted, out _setTamesBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_repair", "...", WardColorPalette.TextMuted, out _setRepairBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_card_fuel", "...", WardColorPalette.TextMuted, out _setFuelBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_upkeep_autodoors_name", "...", WardColorPalette.TextMuted, out _setDoorBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_portal", "...", WardColorPalette.TextMuted, out _setPortalBadge);
     }
 
     public void Bind(PrivateArea ward)
@@ -94,7 +94,7 @@ public class TabOverview
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
 
-        string customName = zdo.GetString(WardZdoKeys.CustomName, "Ward Stone");
+        string customName = zdo.GetString(WardZdoKeys.CustomName, "$wmb_default_ward_name".Localize());
         _currentEnteredName = customName;
         bool canRename = WardRoleManager.CanPerform(zdo, playerId, "core.rename");
         _setNameInput?.Invoke(customName, canRename);
@@ -104,12 +104,12 @@ public class TabOverview
         _setOwnerBadge?.Invoke(creatorName, WardColorPalette.ValheimBeige);
 
         Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : WardColorPalette.IceBlue;
-        _setRoleBadge?.Invoke($"[ {role} ]", roleColor);
+        _setRoleBadge?.Invoke($"[ {WardRoleManager.GetRoleName(role).Localize()} ]", roleColor);
 
         bool isEnabled = _ward.IsEnabled();
-        string statusText = isEnabled ? "● ACTIVE" : "○ INACTIVE";
+        string statusText = isEnabled ? $"● {"$wmb_active".Localize()}" : $"○ {"$wmb_inactive".Localize()}";
         Color statusColor = isEnabled ? WardColorPalette.RunicGreen : WardColorPalette.DangerRed;
-        string btnText = isEnabled ? "DEACTIVATE" : "ACTIVATE";
+        string btnText = isEnabled ? "$wmb_deactivate".Localize() : "$wmb_activate".Localize();
         bool canPower = WardRoleManager.CanPerform(zdo, playerId, "core.power");
         _setPowerRow?.Invoke(statusText, statusColor, btnText, canPower);
 
@@ -131,7 +131,7 @@ public class TabOverview
         for (int i = 0; i < granted.Count; i++)
         {
             FeaturePermission perm = granted[i];
-            GameObject row = WardUIFactory.CreateBadgeRow(_grantedContainer, perm.DisplayName, $"✔  {perm.Category}", WardColorPalette.RunicGreen, out _);
+            GameObject row = WardUIFactory.CreateBadgeRow(_grantedContainer, perm.DisplayName.Localize(), $"✔  {WardRoleManager.GetCategoryDisplayName(perm.Category).Localize()}", WardColorPalette.RunicGreen, out _);
             _grantedRows.Add(row);
         }
 
@@ -152,7 +152,7 @@ public class TabOverview
         if (maxComfortEnabled && isEnabled)
         {
             int comfortLvl = WardComfortService.GetWardComfort(_ward);
-            _setComfortBadge?.Invoke($"✔  LVL {comfortLvl}", WardColorPalette.RunicGreen);
+            _setComfortBadge?.Invoke($"✔  {"$wmb_overview_lvl".Localize()} {comfortLvl}", WardColorPalette.RunicGreen);
         }
         else
         {
@@ -193,11 +193,11 @@ public class TabOverview
 
         if (isActive)
         {
-            badgeSetter("✔  ACTIVE", WardColorPalette.RunicGreen);
+            badgeSetter($"✔  {"$wmb_active".Localize()}", WardColorPalette.RunicGreen);
         }
         else
         {
-            badgeSetter("✖  DISABLED", WardColorPalette.TextMuted);
+            badgeSetter($"✖  {"$wmb_disabled".Localize()}", WardColorPalette.TextMuted);
         }
     }
 
@@ -213,7 +213,7 @@ public class TabOverview
 
         string trimmed = (newName ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(trimmed))
-            trimmed = "Ward Stone";
+            trimmed = "$wmb_default_ward_name".Localize();
 
         _currentEnteredName = trimmed;
         WardNetworkRouter.SendRenameWard(zdo.m_uid, trimmed);

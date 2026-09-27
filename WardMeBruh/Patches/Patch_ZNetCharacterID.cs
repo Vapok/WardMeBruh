@@ -1,4 +1,5 @@
 using HarmonyLib;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
 
 namespace WardMeBruh.Patches;
@@ -20,7 +21,8 @@ internal static class Patch_ZNetCharacterID
                 long playerId = zdo.GetLong(ZDOVars.s_playerID, 0L);
                 if (playerId != 0L)
                 {
-                    PlayerRegistryService.RegisterAndPersistPlayer(playerId, peer.m_playerName);
+                    PlayerRegistryService.RegisterAndPersistPlayer(playerId, peer.m_playerName, broadcast: true);
+                    WardNetworkRouter.SendKnownPlayers(peer.m_uid);
                 }
             }
         }

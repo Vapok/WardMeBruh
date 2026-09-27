@@ -133,14 +133,14 @@ public class WardMainWindow : MonoBehaviour
         titleRt.sizeDelta = new Vector2(520f, 32f);
 
         _titleText = titleObj.GetComponent<Text>();
-        _titleText.text = "WARD CONTROL MATRIX";
+        _titleText.text = "$wmb_window_title".Localize();
         _titleText.font = GUIManager.Instance.AveriaSerifBold;
         _titleText.fontSize = 20;
         _titleText.color = WardColorPalette.ValheimOrange;
         _titleText.alignment = TextAnchor.MiddleLeft;
 
         GameObject fontBtn = GUIManager.Instance.CreateButton(
-            "FONT: SMALL", 
+            "$wmb_font_small".Localize(), 
             _panel.transform, 
             new Vector2(1f, 1f), 
             new Vector2(1f, 1f), 
@@ -157,7 +157,7 @@ public class WardMainWindow : MonoBehaviour
         fontBtn.GetComponent<Button>().onClick.AddListener(OnCycleFontSizeClicked);
 
         GameObject remoteBtn = GUIManager.Instance.CreateButton(
-            "OTHER WARDS ▾", 
+            "$wmb_other_wards".Localize(), 
             _panel.transform, 
             new Vector2(1f, 1f), 
             new Vector2(1f, 1f), 
@@ -200,11 +200,11 @@ public class WardMainWindow : MonoBehaviour
         hlg.childForceExpandHeight = true;
         hlg.spacing = 8f;
 
-        string[] tabNames = { "OVERVIEW", "DEFENSES", "UPKEEP", "ACCESS", "ROSTER", "MANAGEMENT" };
-        for (int i = 0; i < tabNames.Length; i++)
+        string[] tabTokens = { "$wmb_tab_overview", "$wmb_tab_defenses", "$wmb_tab_upkeep", "$wmb_tab_access", "$wmb_tab_roster", "$wmb_tab_management" };
+        for (int i = 0; i < tabTokens.Length; i++)
         {
             int index = i;
-            GameObject btnObj = GUIManager.Instance.CreateButton(tabNames[i], tabBar.transform, Vector2.zero, Vector2.zero, Vector2.zero, 130f, 36f);
+            GameObject btnObj = GUIManager.Instance.CreateButton(tabTokens[i].Localize(), tabBar.transform, Vector2.zero, Vector2.zero, Vector2.zero, 130f, 36f);
             Text btnTxt = btnObj.GetComponentInChildren<Text>();
             if (btnTxt != null)
             {
@@ -271,8 +271,8 @@ public class WardMainWindow : MonoBehaviour
 
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
 
-        string customName = zdo.GetString(Configuration.WardZdoKeys.CustomName, "Ward Stone");
-        _titleText.text = customName.ToUpperInvariant();
+        string customName = zdo.GetString(Configuration.WardZdoKeys.CustomName, "$wmb_default_ward_name".Localize());
+        _titleText.text = customName.Localize().ToUpperInvariant();
 
         bool canDefend = WardRoleManager.CanPerform(zdo, playerId, "defenses.dome_size") ||
                          WardRoleManager.CanPerform(zdo, playerId, "defenses.combat") ||
@@ -412,7 +412,12 @@ public class WardMainWindow : MonoBehaviour
 
         if (_fontSizeBtnText != null)
         {
-            _fontSizeBtnText.text = $"FONT: {mode.ToString().ToUpperInvariant()}";
+            _fontSizeBtnText.text = mode switch
+            {
+                WardFontSizeMode.Medium => "$wmb_font_medium".Localize(),
+                WardFontSizeMode.Large => "$wmb_font_large".Localize(),
+                _ => "$wmb_font_small".Localize()
+            };
         }
 
         ApplyFontSizeToHierarchy(_panel, mode);

@@ -46,17 +46,44 @@ public class WardRepulsionService : MonoBehaviour
             if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
                 continue;
 
+            List<PrivateArea> activeDefenseWards = null;
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea ward = PrivateArea.m_allAreas[i];
+                if (ward == null || !ward.IsEnabled() || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                    continue;
+
+                ZDO zdo = ward.m_nview.GetZDO();
+                if (zdo == null)
+                    continue;
+
+                float push = zdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
+                float shockC = zdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
+                float shockP = zdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
+                if (push > 0f || shockC > 0f || shockP > 0f)
+                {
+                    activeDefenseWards ??= new List<PrivateArea>();
+                    activeDefenseWards.Add(ward);
+                }
+            }
+
+            if (activeDefenseWards == null || activeDefenseWards.Count == 0)
+                continue;
+
             List<Character> allCharacters = Character.GetAllCharacters();
             if (allCharacters == null || allCharacters.Count == 0)
                 continue;
 
-            for (int wardIndex = 0; wardIndex < PrivateArea.m_allAreas.Count; wardIndex++)
+            for (int wardIndex = 0; wardIndex < activeDefenseWards.Count; wardIndex++)
             {
-                PrivateArea ward = PrivateArea.m_allAreas[wardIndex];
+                PrivateArea ward = activeDefenseWards[wardIndex];
                 if (ward == null || !ward.IsEnabled() || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
                     continue;
 
                 ZDO wardZdo = ward.m_nview.GetZDO();
+                if (wardZdo == null)
+                    continue;
+
                 float pushbackForce = wardZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
                 float shockCreatureDmg = wardZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
                 float shockPlayerDmg = wardZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);

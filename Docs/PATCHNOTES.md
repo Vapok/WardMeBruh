@@ -1,3 +1,29 @@
+# 0.0.2
+* **Developer API & Extensibility Architecture**:
+  * Implemented `WardMeBruh.API.WardMeBruhAPI` facilitating external mod integration.
+  * Added `RegisterRoleFeature(...)` allowing third-party mods to dynamically inject custom capability permissions into the WardMeBruh permission matrix under `WardCapabilityCategory.External` or custom category definitions.
+  * Added `RegisterRoleTemplate(...)` to inject custom role presets into newly created ward hierarchies.
+  * Provided spatial and instance queries: `HasFeatureAccess(...)`, `GetPlayerRole(...)`, `GetPlayerRoleName(...)`, `IsInsideWard(...)`, `IsWardShieldActive(...)`, `GetWardRadius(...)`, `GetWardName(...)`, and `GetCoveringWard(...)`.
+  * Added `Docs/WardMeBruhAPI_Client.cs` providing a zero-dependency reflection client wrapper for external mod developers.
+* **Automated API Documentation Build Pipeline**:
+  * Integrated `Vsxmd` (1.4.6) NuGet build task and target to compile XML doc comments directly into GitHub-flavored Markdown.
+  * Configured `WardMeBruh.csproj` with `<GenerateDocumentationFile>true</GenerateDocumentationFile>` and output target `Docs/WardMeBruhAPI.md`.
+  * Generated documentation automatically updates on every project build (`dotnet build`).
+* **Door Closing Race Condition Resolution**:
+  * Refactored `AutoDoorService` to track and cancel active coroutines per door.
+  * Added player proximity detection in `AutoDoorService` (`IsPlayerNearDoor`) preventing automatic door closure while any player is within 3.5m of the doorway.
+  * Added `Patch_Door.RPC_UseDoorPrefix` debounce guard tracking close timestamps (`_doorCloseTimestamps`), suppressing duplicate/competing close RPC requests on recently closed doors within a 1.2s window to prevent vanilla toggle inversion from re-opening doors.
+  * Updated `InteractPostfix` to cancel pending auto-close timers when a door is manually closed.
+* **Engine Performance & Frame Rate Optimizations**:
+  * **Shield Dome Caching (`WardForcefieldDome`)**: Throttled camera dome effect resolution (`FindFirstObjectByType`) to check at most once every 2 seconds if missing. Added dirty-state tracking for `ShieldDomeImageEffect.SetShieldData` to prevent redundant per-frame GPU buffer re-uploads. Applied perimeter ring aether tint once on wake instead of creating heap copies every second.
+  * **Per-Frame Query Caching (`WardQueryService`)**: Added per-frame cache for `GetCoveringWard` and `GetCoveringWardZdo` matching exact frame and coordinates, eliminating up to 7+ redundant spatial ward searches per frame per player.
+  * **Water Physics Postfix Fast-Path (`Patch_WaterVolume`)**: Added `HasAnyActiveWaterDrain` 1-second cached check to exit immediately in 1 CPU cycle when no active wards have water drain enabled, eliminating massive spatial distance loops during water surface calculation.
+  * **AI Static Target Perception Fast-Path (`Patch_BaseAI`)**: Added `HasAnyActiveGhostBase` 1-second cached check to exit immediately when no active wards have ghost base enabled.
+  * **WearNTear Batching (`Patch_WearNTear`, `Patch_Cover`)**: Collapsed 4 separate spatial queries (`WeatherRoof`, `AshShield`, `LavaShield`, `SnowShield`) into a single `GetCoveringWardZdo` resolution on piece wear updates.
+  * **Food Timer Pre-Validation (`Patch_PlayerFood`)**: Relocated `timer < 1f` check prior to spatial ward checks, reducing food query frequency from per-frame to once per second.
+  * **Territory Status Effect Throttling (`SE_WardTerritory`)**: Throttled territory information updates to 0.5s intervals instead of executing on every frame of `Character.Update()`.
+  * **Background Service Fast-Guards (`AreaRepairService`, `AutoFuelService`, `WardRepulsionService`)**: Filter active owned wards requiring processing before instantiating or querying heavy scene lists (`WearNTear.GetAllInstances()`, `Character.GetAllCharacters()`).
+
 # 0.0.1 - Initial Release
 * **Base Extension Architecture**:
   * Implemented hierarchical parent-child ward linking via `WardZdoKeys.ParentWard` and `KnownExtensionWard`.

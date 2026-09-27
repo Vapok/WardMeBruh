@@ -101,20 +101,20 @@ public class TabAccess
             }
         }
 
-        Transform summaryCard = WardUIFactory.CreateCard(_listContainer, "Perimeter Access Scanner");
+        Transform summaryCard = WardUIFactory.CreateCard(_listContainer, "$wmb_access_card_scanner");
         _entryRows.Add(summaryCard.parent.parent.gameObject);
 
-        WardUIFactory.CreateBadgeRow(summaryCard, "Scanned Perimeter Radius", $"{Mathf.RoundToInt(radius)}m", WardColorPalette.ValheimOrange, out _);
-        WardUIFactory.CreateBadgeRow(summaryCard, "Active Containers Detected", $"{wardContainers.Count} Chests", WardColorPalette.ValheimBeige, out _);
-        WardUIFactory.CreateBadgeRow(summaryCard, "Active Doors & Gates Detected", $"{wardDoors.Count} Doors", WardColorPalette.ValheimBeige, out _);
-        WardUIFactory.CreateBadgeRow(summaryCard, "Active Portals Detected", $"{wardPortals.Count} Portals", WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_scanned_radius", $"{Mathf.RoundToInt(radius)}{"$wmb_meters".Localize()}", WardColorPalette.ValheimOrange, out _);
+        WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_containers_detected", $"{wardContainers.Count} {"$wmb_access_chests_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_doors_detected", $"{wardDoors.Count} {"$wmb_access_doors_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_portals_detected", $"{wardPortals.Count} {"$wmb_access_portals_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
 
-        Transform containerCard = WardUIFactory.CreateCard(_listContainer, $"Storage Containers ({wardContainers.Count})");
+        Transform containerCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_containers".Localize()} ({wardContainers.Count})");
         _entryRows.Add(containerCard.parent.parent.gameObject);
 
         if (wardContainers.Count == 0)
         {
-            WardUIFactory.CreateBadgeRow(containerCard, "No chests found in territory", "-", WardColorPalette.TextMuted, out _);
+            WardUIFactory.CreateBadgeRow(containerCard, "$wmb_access_no_containers".Localize(), "-", WardColorPalette.TextMuted, out _);
         }
         else
         {
@@ -124,12 +124,12 @@ public class TabAccess
             }
         }
 
-        Transform doorCard = WardUIFactory.CreateCard(_listContainer, $"Doors & Gateways ({wardDoors.Count})");
+        Transform doorCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_doors".Localize()} ({wardDoors.Count})");
         _entryRows.Add(doorCard.parent.parent.gameObject);
 
         if (wardDoors.Count == 0)
         {
-            WardUIFactory.CreateBadgeRow(doorCard, "No doors found in territory", "-", WardColorPalette.TextMuted, out _);
+            WardUIFactory.CreateBadgeRow(doorCard, "$wmb_access_no_doors".Localize(), "-", WardColorPalette.TextMuted, out _);
         }
         else
         {
@@ -139,12 +139,12 @@ public class TabAccess
             }
         }
 
-        Transform portalCard = WardUIFactory.CreateCard(_listContainer, $"Portals & Teleportation ({wardPortals.Count})");
+        Transform portalCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_portals".Localize()} ({wardPortals.Count})");
         _entryRows.Add(portalCard.parent.parent.gameObject);
 
         WardUIFactory.CreateToggleRow(
             portalCard,
-            "Enforce Portal Access & Transit Clearance",
+            "$wmb_access_enforce_portal",
             portalAccessEnabled,
             val =>
             {
@@ -160,7 +160,7 @@ public class TabAccess
         {
             if (wardPortals.Count == 0)
             {
-                WardUIFactory.CreateBadgeRow(portalCard, "No portals found in territory", "-", WardColorPalette.TextMuted, out _);
+                WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_no_portals".Localize(), "-", WardColorPalette.TextMuted, out _);
             }
             else
             {
@@ -172,7 +172,7 @@ public class TabAccess
         }
         else
         {
-            WardUIFactory.CreateBadgeRow(portalCard, "Portal Access Control is Disabled", "All players may transit freely", WardColorPalette.TextMuted, out _);
+            WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_portal_disabled", "$wmb_access_portal_disabled_desc".Localize(), WardColorPalette.TextMuted, out _);
         }
     }
 
@@ -183,9 +183,9 @@ public class TabAccess
 
         string defaultName = !string.IsNullOrEmpty(container.m_name)
             ? Localization.instance.Localize(container.m_name)
-            : (container.GetComponent<Piece>() != null ? Localization.instance.Localize(container.GetComponent<Piece>().m_name) : "Chest");
+            : (container.GetComponent<Piece>() != null ? Localization.instance.Localize(container.GetComponent<Piece>().m_name) : "$wmb_chest".Localize());
         if (string.IsNullOrEmpty(defaultName))
-            defaultName = "Chest";
+            defaultName = "$wmb_chest".Localize();
 
         string displayName = (!string.IsNullOrEmpty(customName) && !customName.Equals("Container", System.StringComparison.OrdinalIgnoreCase))
             ? customName
@@ -198,7 +198,7 @@ public class TabAccess
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ Role: {role} ]", 
+            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
@@ -225,7 +225,7 @@ public class TabAccess
         });
 
         GameObject fuelBtnObj = GUIManager.Instance.CreateButton(
-            isFuel ? "✔ FUEL DEPOT" : "✖ NO DEPOT", 
+            isFuel ? $"✔ {"$wmb_access_fuel_depot".Localize()}" : $"✖ {"$wmb_access_no_depot".Localize()}", 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
@@ -258,9 +258,9 @@ public class TabAccess
 
         string defaultName = !string.IsNullOrEmpty(door.m_name)
             ? Localization.instance.Localize(door.m_name)
-            : (door.GetComponent<Piece>() != null ? Localization.instance.Localize(door.GetComponent<Piece>().m_name) : "Door");
+            : (door.GetComponent<Piece>() != null ? Localization.instance.Localize(door.GetComponent<Piece>().m_name) : "$wmb_door".Localize());
         if (string.IsNullOrEmpty(defaultName))
-            defaultName = "Door";
+            defaultName = "$wmb_door".Localize();
 
         string displayName = (!string.IsNullOrEmpty(customName) && !customName.Equals("Door", System.StringComparison.OrdinalIgnoreCase))
             ? customName
@@ -272,7 +272,7 @@ public class TabAccess
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ Role: {role} ]", 
+            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
@@ -303,7 +303,7 @@ public class TabAccess
     {
         ZDO zdo = portal.m_nview.GetZDO();
         string tag = portal.GetText();
-        string displayName = !string.IsNullOrEmpty(tag) ? $"Portal: \"{tag}\"" : "Portal (Untagged)";
+        string displayName = !string.IsNullOrEmpty(tag) ? $"{"$wmb_access_portals_unit".Localize()}: \"{tag}\"" : $"{"$wmb_access_portals_unit".Localize()} ({"$wmb_untagged".Localize()})";
 
         int roleInt = zdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
         WardRole role = (WardRole)roleInt;
@@ -311,7 +311,7 @@ public class TabAccess
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ Role: {role} ]", 
+            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 

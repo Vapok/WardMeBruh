@@ -3,6 +3,7 @@ using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
 
@@ -40,7 +41,7 @@ internal static class Patch_TeleportWorld
                 WardRole requiredRole = (WardRole)roleInt;
                 if (!WardPermissions.HasRequiredRole(localWardZdo, playerId, requiredRole))
                 {
-                    NotifyBlocked(player, "Portal transit blocked: Insufficient clearance for this portal");
+                    NotifyBlocked(player, "$wmb_msg_portal_blocked_local".Localize());
                     return false;
                 }
             }
@@ -65,7 +66,7 @@ internal static class Patch_TeleportWorld
                         WardRole destRequiredRole = (WardRole)roleInt;
                         if (!WardPermissions.HasRequiredRole(destWardZdo, playerId, destRequiredRole))
                         {
-                            NotifyBlocked(player, "Destination portal transit blocked: Insufficient clearance at destination");
+                            NotifyBlocked(player, "$wmb_msg_portal_blocked_dest".Localize());
                             return false;
                         }
                     }
@@ -82,7 +83,7 @@ internal static class Patch_TeleportWorld
                             WardRole destRequiredRole = (WardRole)roleInt;
                             if (!WardPermissions.HasRequiredRole(destWardZdo, playerId, destRequiredRole))
                             {
-                                NotifyBlocked(player, "Destination portal transit blocked: Insufficient clearance at destination");
+                                NotifyBlocked(player, "$wmb_msg_portal_blocked_dest".Localize());
                                 return false;
                             }
                         }

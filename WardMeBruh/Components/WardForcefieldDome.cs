@@ -9,6 +9,7 @@ namespace WardMeBruh.Components;
 public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 {
     private static ShieldDomeImageEffect _shieldDomeEffect;
+    private static float _lastDomeEffectSearchTime = -1f;
 
     private PrivateArea _area;
     private SphereCollider _domeCollider;
@@ -17,7 +18,10 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
     private float _lastRadius = -1f;
     private float _lastHitTime;
     private bool _isDomeRegistered;
-    private float _lastTintTime;
+    private float _lastRegisteredRadius = -1f;
+    private Vector3 _lastRegisteredPos = Vector3.negativeInfinity;
+    private float _lastRegisteredHitTime = -1f;
+    private bool _isTintApplied;
 
     private void Awake()
     {
@@ -100,7 +104,19 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
         if (_shieldDomeEffect == null)
         {
-            _shieldDomeEffect = Object.FindFirstObjectByType<ShieldDomeImageEffect>();
+            float now = Time.time;
+            if (now - _lastDomeEffectSearchTime >= 2.0f)
+            {
+                _lastDomeEffectSearchTime = now;
+                if (Camera.main != null)
+                {
+                    _shieldDomeEffect = Camera.main.GetComponent<ShieldDomeImageEffect>();
+                }
+                if (_shieldDomeEffect == null)
+                {
+                    _shieldDomeEffect = Object.FindFirstObjectByType<ShieldDomeImageEffect>();
+                }
+            }
         }
 
         if (_shieldDomeEffect == null || _proxyGenerator == null)
@@ -108,8 +124,18 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
         if (active)
         {
-            _shieldDomeEffect.SetShieldData(_proxyGenerator, transform.position, radius, 1.0f, _lastHitTime);
-            _isDomeRegistered = true;
+            Vector3 currentPos = transform.position;
+            if (!_isDomeRegistered ||
+                !Mathf.Approximately(_lastRegisteredRadius, radius) ||
+                _lastRegisteredPos != currentPos ||
+                !Mathf.Approximately(_lastRegisteredHitTime, _lastHitTime))
+            {
+                _shieldDomeEffect.SetShieldData(_proxyGenerator, currentPos, radius, 1.0f, _lastHitTime);
+                _lastRegisteredRadius = radius;
+                _lastRegisteredPos = currentPos;
+                _lastRegisteredHitTime = _lastHitTime;
+                _isDomeRegistered = true;
+            }
         }
         else if (_isDomeRegistered)
         {
@@ -124,6 +150,9 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
             _shieldDomeEffect.RemoveShield(_proxyGenerator);
         }
         _isDomeRegistered = false;
+        _lastRegisteredRadius = -1f;
+        _lastRegisteredPos = Vector3.negativeInfinity;
+        _lastRegisteredHitTime = -1f;
     }
 
     private void UpdatePerimeterRing(bool active, float radius)
@@ -139,9 +168,8 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
                 _areaMarker.gameObject.SetActive(true);
             }
 
-            if (Time.time - _lastTintTime >= 1.0f)
+            if (!_isTintApplied)
             {
-                _lastTintTime = Time.time;
                 ApplyAetherIceTint();
             }
         }
@@ -185,6 +213,8 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
                 lights[i].color = WardColorPalette.AetherIce;
             }
         }
+
+        _isTintApplied = true;
     }
 
     public void TriggerHit()
@@ -192,7 +222,11 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
         _lastHitTime = Time.time;
         if (_isDomeRegistered && _shieldDomeEffect != null && _proxyGenerator != null)
         {
-            _shieldDomeEffect.SetShieldData(_proxyGenerator, transform.position, _lastRadius, 1.0f, _lastHitTime);
+            Vector3 currentPos = transform.position;
+            _shieldDomeEffect.SetShieldData(_proxyGenerator, currentPos, _lastRadius, 1.0f, _lastHitTime);
+            _lastRegisteredRadius = _lastRadius;
+            _lastRegisteredPos = currentPos;
+            _lastRegisteredHitTime = _lastHitTime;
         }
     }
 

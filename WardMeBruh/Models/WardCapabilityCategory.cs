@@ -6,5 +6,6 @@ public enum WardCapabilityCategory
     Access,
     Defenses,
     Upkeep,
-    Personnel
+    Personnel,
+    External
 }

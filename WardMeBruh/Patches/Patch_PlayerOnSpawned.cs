@@ -1,4 +1,5 @@
 using HarmonyLib;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
 
 namespace WardMeBruh.Patches;
@@ -15,6 +16,8 @@ internal static class Patch_PlayerOnSpawned
             if (id != 0L && !string.IsNullOrEmpty(name))
             {
                 PlayerRegistryService.RegisterAndPersistPlayer(id, name);
+                WardNetworkRouter.RegisterPlayerWithServer(id, name);
+                WardNetworkRouter.RequestRegistrySync();
             }
         }
     }

@@ -4,6 +4,7 @@ using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
 
@@ -44,14 +45,14 @@ internal static class Patch_Minimap
 
             if (!s_wardPins.TryGetValue(ward.Id, out Minimap.PinData pin))
             {
-                string label = string.IsNullOrEmpty(ward.Name) ? "Ward" : ward.Name;
+                string label = string.IsNullOrEmpty(ward.Name) ? "$wmb_ward".Localize() : ward.Name;
                 pin = __instance.AddPin(ward.Position, Minimap.PinType.Icon3, label, false, false);
                 s_wardPins[ward.Id] = pin;
             }
             else
             {
                 pin.m_pos = ward.Position;
-                pin.m_name = string.IsNullOrEmpty(ward.Name) ? "Ward" : ward.Name;
+                pin.m_name = string.IsNullOrEmpty(ward.Name) ? "$wmb_ward".Localize() : ward.Name;
             }
         }
 

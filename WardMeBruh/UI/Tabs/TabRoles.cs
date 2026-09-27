@@ -3,6 +3,7 @@ using System.Linq;
 using Jotunn.Managers;
 using UnityEngine;
 using UnityEngine.UI;
+using WardMeBruh.API;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Networking;
@@ -54,22 +55,46 @@ public class TabRoles
             return;
 
         ZDO zdo = _ward.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo) ?? zdo;
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        bool canManage = WardRoleManager.CanPerform(zdo, playerId, "personnel.roster");
-        bool isOwner = WardPermissions.GetPlayerRole(zdo, playerId) == WardRole.Owner;
+        bool canManage = WardRoleManager.CanPerform(effectiveZdo, playerId, WardPermissionIds.PersonnelRoster);
+        int callerRoleId = WardRoleManager.GetPlayerRoleId(effectiveZdo, playerId);
+        bool isOwner = callerRoleId == (int)WardRole.Owner || WardPermissions.IsAdmin(playerId);
 
+        WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(effectiveZdo);
+        List<WardRoleDefinition> allRoles = WardRoleManager.GetRoleDefinitions(effectiveZdo);
 
-        string managersData = zdo.GetString(WardZdoKeys.RolesManagers, string.Empty);
-        WardRoster managersRoster = WardRoster.Deserialize(managersData);
+        WardRoleDefinition callerDef = null;
+        for (int i = 0; i < allRoles.Count; i++)
+        {
+            if (allRoles[i].Id == callerRoleId)
+            {
+                callerDef = allRoles[i];
+                break;
+            }
+        }
+        int callerLevel = isOwner ? int.MaxValue : (callerDef != null ? callerDef.Level : 0);
 
-        string residentsData = zdo.GetString(WardZdoKeys.RolesResidents, string.Empty);
-        WardRoster residentsRoster = WardRoster.Deserialize(residentsData);
+        List<WardRoleDefinition> rosterRoles = new();
+        for (int i = 0; i < allRoles.Count; i++)
+        {
+            WardRoleDefinition r = allRoles[i];
+            if (r.Id != (int)WardRole.Guest && r.Id != (int)WardRole.Owner)
+            {
+                rosterRoles.Add(r);
+            }
+        }
+        rosterRoles.Sort((a, b) =>
+        {
+            int levelComp = a.Level.CompareTo(b.Level);
+            return levelComp != 0 ? levelComp : a.Id.CompareTo(b.Id);
+        });
 
-        long ownerId = zdo.GetLong(ZDOVars.s_creator, 0L);
+        long ownerId = effectiveZdo.GetLong(ZDOVars.s_creator, 0L);
 
         if (canManage)
         {
-            Transform addCard = WardUIFactory.CreateCard(_listContainer, "Enroll Player to Roster");
+            Transform addCard = WardUIFactory.CreateCard(_listContainer, "$wmb_roles_card_enroll");
             _rosterCards.Add(addCard.parent.parent.gameObject);
 
             List<KeyValuePair<long, string>> allKnown = PlayerRegistryService.GetKnownPlayers();
@@ -79,14 +104,16 @@ public class TabRoles
                 KeyValuePair<long, string> kp = allKnown[i];
                 if (kp.Key == ownerId)
                     continue;
-                if (managersRoster.Contains(kp.Key) || residentsRoster.Contains(kp.Key))
+                if (assignments.Contains(kp.Key))
                     continue;
                 knownPlayers.Add(kp);
             }
 
+            WardMeBruh.Log.Info($"[TabRoles] Refresh. allKnown={allKnown.Count}, knownPlayers={knownPlayers.Count}, ownerId={ownerId}");
+
             _dropdownPlayers.Clear();
 
-            WardUIFactory.CreateSettingRow(addCard, "Known World Characters", out Transform dropCtrlContainer);
+            WardUIFactory.CreateSettingRow(addCard, "$wmb_roles_known_characters", out Transform dropCtrlContainer);
 
             GameObject dropdownObj = WardUIExtensions.CreateValheimDropdown(dropCtrlContainer, 210f, 28f);
             dropdownObj.GetComponent<RectTransform>().sizeDelta = new Vector2(210f, 28f);
@@ -95,43 +122,59 @@ public class TabRoles
             _knownPlayerDropdown.ClearOptions();
 
             GameObject dropResBtn = GUIManager.Instance.CreateButton(
-                "+ RESIDENT",
+                "$wmb_roles_add_resident".Localize(),
                 dropCtrlContainer,
                 Vector2.zero,
                 Vector2.zero,
                 Vector2.zero,
-                95f,
+                100f,
                 28f);
-            dropResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(95f, 28f);
-            dropResBtn.SetLayoutDimensions(95f, 28f);
-            dropResBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole(WardRole.Resident));
+            dropResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
+            dropResBtn.SetLayoutDimensions(100f, 28f);
+            Text dropResTxt = dropResBtn.GetComponentInChildren<Text>();
+            if (dropResTxt != null)
+            {
+                dropResTxt.fontSize = 11;
+                dropResTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                dropResTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                dropResTxt.alignment = TextAnchor.MiddleCenter;
+            }
+            dropResBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Resident));
 
             GameObject dropMgrBtn = null;
             if (isOwner)
             {
                 dropMgrBtn = GUIManager.Instance.CreateButton(
-                    "+ MANAGER",
+                    "$wmb_roles_add_manager".Localize(),
                     dropCtrlContainer,
                     Vector2.zero,
                     Vector2.zero,
                     Vector2.zero,
-                    95f,
+                    100f,
                     28f);
-                dropMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(95f, 28f);
-                dropMgrBtn.SetLayoutDimensions(95f, 28f);
-                dropMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole(WardRole.Manager));
+                dropMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
+                dropMgrBtn.SetLayoutDimensions(100f, 28f);
+                Text dropMgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
+                if (dropMgrTxt != null)
+                {
+                    dropMgrTxt.fontSize = 11;
+                    dropMgrTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                    dropMgrTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    dropMgrTxt.alignment = TextAnchor.MiddleCenter;
+                }
+                dropMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Manager));
             }
 
             if (knownPlayers.Count == 0)
             {
                 _knownPlayerDropdown.interactable = false;
-                _knownPlayerDropdown.AddOptions(new List<Dropdown.OptionData> { new Dropdown.OptionData("No Characters") });
+                _knownPlayerDropdown.AddOptions(new List<Dropdown.OptionData> { new Dropdown.OptionData("$wmb_roles_no_characters".Localize()) });
                 _knownPlayerDropdown.value = 0;
+                _knownPlayerDropdown.RefreshShownValue();
 
                 dropResBtn.GetComponent<Button>().interactable = false;
-                Text resTxt = dropResBtn.GetComponentInChildren<Text>();
-                if (resTxt != null)
-                    resTxt.color = WardColorPalette.TextMuted;
+                if (dropResTxt != null)
+                    dropResTxt.color = WardColorPalette.TextMuted;
 
                 if (dropMgrBtn != null)
                 {
@@ -145,7 +188,7 @@ public class TabRoles
             {
                 _knownPlayerDropdown.interactable = true;
                 List<Dropdown.OptionData> options = new();
-                options.Add(new Dropdown.OptionData("-- Select Character --"));
+                options.Add(new Dropdown.OptionData("$wmb_roles_select_character".Localize()));
 
                 for (int i = 0; i < knownPlayers.Count; i++)
                 {
@@ -154,22 +197,43 @@ public class TabRoles
                 }
                 _knownPlayerDropdown.AddOptions(options);
                 _knownPlayerDropdown.value = 0;
+                _knownPlayerDropdown.RefreshShownValue();
 
-                dropResBtn.GetComponent<Button>().interactable = true;
-                Text resTxt = dropResBtn.GetComponentInChildren<Text>();
-                if (resTxt != null)
-                    resTxt.color = WardColorPalette.ValheimOrange;
+                dropResBtn.GetComponent<Button>().interactable = false;
+                if (dropResTxt != null)
+                    dropResTxt.color = WardColorPalette.TextMuted;
 
                 if (dropMgrBtn != null)
                 {
-                    dropMgrBtn.GetComponent<Button>().interactable = true;
+                    dropMgrBtn.GetComponent<Button>().interactable = false;
                     Text mgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
                     if (mgrTxt != null)
-                        mgrTxt.color = WardColorPalette.ValheimOrange;
+                        mgrTxt.color = WardColorPalette.TextMuted;
                 }
+
+                _knownPlayerDropdown.onValueChanged.AddListener((int index) =>
+                {
+                    bool hasSelection = index > 0 && index - 1 < _dropdownPlayers.Count;
+                    dropResBtn.GetComponent<Button>().interactable = hasSelection;
+                    if (dropResTxt != null)
+                        dropResTxt.color = hasSelection ? WardColorPalette.ValheimOrange : WardColorPalette.TextMuted;
+
+                    if (dropMgrBtn != null)
+                    {
+                        dropMgrBtn.GetComponent<Button>().interactable = hasSelection;
+                        Text mgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
+                        if (mgrTxt != null)
+                            mgrTxt.color = hasSelection ? WardColorPalette.ValheimOrange : WardColorPalette.TextMuted;
+                    }
+
+                    if (hasSelection && _addPlayerInput != null)
+                    {
+                        _addPlayerInput.text = _dropdownPlayers[index - 1].Value;
+                    }
+                });
             }
 
-            WardUIFactory.CreateSettingRow(addCard, "Manual Entry (Unlisted)", out Transform inputCtrlContainer);
+            WardUIFactory.CreateSettingRow(addCard, "$wmb_roles_manual_entry", out Transform inputCtrlContainer);
 
             GameObject inputObj = GUIManager.Instance.CreateInputField(
                 inputCtrlContainer,
@@ -177,7 +241,7 @@ public class TabRoles
                 Vector2.zero,
                 Vector2.zero,
                 InputField.ContentType.Standard,
-                "Enter character name...",
+                "$wmb_roles_enter_name_placeholder".Localize(),
                 14,
                 210f,
                 28f);
@@ -186,121 +250,234 @@ public class TabRoles
             _addPlayerInput = inputObj.GetComponent<InputField>();
 
             GameObject addResBtn = GUIManager.Instance.CreateButton(
-                "+ RESIDENT",
+                "$wmb_roles_add_resident".Localize(),
                 inputCtrlContainer,
                 Vector2.zero,
                 Vector2.zero,
                 Vector2.zero,
-                95f,
+                100f,
                 28f);
-            addResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(95f, 28f);
-            addResBtn.SetLayoutDimensions(95f, 28f);
-            addResBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole(WardRole.Resident));
+            addResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
+            addResBtn.SetLayoutDimensions(100f, 28f);
+            Text addResTxt = addResBtn.GetComponentInChildren<Text>();
+            if (addResTxt != null)
+            {
+                addResTxt.fontSize = 11;
+                addResTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                addResTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                addResTxt.alignment = TextAnchor.MiddleCenter;
+            }
+            addResBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Resident));
 
             if (isOwner)
             {
                 GameObject addMgrBtn = GUIManager.Instance.CreateButton(
-                    "+ MANAGER",
+                    "$wmb_roles_add_manager".Localize(),
                     inputCtrlContainer,
                     Vector2.zero,
                     Vector2.zero,
                     Vector2.zero,
-                    95f,
+                    100f,
                     28f);
-                addMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(95f, 28f);
-                addMgrBtn.SetLayoutDimensions(95f, 28f);
-                addMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole(WardRole.Manager));
+                addMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
+                addMgrBtn.SetLayoutDimensions(100f, 28f);
+                Text addMgrTxt = addMgrBtn.GetComponentInChildren<Text>();
+                if (addMgrTxt != null)
+                {
+                    addMgrTxt.fontSize = 11;
+                    addMgrTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                    addMgrTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                    addMgrTxt.alignment = TextAnchor.MiddleCenter;
+                }
+                addMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Manager));
             }
         }
 
-
-
-        int totalCount = managersRoster.Entries.Count + residentsRoster.Entries.Count;
-        Transform rosterCard = WardUIFactory.CreateCard(_listContainer, $"Permitted Roster ({totalCount} Members)");
+        int totalCount = assignments.Entries.Count;
+        Transform rosterCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_roles_card_roster".Localize()} ({totalCount} {"$wmb_roles_members_unit".Localize()})");
         _rosterCards.Add(rosterCard.parent.parent.gameObject);
 
         if (totalCount == 0)
         {
-            WardUIFactory.CreateBadgeRow(rosterCard, "No players currently permitted", "-", WardColorPalette.TextMuted, out _);
+            WardUIFactory.CreateBadgeRow(rosterCard, "$wmb_roles_no_players".Localize(), "-", WardColorPalette.TextMuted, out _);
         }
         else
         {
-            for (int i = 0; i < managersRoster.Entries.Count; i++)
+            for (int i = 0; i < assignments.Entries.Count; i++)
             {
-                CreateRosterRow(rosterCard, managersRoster.Entries[i], WardRole.Manager, canManage, isOwner);
-            }
-
-            for (int i = 0; i < residentsRoster.Entries.Count; i++)
-            {
-                CreateRosterRow(rosterCard, residentsRoster.Entries[i], WardRole.Resident, canManage, isOwner);
+                CreateRosterRow(rosterCard, assignments.Entries[i], rosterRoles, allRoles, canManage, isOwner, callerLevel);
             }
         }
     }
 
-    private void CreateRosterRow(Transform parent, RosterEntry entry, WardRole role, bool canManage, bool isOwner)
+    private void CreateRosterRow(
+        Transform parent,
+        PlayerRoleAssignment entry,
+        List<WardRoleDefinition> rosterRoles,
+        List<WardRoleDefinition> allRoles,
+        bool canManage,
+        bool isOwner,
+        int callerLevel)
     {
         string labelText = $"{entry.PlayerName} (ID: {entry.PlayerId})";
         WardUIFactory.CreateSettingRow(parent, labelText, out Transform ctrlContainer);
 
+        WardRoleDefinition currentRole = null;
+        for (int i = 0; i < allRoles.Count; i++)
+        {
+            if (allRoles[i].Id == entry.RoleId)
+            {
+                currentRole = allRoles[i];
+                break;
+            }
+        }
+        if (currentRole == null)
+        {
+            currentRole = new WardRoleDefinition(entry.RoleId, $"Role {entry.RoleId}", 1, WardColorPalette.ColorHex(WardColorPalette.IceBlue));
+        }
+
+        int currentIndex = -1;
+        for (int i = 0; i < rosterRoles.Count; i++)
+        {
+            if (rosterRoles[i].Id == entry.RoleId)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+        if (currentIndex == -1)
+        {
+            for (int i = 0; i < rosterRoles.Count; i++)
+            {
+                if (rosterRoles[i].Level == currentRole.Level)
+                {
+                    currentIndex = i;
+                    break;
+                }
+            }
+        }
+        if (currentIndex == -1 && rosterRoles.Count > 0)
+        {
+            currentIndex = 0;
+        }
+
+        WardRoleDefinition prevRole = (currentIndex > 0) ? rosterRoles[currentIndex - 1] : null;
+        WardRoleDefinition nextRole = (currentIndex >= 0 && currentIndex < rosterRoles.Count - 1) ? rosterRoles[currentIndex + 1] : null;
+
+        bool canDemote = prevRole != null && (isOwner || (canManage && callerLevel > currentRole.Level));
+        bool canPromote = nextRole != null && (isOwner || (canManage && callerLevel > currentRole.Level && callerLevel > nextRole.Level));
+        bool canRemove = canManage && (isOwner || callerLevel > currentRole.Level);
+
         GameObject roleBadgeObj = new GameObject("RoleBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
         roleBadgeObj.transform.SetParent(ctrlContainer, false);
-        roleBadgeObj.SetLayoutDimensions(100f, 28f);
+        float badgeWidth = Mathf.Clamp(currentRole.Name.Length * 9f + 24f, 80f, 150f);
+        roleBadgeObj.SetLayoutDimensions(badgeWidth, 28f);
+
+        Color badgeColor = WardColorPalette.IceBlue;
+        if (!string.IsNullOrEmpty(currentRole.ColorHex) && ColorUtility.TryParseHtmlString(currentRole.ColorHex, out Color parsedColor))
+        {
+            badgeColor = parsedColor;
+        }
+        else if (currentRole.Level >= 2)
+        {
+            badgeColor = WardColorPalette.GoldAmber;
+        }
 
         Text roleBadge = roleBadgeObj.GetComponent<Text>();
-        roleBadge.text = $"[{role}]";
+        roleBadge.text = $"[{currentRole.Name.Localize()}]";
         roleBadge.font = GUIManager.Instance.AveriaSerifBold;
         roleBadge.fontSize = 13;
-        roleBadge.color = role == WardRole.Manager ? WardColorPalette.GoldAmber : WardColorPalette.IceBlue;
+        roleBadge.color = badgeColor;
         roleBadge.alignment = TextAnchor.MiddleRight;
 
-        if (isOwner && role == WardRole.Resident)
+        if (canDemote)
         {
-            GameObject promoteBtn = GUIManager.Instance.CreateButton(
-                "Promote", 
-                ctrlContainer, 
-                Vector2.zero, 
-                Vector2.zero, 
-                Vector2.zero, 
-                80f, 
-                26f);
-            promoteBtn.SetLayoutDimensions(80f, 26f);
-            promoteBtn.GetComponent<Button>().onClick.AddListener(() => PromoteToManager(entry));
-        }
-        else if (isOwner && role == WardRole.Manager)
-        {
+            string demoteText = $"{"$wmb_roles_demote".Localize()} ({prevRole.Name.Localize()})";
+            float demoteWidth = Mathf.Clamp(demoteText.Length * 7.5f + 16f, 85f, 175f);
+
             GameObject demoteBtn = GUIManager.Instance.CreateButton(
-                "Demote", 
-                ctrlContainer, 
-                Vector2.zero, 
-                Vector2.zero, 
-                Vector2.zero, 
-                80f, 
+                demoteText,
+                ctrlContainer,
+                Vector2.zero,
+                Vector2.zero,
+                Vector2.zero,
+                demoteWidth,
                 26f);
-            demoteBtn.SetLayoutDimensions(80f, 26f);
-            demoteBtn.GetComponent<Button>().onClick.AddListener(() => DemoteToResident(entry));
+            demoteBtn.SetLayoutDimensions(demoteWidth, 26f);
+
+            Text demTxt = demoteBtn.GetComponentInChildren<Text>();
+            if (demTxt != null)
+            {
+                demTxt.font = GUIManager.Instance.AveriaSerifBold;
+                demTxt.fontSize = 11;
+                demTxt.color = WardColorPalette.ValheimOrange;
+                demTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                demTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                demTxt.alignment = TextAnchor.MiddleCenter;
+            }
+
+            int targetRoleId = prevRole.Id;
+            demoteBtn.GetComponent<Button>().onClick.AddListener(() => SetPlayerRole(entry.PlayerId, entry.PlayerName, targetRoleId));
         }
 
-        if (canManage)
+        if (canPromote)
+        {
+            string promoteText = $"{"$wmb_roles_promote".Localize()} ({nextRole.Name.Localize()})";
+            float promoteWidth = Mathf.Clamp(promoteText.Length * 7.5f + 16f, 85f, 175f);
+
+            GameObject promoteBtn = GUIManager.Instance.CreateButton(
+                promoteText,
+                ctrlContainer,
+                Vector2.zero,
+                Vector2.zero,
+                Vector2.zero,
+                promoteWidth,
+                26f);
+            promoteBtn.SetLayoutDimensions(promoteWidth, 26f);
+
+            Text promTxt = promoteBtn.GetComponentInChildren<Text>();
+            if (promTxt != null)
+            {
+                promTxt.font = GUIManager.Instance.AveriaSerifBold;
+                promTxt.fontSize = 11;
+                promTxt.color = WardColorPalette.ValheimOrange;
+                promTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                promTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                promTxt.alignment = TextAnchor.MiddleCenter;
+            }
+
+            int targetRoleId = nextRole.Id;
+            promoteBtn.GetComponent<Button>().onClick.AddListener(() => SetPlayerRole(entry.PlayerId, entry.PlayerName, targetRoleId));
+        }
+
+        if (canRemove)
         {
             GameObject removeBtn = GUIManager.Instance.CreateButton(
-                "Remove", 
-                ctrlContainer, 
-                Vector2.zero, 
-                Vector2.zero, 
-                Vector2.zero, 
-                80f, 
+                "$wmb_roles_remove".Localize(),
+                ctrlContainer,
+                Vector2.zero,
+                Vector2.zero,
+                Vector2.zero,
+                75f,
                 26f);
-            removeBtn.SetLayoutDimensions(80f, 26f);
+            removeBtn.SetLayoutDimensions(75f, 26f);
+
             Text rmTxt = removeBtn.GetComponentInChildren<Text>();
             if (rmTxt != null)
             {
+                rmTxt.font = GUIManager.Instance.AveriaSerifBold;
+                rmTxt.fontSize = 11;
                 rmTxt.color = WardColorPalette.DangerRed;
+                rmTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                rmTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                rmTxt.alignment = TextAnchor.MiddleCenter;
             }
-            removeBtn.GetComponent<Button>().onClick.AddListener(() => RemoveFromRoster(entry, role));
+
+            removeBtn.GetComponent<Button>().onClick.AddListener(() => RemovePlayerFromRoster(entry.PlayerId));
         }
     }
 
-    private void AddDropdownPlayerToRole(WardRole targetRole)
+    private void AddDropdownPlayerToRole(int targetRoleId)
     {
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
@@ -313,22 +490,10 @@ public class TabRoles
             return;
 
         KeyValuePair<long, string> player = _dropdownPlayers[selectedIndex - 1];
-        long playerId = player.Key;
-        string playerName = player.Value;
-
-        ZDO zdo = _ward.m_nview.GetZDO();
-        int key = targetRole == WardRole.Manager ? WardZdoKeys.RolesManagers : WardZdoKeys.RolesResidents;
-        string currentData = zdo.GetString(key, string.Empty);
-        WardRoster roster = WardRoster.Deserialize(currentData);
-
-        roster.AddOrUpdate(playerId, playerName);
-        zdo.Set(key, roster.Serialize());
-
-        WardMeBruh.Log.Debug($"[TabRoles] Enrolled dropdown character {playerName} (ID: {playerId}) to {targetRole}");
-        Refresh();
+        SetPlayerRole(player.Key, player.Value, targetRoleId);
     }
 
-    private void AddManualPlayerToRole(WardRole targetRole)
+    private void AddManualPlayerToRole(int targetRoleId)
     {
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
@@ -362,67 +527,45 @@ public class TabRoles
             playerName = Player.m_localPlayer.GetPlayerName();
         }
 
-        ZDO zdo = _ward.m_nview.GetZDO();
-        int key = targetRole == WardRole.Manager ? WardZdoKeys.RolesManagers : WardZdoKeys.RolesResidents;
-        string currentData = zdo.GetString(key, string.Empty);
-        WardRoster roster = WardRoster.Deserialize(currentData);
-
-        roster.AddOrUpdate(playerId, playerName);
-        zdo.Set(key, roster.Serialize());
-
         _addPlayerInput.text = string.Empty;
-        WardMeBruh.Log.Debug($"[TabRoles] Enrolled manual character {playerName} (ID: {playerId}) to {targetRole}");
-        Refresh();
+        SetPlayerRole(playerId, playerName, targetRoleId);
     }
 
-    private void PromoteToManager(RosterEntry entry)
+    private void SetPlayerRole(long playerId, string playerName, int targetRoleId)
     {
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
 
         ZDO zdo = _ward.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo) ?? zdo;
 
-        WardRoster res = WardRoster.Deserialize(zdo.GetString(WardZdoKeys.RolesResidents, string.Empty));
-        res.Remove(entry.PlayerId);
-        zdo.Set(WardZdoKeys.RolesResidents, res.Serialize());
+        WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(effectiveZdo);
+        assignments.SetRole(playerId, playerName, targetRoleId);
+        WardRoleManager.SaveRoleAssignments(effectiveZdo, assignments);
 
-        WardRoster mgr = WardRoster.Deserialize(zdo.GetString(WardZdoKeys.RolesManagers, string.Empty));
-        mgr.AddOrUpdate(entry.PlayerId, entry.PlayerName);
-        zdo.Set(WardZdoKeys.RolesManagers, mgr.Serialize());
+        string serialized = assignments.Serialize();
+        WardNetworkRouter.SendRoleAssignments(effectiveZdo.m_uid, serialized);
 
+        WardMeBruh.Log.Info($"[TabRoles] Set player {playerName} (ID: {playerId}) to role {targetRoleId}");
         Refresh();
     }
 
-    private void DemoteToResident(RosterEntry entry)
+    private void RemovePlayerFromRoster(long playerId)
     {
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
 
         ZDO zdo = _ward.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo) ?? zdo;
 
-        WardRoster mgr = WardRoster.Deserialize(zdo.GetString(WardZdoKeys.RolesManagers, string.Empty));
-        mgr.Remove(entry.PlayerId);
-        zdo.Set(WardZdoKeys.RolesManagers, mgr.Serialize());
+        WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(effectiveZdo);
+        assignments.Remove(playerId);
+        WardRoleManager.SaveRoleAssignments(effectiveZdo, assignments);
 
-        WardRoster res = WardRoster.Deserialize(zdo.GetString(WardZdoKeys.RolesResidents, string.Empty));
-        res.AddOrUpdate(entry.PlayerId, entry.PlayerName);
-        zdo.Set(WardZdoKeys.RolesResidents, res.Serialize());
+        string serialized = assignments.Serialize();
+        WardNetworkRouter.SendRoleAssignments(effectiveZdo.m_uid, serialized);
 
-        Refresh();
-    }
-
-    private void RemoveFromRoster(RosterEntry entry, WardRole role)
-    {
-        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
-            return;
-
-        ZDO zdo = _ward.m_nview.GetZDO();
-        int key = role == WardRole.Manager ? WardZdoKeys.RolesManagers : WardZdoKeys.RolesResidents;
-
-        WardRoster roster = WardRoster.Deserialize(zdo.GetString(key, string.Empty));
-        roster.Remove(entry.PlayerId);
-        zdo.Set(key, roster.Serialize());
-
+        WardMeBruh.Log.Info($"[TabRoles] Removed player ID: {playerId} from roster");
         Refresh();
     }
 }

@@ -20,8 +20,10 @@ public static class WardNetworkRouter
     private const string RpcSetWardRole = "WMB_SetWardRole";
     private const string RpcSetFeatureRole = "WMB_SetFeatureRole";
     private const string RpcSetRoleDefinitions = "WMB_SetRoleDefinitions";
+    private const string RpcSetRoleAssignments = "WMB_SetRoleAssignments";
     private const string RpcSyncAllPlayers = "WMB_SyncAllPlayers";
     private const string RpcSyncSinglePlayer = "WMB_SyncSinglePlayer";
+    private const string RpcRegisterPlayer = "WMB_RegisterPlayer";
 
     public static void Register()
     {
@@ -39,8 +41,10 @@ public static class WardNetworkRouter
         ZRoutedRpc.instance.Register(RpcSetWardRole, new Action<long, ZPackage>(RPC_SetWardRole));
         ZRoutedRpc.instance.Register(RpcSetFeatureRole, new Action<long, ZPackage>(RPC_SetFeatureRole));
         ZRoutedRpc.instance.Register(RpcSetRoleDefinitions, new Action<long, ZPackage>(RPC_SetRoleDefinitions));
+        ZRoutedRpc.instance.Register(RpcSetRoleAssignments, new Action<long, ZPackage>(RPC_SetRoleAssignments));
         ZRoutedRpc.instance.Register(RpcSyncAllPlayers, new Action<long, ZPackage>(RPC_SyncAllPlayers));
         ZRoutedRpc.instance.Register(RpcSyncSinglePlayer, new Action<long, ZPackage>(RPC_SyncSinglePlayer));
+        ZRoutedRpc.instance.Register(RpcRegisterPlayer, new Action<long, ZPackage>(RPC_RegisterPlayer));
     }
 
     public static void RequestRegistrySync()
@@ -305,11 +309,10 @@ public static class WardNetworkRouter
         wardZdo.Set(ZDOVars.s_creator, newOwnerId);
         wardZdo.Set(ZDOVars.s_creatorName, newOwnerName);
 
-        string managersData = wardZdo.GetString(WardZdoKeys.RolesManagers, string.Empty);
-        WardRoster managersRoster = WardRoster.Deserialize(managersData);
-        managersRoster.AddOrUpdate(currentOwnerId, currentOwnerName);
-        managersRoster.Remove(newOwnerId);
-        wardZdo.Set(WardZdoKeys.RolesManagers, managersRoster.Serialize());
+        WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(wardZdo);
+        assignments.SetRole(currentOwnerId, currentOwnerName, (int)WardRole.Manager);
+        assignments.Remove(newOwnerId);
+        WardRoleManager.SaveRoleAssignments(wardZdo, assignments);
 
         WardMeBruh.Log.Debug($"[ZDO] Updated Ward {wardId} ownership: OldOwner {currentOwnerId} -> NewOwner {newOwnerId} ({newOwnerName})");
 
@@ -519,6 +522,61 @@ public static class WardNetworkRouter
         WardMeBruh.Log.Debug($"[ZDO] Updated Ward {wardId} RoleDefinitions");
     }
 
+    public static void SendRoleAssignments(ZDOID wardId, string serializedAssignments)
+    {
+        if (ZRoutedRpc.instance == null)
+            return;
+
+        WardMeBruh.Log.Debug($"[Network] Transmitting role assignments: Ward {wardId}");
+        ZPackage pkg = new();
+        pkg.Write(wardId);
+        pkg.Write(serializedAssignments ?? string.Empty);
+
+        long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
+        ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcSetRoleAssignments, pkg);
+
+        if (ZDOMan.instance != null)
+        {
+            ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+            if (wardZdo != null)
+            {
+                wardZdo.Set(WardZdoKeys.RoleAssignments, serializedAssignments ?? string.Empty);
+                WardRoleAssignments assignments = WardRoleAssignments.Deserialize(serializedAssignments ?? string.Empty);
+                assignments.SyncToLegacy(out WardRoster managers, out WardRoster residents);
+                wardZdo.Set(WardZdoKeys.RolesManagers, managers.Serialize());
+                wardZdo.Set(WardZdoKeys.RolesResidents, residents.Serialize());
+            }
+        }
+    }
+
+    private static void RPC_SetRoleAssignments(long sender, ZPackage pkg)
+    {
+        if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null)
+            return;
+
+        if (pkg == null)
+            return;
+
+        ZDOID wardId = pkg.ReadZDOID();
+        string serializedAssignments = pkg.ReadString();
+
+        WardMeBruh.Log.Debug($"[Network] Received role assignments update for Ward {wardId} from sender {sender}");
+
+        ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+        if (wardZdo == null)
+        {
+            WardMeBruh.Log.Debug($"[Network] Role assignments update failed: Ward ZDO {wardId} not found");
+            return;
+        }
+
+        wardZdo.Set(WardZdoKeys.RoleAssignments, serializedAssignments);
+        WardRoleAssignments assignments = WardRoleAssignments.Deserialize(serializedAssignments);
+        assignments.SyncToLegacy(out WardRoster managers, out WardRoster residents);
+        wardZdo.Set(WardZdoKeys.RolesManagers, managers.Serialize());
+        wardZdo.Set(WardZdoKeys.RolesResidents, residents.Serialize());
+        WardMeBruh.Log.Debug($"[ZDO] Updated Ward {wardId} RoleAssignments and legacy rosters");
+    }
+
     public static void SendKnownPlayers(long targetPeerId)
     {
         if (ZRoutedRpc.instance == null || ZNet.instance == null || !ZNet.instance.IsServer())
@@ -563,6 +621,7 @@ public static class WardNetworkRouter
                 PlayerRegistryService.RegisterAndPersistPlayer(id, name, false);
             }
         }
+        WardMeBruh.Log.Info($"[Network] Received authoritative player registry sync from server ({count} players)");
     }
 
     private static void RPC_SyncSinglePlayer(long sender, ZPackage pkg)
@@ -575,6 +634,43 @@ public static class WardNetworkRouter
         if (id != 0L && !string.IsNullOrEmpty(name))
         {
             PlayerRegistryService.RegisterAndPersistPlayer(id, name, false);
+            WardMeBruh.Log.Info($"[Network] Received player update from server: '{name}' (ID: {id})");
+        }
+    }
+
+    public static void RegisterPlayerWithServer(long playerId, string playerName)
+    {
+        if (ZRoutedRpc.instance == null || playerId == 0L || string.IsNullOrEmpty(playerName))
+            return;
+
+        if (ZNet.instance != null && ZNet.instance.IsServer())
+        {
+            PlayerRegistryService.RegisterAndPersistPlayer(playerId, playerName, broadcast: true);
+            return;
+        }
+
+        WardMeBruh.Log.Info($"[Network] Transmitting character registration to server: '{playerName}' (ID: {playerId})");
+        ZPackage pkg = new();
+        pkg.Write(playerId);
+        pkg.Write(playerName);
+
+        long serverPeer = ZRoutedRpc.instance.GetServerPeerID();
+        ZRoutedRpc.instance.InvokeRoutedRPC(serverPeer, RpcRegisterPlayer, pkg);
+    }
+
+    private static void RPC_RegisterPlayer(long sender, ZPackage pkg)
+    {
+        if (ZNet.instance == null || !ZNet.instance.IsServer() || pkg == null)
+            return;
+
+        long playerId = pkg.ReadLong();
+        string playerName = pkg.ReadString();
+
+        if (playerId != 0L && !string.IsNullOrEmpty(playerName))
+        {
+            WardMeBruh.Log.Info($"[Server] Authoritative registration for player '{playerName}' (ID: {playerId}) from peer {sender}");
+            PlayerRegistryService.RegisterAndPersistPlayer(playerId, playerName, broadcast: true);
+            SendKnownPlayers(sender);
         }
     }
 }

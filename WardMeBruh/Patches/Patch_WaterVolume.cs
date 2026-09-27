@@ -14,6 +14,9 @@ internal static class Patch_WaterVolume
     [HarmonyPostfix]
     private static void Postfix_GetWaterSurface(Vector3 point, ref float __result)
     {
+        if (!WardQueryService.HasAnyActiveWaterDrain())
+            return;
+
         if (WardQueryService.HasFeatureEnabled(point, WardZdoKeys.WaterDrain))
         {
             __result = DrainedSurfaceLevel;

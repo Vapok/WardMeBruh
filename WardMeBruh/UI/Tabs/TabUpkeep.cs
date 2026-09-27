@@ -38,17 +38,17 @@ public class TabUpkeep
 
         WardUIFactory.CreateScrollArea(_root.transform, out Transform listContainer);
 
-        Transform card1 = WardUIFactory.CreateCard(listContainer, "Automated Area Maintenance & Repair");
+        Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_repair");
         WardUIFactory.CreateToggleRow(
             card1, 
-            "Automated Area Repair", 
+            "$wmb_upkeep_repair", 
             false, 
             v => SetZdoBool(WardZdoKeys.RepairEnabled, v, "upkeep.repair"), 
             out _setRepair);
 
         WardUIFactory.CreateSliderRow(
             card1, 
-            "Repair Damage Threshold", 
+            "$wmb_upkeep_repair_threshold", 
             20f, 
             100f, 
             100f, 
@@ -57,30 +57,30 @@ public class TabUpkeep
             v => SetZdoFloat(WardZdoKeys.RepairThreshold, v / 100f, "upkeep.repair"), 
             out _setRepairThresholdSlider);
 
-        WardUIFactory.CreateBadgeRow(card1, "Repair Resource Cost", "Free (0 Wood / Iron / Stone)", WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(card1, "$wmb_upkeep_repair_cost", "$wmb_upkeep_repair_cost_val".Localize(), WardColorPalette.ValheimBeige, out _);
 
-        Transform card2 = WardUIFactory.CreateCard(listContainer, "Auto-Fuel Supply Depot");
+        Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_fuel");
         WardUIFactory.CreateToggleRow(
             card2, 
-            "Automated Fuel Distribution", 
+            "$wmb_upkeep_fuel", 
             false, 
             v => SetZdoBool(WardZdoKeys.AutoFuelEnabled, v, "upkeep.autofuel"), 
             out _setAutoFuel);
 
-        WardUIFactory.CreateBadgeRow(card2, "Fuel Container Source", "Marked Containers ('Fuel')", WardColorPalette.GoldAmber, out _);
-        WardUIFactory.CreateBadgeRow(card2, "Supported Appliances", "Fireplaces, Torches, Smelters, Kilns", WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_fuel_source", "$wmb_upkeep_fuel_source_val".Localize(), WardColorPalette.GoldAmber, out _);
+        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_appliances", "$wmb_upkeep_appliances_val".Localize(), WardColorPalette.ValheimBeige, out _);
 
-        Transform card3 = WardUIFactory.CreateCard(listContainer, "Automated Door Control");
+        Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_doors");
         WardUIFactory.CreateToggleRow(
             card3, 
-            "Auto-Close Doors Behind Players", 
+            "$wmb_upkeep_auto_close_doors", 
             false, 
             v => SetZdoBool(WardZdoKeys.AutoCloseDoors, v, "upkeep.autodoors"), 
             out _setAutoClose);
 
         WardUIFactory.CreateSliderRow(
             card3, 
-            "Door Auto-Close Delay", 
+            "$wmb_upkeep_auto_close_delay", 
             1f, 
             30f, 
             5f, 
@@ -89,38 +89,38 @@ public class TabUpkeep
             v => SetZdoFloat(WardZdoKeys.AutoCloseDelay, v, "upkeep.autodoors"), 
             out _setAutoCloseSlider);
 
-        Transform card4 = WardUIFactory.CreateCard(listContainer, "Environmental & Biome Immunity Shields");
+        Transform card4 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_biome");
         WardUIFactory.CreateToggleRow(
             card4, 
-            "Virtual Weather Roof", 
+            "$wmb_upkeep_weather_roof", 
             false, 
             v => SetZdoBool(WardZdoKeys.WeatherRoof, v, "defenses.biome"), 
             out _setWeatherRoof);
 
         WardUIFactory.CreateToggleRow(
             card4, 
-            "Ashlands Ash Rain Shield", 
+            "$wmb_upkeep_ash_shield", 
             false, 
             v => SetZdoBool(WardZdoKeys.AshShield, v, "defenses.biome"), 
             out _setAshShield);
 
         WardUIFactory.CreateToggleRow(
             card4, 
-            "Lava Damage Shield", 
+            "$wmb_upkeep_lava_shield", 
             false, 
             v => SetZdoBool(WardZdoKeys.LavaShield, v, "defenses.biome"), 
             out _setLavaShield);
 
         WardUIFactory.CreateToggleRow(
             card4, 
-            "Deep North Blizzard Shield", 
+            "$wmb_upkeep_snow_shield", 
             false, 
             v => SetZdoBool(WardZdoKeys.SnowShield, v, "defenses.biome"), 
             out _setSnowShield);
 
         WardUIFactory.CreateToggleRow(
             card4, 
-            "Subsea Water Drain (Dry Basement)", 
+            "$wmb_upkeep_water_drain", 
             false, 
             v => SetZdoBool(WardZdoKeys.WaterDrain, v, "upkeep.waterdrain"), 
             out _setWaterDrain);

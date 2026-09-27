@@ -44,19 +44,36 @@ public class AreaRepairService : MonoBehaviour
             if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
                 continue;
 
+            List<PrivateArea> activeRepairWards = null;
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea ward = PrivateArea.m_allAreas[i];
+                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                    continue;
+
+                ZDO zdo = ward.m_nview.GetZDO();
+                if (zdo != null && zdo.GetBool(WardZdoKeys.RepairEnabled, false))
+                {
+                    activeRepairWards ??= new List<PrivateArea>();
+                    activeRepairWards.Add(ward);
+                }
+            }
+
+            if (activeRepairWards == null || activeRepairWards.Count == 0)
+                continue;
+
             List<WearNTear> allPieces = WearNTear.GetAllInstances();
             if (allPieces == null || allPieces.Count == 0)
                 continue;
 
-            for (int wardIndex = 0; wardIndex < PrivateArea.m_allAreas.Count; wardIndex++)
+            for (int wardIndex = 0; wardIndex < activeRepairWards.Count; wardIndex++)
             {
-                PrivateArea ward = PrivateArea.m_allAreas[wardIndex];
+                PrivateArea ward = activeRepairWards[wardIndex];
                 if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
                     continue;
 
                 ZDO wardZdo = ward.m_nview.GetZDO();
-                bool repairEnabled = wardZdo.GetBool(WardZdoKeys.RepairEnabled, false);
-                if (!repairEnabled)
+                if (wardZdo == null)
                     continue;
 
                 float radius = WardQueryService.GetWardRadius(ward);

@@ -3,6 +3,7 @@ using Jotunn.Managers;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.Models;
+using WardMeBruh.Services;
 
 namespace WardMeBruh.UI;
 
@@ -151,7 +152,7 @@ public static class WardUIFactory
         htRt.offsetMax = new Vector2(-12f, 0f);
 
         Text headerText = headerTextObj.GetComponent<Text>();
-        headerText.text = title.ToUpperInvariant();
+        headerText.text = title.Localize().ToUpperInvariant();
         headerText.font = GUIManager.Instance.AveriaSerifBold;
         headerText.fontSize = 13;
         headerText.color = WardColorPalette.ValheimOrange;
@@ -195,22 +196,22 @@ public static class WardUIFactory
 
         GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
         labelObj.transform.SetParent(rowObj.transform, false);
-        labelObj.GetComponent<RectTransform>().sizeDelta = new Vector2(330f, rowHeight);
-        labelObj.SetLayoutDimensions(330f, rowHeight, 280f, rowHeight);
+        labelObj.GetComponent<RectTransform>().sizeDelta = new Vector2(300f, rowHeight);
+        labelObj.SetLayoutDimensions(300f, rowHeight, 200f, rowHeight);
 
         Text label = labelObj.GetComponent<Text>();
-        label.text = labelText;
+        label.text = labelText.Localize();
         label.font = GUIManager.Instance.AveriaSerifBold;
         label.fontSize = 13;
         label.color = WardColorPalette.ValheimBeige;
         label.alignment = TextAnchor.MiddleLeft;
         label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Truncate;
+        label.verticalOverflow = VerticalWrapMode.Overflow;
 
         GameObject controlsObj = new GameObject("Controls", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         controlsObj.transform.SetParent(rowObj.transform, false);
-        controlsObj.GetComponent<RectTransform>().sizeDelta = new Vector2(410f, rowHeight);
-        LayoutElement ctrlLe = controlsObj.SetLayoutDimensions(410f, rowHeight, 200f, rowHeight);
+        controlsObj.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, rowHeight);
+        LayoutElement ctrlLe = controlsObj.SetLayoutDimensions(430f, rowHeight, 200f, rowHeight);
         ctrlLe.flexibleWidth = 1f;
 
         HorizontalLayoutGroup ctrlHlg = controlsObj.GetComponent<HorizontalLayoutGroup>();
@@ -230,7 +231,7 @@ public static class WardUIFactory
         CreateSettingRow(parent, labelText, out Transform controlContainer);
 
         GameObject btnObj = GUIManager.Instance.CreateButton(
-            initialValue ? "✔  ENABLED" : "✖  DISABLED",
+            initialValue ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}",
             controlContainer,
             Vector2.zero,
             Vector2.zero,
@@ -250,7 +251,7 @@ public static class WardUIFactory
         void UpdateVisual(bool state)
         {
             currentValue = state;
-            btnText.text = state ? "✔  ENABLED" : "✖  DISABLED";
+            btnText.text = state ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}";
             btnText.color = state ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
         }
 
@@ -287,7 +288,7 @@ public static class WardUIFactory
         CreateSettingRow(parent, labelText, out Transform controlContainer);
 
         GameObject toggleBtnObj = GUIManager.Instance.CreateButton(
-            initialToggle ? "✔  ENABLED" : "✖  DISABLED",
+            initialToggle ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}",
             controlContainer,
             Vector2.zero,
             Vector2.zero,
@@ -306,7 +307,7 @@ public static class WardUIFactory
         bool currentToggle = initialToggle;
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ Role: {initialRole} ]",
+            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(initialRole).Localize()} ]",
             controlContainer,
             Vector2.zero,
             Vector2.zero,
@@ -327,7 +328,7 @@ public static class WardUIFactory
         toggleBtn.onClick.AddListener(() =>
         {
             currentToggle = !currentToggle;
-            toggleTxt.text = currentToggle ? "✔  ENABLED" : "✖  DISABLED";
+            toggleTxt.text = currentToggle ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}";
             toggleTxt.color = currentToggle ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
             onToggle?.Invoke(currentToggle);
         });
@@ -335,7 +336,7 @@ public static class WardUIFactory
         roleBtn.onClick.AddListener(() =>
         {
             currentRole = (WardRole)(((int)currentRole + 1) % 4);
-            roleTxt.text = $"[ Role: {currentRole} ]";
+            roleTxt.text = $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(currentRole).Localize()} ]";
             roleTxt.color = GetRoleColor(currentRole);
             onRoleChanged?.Invoke(currentRole);
         });
@@ -343,11 +344,11 @@ public static class WardUIFactory
         updateVisual = (state, role, interactable) =>
         {
             currentToggle = state;
-            toggleTxt.text = state ? "✔  ENABLED" : "✖  DISABLED";
+            toggleTxt.text = state ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}";
             toggleTxt.color = state ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
 
             currentRole = role;
-            roleTxt.text = $"[ Role: {role} ]";
+            roleTxt.text = $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]";
             roleTxt.color = GetRoleColor(role);
 
             toggleBtn.interactable = interactable;
@@ -561,7 +562,7 @@ public static class WardUIFactory
             badgeText.text = text;
             badgeText.color = color;
             btnText.text = buttonLabel;
-            btnText.color = buttonLabel == "DEACTIVATE" ? WardColorPalette.DangerRed : WardColorPalette.RunicGreen;
+            btnText.color = (buttonLabel == "$wmb_deactivate".Localize() || buttonLabel == "DEACTIVATE") ? WardColorPalette.DangerRed : WardColorPalette.RunicGreen;
             btnObj.SetActive(canPower);
         };
     }

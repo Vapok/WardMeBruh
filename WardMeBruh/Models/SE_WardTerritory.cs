@@ -2,6 +2,7 @@ using System.Text;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Models;
 
@@ -10,7 +11,7 @@ public class SE_WardTerritory : StatusEffect
     public static readonly int EffectHash = "SE_WardTerritory".GetStableHashCode();
 
     private WardRole _currentRole = WardRole.Guest;
-    private string _baseName = "Ward Territory";
+    private string _baseName = "$wmb_ward_territory".Localize();
     private string _creatorName = "Unknown";
     private float _wardRadius = 32f;
 
@@ -18,10 +19,13 @@ public class SE_WardTerritory : StatusEffect
     {
         base.Setup(character);
         name = "SE_WardTerritory";
-        m_name = "Ward Territory";
+        m_name = "$wmb_ward_territory".Localize();
         m_icon = WardIconHelper.GetWardIcon();
         UpdateTerritoryData();
     }
+
+    private float _timeSinceLastUpdate;
+    private const float UpdateIntervalSeconds = 0.5f;
 
     public override void UpdateStatusEffect(float dt)
     {
@@ -30,6 +34,11 @@ public class SE_WardTerritory : StatusEffect
         if (m_character == null)
             return;
 
+        _timeSinceLastUpdate += dt;
+        if (_timeSinceLastUpdate < UpdateIntervalSeconds)
+            return;
+
+        _timeSinceLastUpdate = 0f;
         UpdateTerritoryData();
     }
 
@@ -54,7 +63,7 @@ public class SE_WardTerritory : StatusEffect
         _baseName = effectiveZdo.GetString(WardZdoKeys.CustomName, ward.m_name);
         if (string.IsNullOrEmpty(_baseName))
         {
-            _baseName = "Ward Stone";
+            _baseName = "$wmb_default_ward_name".Localize();
         }
 
         _currentRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
@@ -71,24 +80,24 @@ public class SE_WardTerritory : StatusEffect
 
     public override string GetIconText()
     {
-        return _currentRole.ToString();
+        return WardRoleManager.GetRoleName(_currentRole).Localize();
     }
 
     public override string GetTooltipString()
     {
         StringBuilder sb = new();
-        sb.AppendLine($"<color=#fcd34d>Territory:</color> {_baseName}");
-        sb.AppendLine($"<color=#38bdf8>Clearance:</color> {_currentRole}");
-        sb.AppendLine($"<color=#9ca3af>Owner:</color> {_creatorName}");
-        sb.AppendLine($"<color=#9ca3af>Perimeter:</color> {_wardRadius:F0}m");
+        sb.AppendLine($"<color=#fcd34d>{"$wmb_territory_label".Localize()}</color> {_baseName.Localize()}");
+        sb.AppendLine($"<color=#38bdf8>{"$wmb_clearance_label".Localize()}</color> {WardRoleManager.GetRoleName(_currentRole).Localize()}");
+        sb.AppendLine($"<color=#9ca3af>{"$wmb_owner_label".Localize()}</color> {_creatorName}");
+        sb.AppendLine($"<color=#9ca3af>{"$wmb_perimeter_label".Localize()}</color> {_wardRadius:F0}{"$wmb_meters".Localize()}");
         PrivateArea ward = (m_character != null) ? WardQueryService.GetCoveringWard(m_character.transform.position) : null;
         if (ward != null && ward.IsEnabled())
         {
-            sb.AppendLine("<color=#4ade80>Protected by Ward Shield</color>");
+            sb.AppendLine($"<color=#4ade80>{"$wmb_shield_active_desc".Localize()}</color>");
         }
         else
         {
-            sb.AppendLine("<color=#ef4444>Ward Shield Inactive</color>");
+            sb.AppendLine($"<color=#ef4444>{"$wmb_shield_inactive_desc".Localize()}</color>");
         }
         return sb.ToString();
     }

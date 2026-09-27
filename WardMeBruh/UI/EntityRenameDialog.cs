@@ -91,7 +91,7 @@ public class EntityRenameDialog : MonoBehaviour
         _panel.name = "EntityRenameDialog";
 
         GameObject headerObj = GUIManager.Instance.CreateText(
-            "CONFIGURE", 
+            "$wmb_dialog_configure".Localize(), 
             _panel.transform, 
             new Vector2(0.5f, 1f), 
             new Vector2(0.5f, 1f), 
@@ -112,7 +112,7 @@ public class EntityRenameDialog : MonoBehaviour
             new Vector2(0.5f, 0.5f), 
             new Vector2(0f, 30f), 
             InputField.ContentType.Standard, 
-            "Enter custom name...", 
+            "$wmb_enter_custom_name".Localize(), 
             16, 
             400f, 
             36f);
@@ -127,7 +127,7 @@ public class EntityRenameDialog : MonoBehaviour
         });
 
         GameObject roleObj = GUIManager.Instance.CreateButton(
-            "Role: Resident", 
+            $"{"$wmb_role".Localize()}: {"$wmb_role_resident".Localize()}", 
             _panel.transform, 
             new Vector2(0.5f, 0.5f), 
             new Vector2(0.5f, 0.5f), 
@@ -145,7 +145,7 @@ public class EntityRenameDialog : MonoBehaviour
         }
 
         GameObject depotObj = GUIManager.Instance.CreateButton(
-            "✖ No Depot", 
+            "$wmb_depot_no".Localize(), 
             _panel.transform, 
             new Vector2(0.5f, 0.5f), 
             new Vector2(0.5f, 0.5f), 
@@ -163,7 +163,7 @@ public class EntityRenameDialog : MonoBehaviour
         }
 
         GameObject saveBtn = GUIManager.Instance.CreateButton(
-            "SAVE", 
+            "$wmb_save".Localize(), 
             _panel.transform, 
             new Vector2(0.5f, 0f), 
             new Vector2(0.5f, 0f), 
@@ -173,7 +173,7 @@ public class EntityRenameDialog : MonoBehaviour
         saveBtn.GetComponent<Button>().onClick.AddListener(OnSaveClicked);
 
         GameObject cancelBtn = GUIManager.Instance.CreateButton(
-            "CANCEL", 
+            "$wmb_cancel".Localize(), 
             _panel.transform, 
             new Vector2(0.5f, 0f), 
             new Vector2(0.5f, 0f), 
@@ -192,7 +192,7 @@ public class EntityRenameDialog : MonoBehaviour
 
         _activeEntityId = door.m_nview.GetZDO().m_uid;
         _isDoor = true;
-        _headerText.text = "CONFIGURE DOOR";
+        _headerText.text = "$wmb_configure_door".Localize().ToUpperInvariant();
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         _coveringWard = WardQueryService.GetCoveringWard(door.transform.position);
@@ -208,9 +208,9 @@ public class EntityRenameDialog : MonoBehaviour
 
         string defaultDoorName = !string.IsNullOrEmpty(door.m_name)
             ? Localization.instance.Localize(door.m_name)
-            : (door.GetComponent<Piece>() != null ? Localization.instance.Localize(door.GetComponent<Piece>().m_name) : "Door");
+            : (door.GetComponent<Piece>() != null ? Localization.instance.Localize(door.GetComponent<Piece>().m_name) : "$wmb_door".Localize());
         if (string.IsNullOrEmpty(defaultDoorName))
-            defaultDoorName = "Door";
+            defaultDoorName = "$wmb_door".Localize();
 
         ZDO zdo = door.m_nview.GetZDO();
         string customDoorName = zdo.GetString(WardZdoKeys.DoorName, string.Empty);
@@ -239,7 +239,7 @@ public class EntityRenameDialog : MonoBehaviour
 
         _activeEntityId = container.m_nview.GetZDO().m_uid;
         _isDoor = false;
-        _headerText.text = "CONFIGURE CHEST";
+        _headerText.text = "$wmb_configure_chest".Localize().ToUpperInvariant();
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         _coveringWard = WardQueryService.GetCoveringWard(container.transform.position);
@@ -255,9 +255,9 @@ public class EntityRenameDialog : MonoBehaviour
 
         string defaultContainerName = !string.IsNullOrEmpty(container.m_name)
             ? Localization.instance.Localize(container.m_name)
-            : (container.GetComponent<Piece>() != null ? Localization.instance.Localize(container.GetComponent<Piece>().m_name) : "Chest");
+            : (container.GetComponent<Piece>() != null ? Localization.instance.Localize(container.GetComponent<Piece>().m_name) : "$wmb_chest".Localize());
         if (string.IsNullOrEmpty(defaultContainerName))
-            defaultContainerName = "Chest";
+            defaultContainerName = "$wmb_chest".Localize();
 
         ZDO zdo = container.m_nview.GetZDO();
         string customContainerName = zdo.GetString(WardZdoKeys.ContainerName, string.Empty);
@@ -291,7 +291,7 @@ public class EntityRenameDialog : MonoBehaviour
         _roleBtn.interactable = _canManage;
         if (_roleTxt != null)
         {
-            _roleTxt.text = $"Role: {role}";
+            _roleTxt.text = $"{"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()}";
             _roleTxt.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
         }
     }
@@ -301,7 +301,7 @@ public class EntityRenameDialog : MonoBehaviour
         _depotBtn.interactable = _canManage && _coveringWard != null;
         if (_depotTxt != null)
         {
-            _depotTxt.text = isFuel ? "✔ Fuel Depot" : "✖ No Depot";
+            _depotTxt.text = isFuel ? "$wmb_depot_yes".Localize() : "$wmb_depot_no".Localize();
             _depotTxt.color = isFuel ? WardColorPalette.GoldAmber : WardColorPalette.TextMuted;
         }
     }

@@ -47,26 +47,32 @@ internal static class Patch_WearNTear
     [HarmonyPrefix]
     private static void Prefix_UpdateWear(WearNTear __instance)
     {
-        Vector3 position = __instance.transform.position;
+        if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
+            return;
 
-        if (WardQueryService.HasFeatureEnabled(position, WardZdoKeys.WeatherRoof))
+        Vector3 position = __instance.transform.position;
+        ZDO wardZdo = WardQueryService.GetCoveringWardZdo(position);
+        if (wardZdo == null || !wardZdo.GetBool(ZDOVars.s_enabled, true))
+            return;
+
+        if (wardZdo.GetBool(WardZdoKeys.WeatherRoof, false))
         {
             s_haveRoofRef(__instance) = true;
             s_rainWetRef(__instance) = false;
         }
 
-        if (WardQueryService.HasFeatureEnabled(position, WardZdoKeys.AshShield))
+        if (wardZdo.GetBool(WardZdoKeys.AshShield, false))
         {
             s_haveAshRoofRef(__instance) = true;
             __instance.m_ashDamageImmune = true;
         }
 
-        if (WardQueryService.HasFeatureEnabled(position, WardZdoKeys.LavaShield))
+        if (wardZdo.GetBool(WardZdoKeys.LavaShield, false))
         {
             __instance.m_ashDamageImmune = true;
         }
 
-        if (WardQueryService.HasFeatureEnabled(position, WardZdoKeys.SnowShield))
+        if (wardZdo.GetBool(WardZdoKeys.SnowShield, false))
         {
             __instance.m_snowDamageImmune = true;
         }

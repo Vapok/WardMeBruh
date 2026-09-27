@@ -112,7 +112,7 @@ public class TabManagement
 
     private void BuildRoleList(List<WardRoleDefinition> roles, bool canManageGovernance)
     {
-        Transform card = WardUIFactory.CreateCard(_leftContainer, "Ward Hierarchy");
+        Transform card = WardUIFactory.CreateCard(_leftContainer, "$wmb_mgmt_card_hierarchy");
         _roleButtons.Add(card.parent.parent.gameObject);
 
         List<WardRoleDefinition> sortedRoles = new(roles);
@@ -133,7 +133,7 @@ public class TabManagement
                 _ => "🛡️"
             };
 
-            string title = $"{roleIcon} {role.Name} (Tier {role.Level})";
+            string title = $"{roleIcon} {role.Name.Localize()} ({"$wmb_mgmt_tier_label".Localize()} {role.Level})";
             GameObject btnObj = GUIManager.Instance.CreateButton(
                 title,
                 card,
@@ -172,11 +172,11 @@ public class TabManagement
 
         if (canManageGovernance)
         {
-            Transform actionsCard = WardUIFactory.CreateCard(_leftContainer, "Role Actions");
+            Transform actionsCard = WardUIFactory.CreateCard(_leftContainer, "$wmb_mgmt_card_actions");
             _roleButtons.Add(actionsCard.parent.parent.gameObject);
 
             GameObject addBtnObj = GUIManager.Instance.CreateButton(
-                "+ Add Custom Role",
+                "$wmb_mgmt_add_role".Localize(),
                 actionsCard,
                 Vector2.zero,
                 Vector2.zero,
@@ -195,7 +195,7 @@ public class TabManagement
             if (_selectedRoleId >= 100)
             {
                 GameObject renameBtnObj = GUIManager.Instance.CreateButton(
-                    "✏️ Rename Role",
+                    "$wmb_mgmt_rename_role".Localize(),
                     actionsCard,
                     Vector2.zero,
                     Vector2.zero,
@@ -211,8 +211,42 @@ public class TabManagement
                 Button renBtn = renameBtnObj.GetComponent<Button>();
                 renBtn.onClick.AddListener(() => OnRenameCustomRole(roles));
 
+                GameObject tierUpBtnObj = GUIManager.Instance.CreateButton(
+                    "$wmb_mgmt_tier_up".Localize(),
+                    actionsCard,
+                    Vector2.zero,
+                    Vector2.zero,
+                    Vector2.zero,
+                    200f,
+                    28f);
+
+                LayoutElement tuLe = tierUpBtnObj.AddComponent<LayoutElement>();
+                tuLe.minHeight = 28f;
+                tuLe.preferredHeight = 28f;
+                tuLe.flexibleWidth = 1f;
+
+                Button tuBtn = tierUpBtnObj.GetComponent<Button>();
+                tuBtn.onClick.AddListener(() => OnChangeCustomRoleTier(roles, 1));
+
+                GameObject tierDownBtnObj = GUIManager.Instance.CreateButton(
+                    "$wmb_mgmt_tier_down".Localize(),
+                    actionsCard,
+                    Vector2.zero,
+                    Vector2.zero,
+                    Vector2.zero,
+                    200f,
+                    28f);
+
+                LayoutElement tdLe = tierDownBtnObj.AddComponent<LayoutElement>();
+                tdLe.minHeight = 28f;
+                tdLe.preferredHeight = 28f;
+                tdLe.flexibleWidth = 1f;
+
+                Button tdBtn = tierDownBtnObj.GetComponent<Button>();
+                tdBtn.onClick.AddListener(() => OnChangeCustomRoleTier(roles, -1));
+
                 GameObject delBtnObj = GUIManager.Instance.CreateButton(
-                    "🗑️ Delete Role",
+                    "$wmb_mgmt_delete_role".Localize(),
                     actionsCard,
                     Vector2.zero,
                     Vector2.zero,
@@ -254,16 +288,18 @@ public class TabManagement
             WardCapabilityCategory.Access,
             WardCapabilityCategory.Defenses,
             WardCapabilityCategory.Upkeep,
-            WardCapabilityCategory.Personnel
+            WardCapabilityCategory.Personnel,
+            WardCapabilityCategory.External
         };
 
         string[] categoryTitles =
         {
-            "Core Ward Authority",
-            "Access & Entity Governance",
-            "Defenses & Combat",
-            "Base Upkeep & Sanctuary",
-            "Personnel Governance"
+            "$wmb_cat_core",
+            "$wmb_cat_access",
+            "$wmb_cat_defenses",
+            "$wmb_cat_upkeep",
+            "$wmb_cat_personnel",
+            "$wmb_cat_external"
         };
 
         for (int cIndex = 0; cIndex < categories.Length; cIndex++)
@@ -339,7 +375,7 @@ public class TabManagement
         titleLe.flexibleHeight = 0f;
 
         Text titleTxt = titleObj.GetComponent<Text>();
-        titleTxt.text = perm.DisplayName;
+        titleTxt.text = perm.DisplayName.Localize();
         titleTxt.font = GUIManager.Instance.AveriaSerifBold;
         titleTxt.fontSize = 12;
         titleTxt.color = WardColorPalette.ValheimOrange;
@@ -353,7 +389,7 @@ public class TabManagement
         descLe.flexibleHeight = 0f;
 
         Text descTxt = descObj.GetComponent<Text>();
-        descTxt.text = perm.Description;
+        descTxt.text = perm.Description.Localize();
         descTxt.font = GUIManager.Instance.AveriaSerif;
         descTxt.fontSize = 10;
         descTxt.color = WardColorPalette.TextMuted;
@@ -388,7 +424,7 @@ public class TabManagement
         {
             if (btnTxt != null)
             {
-                btnTxt.text = "✔ Owner Authority";
+                btnTxt.text = $"✔ {"$wmb_mgmt_owner_authority".Localize()}";
                 btnTxt.color = new Color(0.85f, 0.75f, 0.45f);
             }
             btnImg.color = new Color(0.20f, 0.18f, 0.14f);
@@ -398,7 +434,7 @@ public class TabManagement
         {
             if (btnTxt != null)
             {
-                btnTxt.text = $"✔ Inherited ({inheritedFrom})";
+                btnTxt.text = $"✔ {"$wmb_mgmt_inherited".Localize()} ({inheritedFrom.Localize()})";
                 btnTxt.color = new Color(0.65f, 0.72f, 0.80f);
             }
             btnImg.color = new Color(0.18f, 0.22f, 0.28f);
@@ -408,7 +444,7 @@ public class TabManagement
         {
             if (btnTxt != null)
             {
-                btnTxt.text = "✔ Granted";
+                btnTxt.text = $"✔ {"$wmb_mgmt_granted".Localize()}";
                 btnTxt.color = new Color(0.9f, 1f, 0.9f);
             }
             btnImg.color = new Color(0.10f, 0.40f, 0.20f);
@@ -425,7 +461,7 @@ public class TabManagement
         {
             if (btnTxt != null)
             {
-                btnTxt.text = "✖ Not Granted";
+                btnTxt.text = $"✖ {"$wmb_mgmt_not_granted".Localize()}";
                 btnTxt.color = WardColorPalette.TextMuted;
             }
             btnImg.color = new Color(0.14f, 0.14f, 0.14f);
@@ -453,7 +489,7 @@ public class TabManagement
             if (roles[i].Id >= 100) customCount++;
         }
 
-        string roleName = $"Custom Rank {customCount + 1}";
+        string roleName = $"{"$wmb_mgmt_custom_rank".Localize()} {customCount + 1}";
         WardRoleDefinition newRole = new WardRoleDefinition(nextId, roleName, 2, "#93c5fd");
         roles.Add(newRole);
 
@@ -480,7 +516,7 @@ public class TabManagement
         if (TextInput.instance != null)
         {
             EnsureTextInputOnTop();
-            TextInput.instance.RequestText(new RoleNameListener(role, roles, this), "Set Custom Role Name", 24);
+            TextInput.instance.RequestText(new RoleNameListener(role, roles, this), "$wmb_mgmt_rename_prompt".Localize(), 24);
         }
     }
 
@@ -504,6 +540,21 @@ public class TabManagement
         }
 
         TextInput.instance.transform.SetAsLastSibling();
+    }
+
+    private void OnChangeCustomRoleTier(List<WardRoleDefinition> roles, int delta)
+    {
+        for (int i = 0; i < roles.Count; i++)
+        {
+            if (roles[i].Id == _selectedRoleId)
+            {
+                roles[i].Level = Mathf.Clamp(roles[i].Level + delta, 1, 10);
+                break;
+            }
+        }
+
+        SaveAndBroadcast(roles);
+        Refresh();
     }
 
     private void OnDeleteCustomRole(List<WardRoleDefinition> roles)

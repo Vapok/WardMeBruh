@@ -1,6 +1,7 @@
 using HarmonyLib;
 using WardMeBruh.Configuration;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
 
@@ -25,7 +26,7 @@ internal static class Patch_SkillsDeath
         if (WardQueryService.HasFeatureEnabled(player.transform.position, WardZdoKeys.DeathSkillShield, player.GetPlayerID()))
         {
             WardMeBruh.Log.Debug($"[Skill Protection] Ward shielded player '{player.GetPlayerName()}' ({player.GetPlayerID()}) skills from death loss at {player.transform.position}");
-            player.Message(MessageHud.MessageType.Center, "Ward protected skills from death loss");
+            player.Message(MessageHud.MessageType.Center, "$wmb_msg_death_skill_shield".Localize());
             return false;
         }
 

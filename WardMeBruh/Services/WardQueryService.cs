@@ -60,13 +60,103 @@ public static class WardQueryService
         return ward;
     }
 
+    private static int _lastWardFrame = -1;
+    private static Vector3 _lastWardPoint;
+    private static float _lastWardRadius;
+    private static PrivateArea _cachedCoveringWard;
+
+    private static int _lastZdoFrame = -1;
+    private static Vector3 _lastZdoPoint;
+    private static float _lastZdoRadius;
+    private static ZDO _cachedCoveringZdo;
+
+    private static float _lastWaterDrainCheckTime = -1f;
+    private static bool _hasAnyActiveWaterDrain;
+
+    private static float _lastGhostBaseCheckTime = -1f;
+    private static bool _hasAnyActiveGhostBase;
+
+    public static bool HasAnyActiveWaterDrain()
+    {
+        float now = Time.time;
+        if (now - _lastWaterDrainCheckTime < 1.0f)
+            return _hasAnyActiveWaterDrain;
+
+        _lastWaterDrainCheckTime = now;
+        _hasAnyActiveWaterDrain = false;
+
+        if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
+            return false;
+
+        for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+        {
+            PrivateArea area = PrivateArea.m_allAreas[i];
+            if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
+                continue;
+
+            ZDO zdo = area.m_nview.GetZDO();
+            if (zdo != null && zdo.GetBool(WardZdoKeys.WaterDrain, false))
+            {
+                _hasAnyActiveWaterDrain = true;
+                break;
+            }
+        }
+
+        return _hasAnyActiveWaterDrain;
+    }
+
+    public static bool HasAnyActiveGhostBase()
+    {
+        float now = Time.time;
+        if (now - _lastGhostBaseCheckTime < 1.0f)
+            return _hasAnyActiveGhostBase;
+
+        _lastGhostBaseCheckTime = now;
+        _hasAnyActiveGhostBase = false;
+
+        if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
+            return false;
+
+        for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+        {
+            PrivateArea area = PrivateArea.m_allAreas[i];
+            if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
+                continue;
+
+            ZDO zdo = area.m_nview.GetZDO();
+            if (zdo != null && zdo.GetBool(WardZdoKeys.GhostBase, false))
+            {
+                _hasAnyActiveGhostBase = true;
+                break;
+            }
+        }
+
+        return _hasAnyActiveGhostBase;
+    }
+
+    public static void InvalidateFeatureCaches()
+    {
+        _lastWaterDrainCheckTime = -1f;
+        _lastGhostBaseCheckTime = -1f;
+    }
+
     public static PrivateArea GetCoveringWard(Vector3 point, float radius = 0f)
     {
         if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
             return null;
 
+        if (Time.frameCount == _lastWardFrame && _lastWardPoint == point && Mathf.Approximately(_lastWardRadius, radius))
+            return _cachedCoveringWard;
+
+        _lastWardFrame = Time.frameCount;
+        _lastWardPoint = point;
+        _lastWardRadius = radius;
+
         if (PrivateArea.m_allAreas == null)
+        {
+            _cachedCoveringWard = null;
             return null;
+        }
 
         List<PrivateArea> allAreas = PrivateArea.m_allAreas;
         for (int i = 0; i < allAreas.Count; i++)
@@ -76,26 +166,44 @@ public static class WardQueryService
                 continue;
 
             if (IsInsideWard(area, point, radius))
-                return GetEffectiveWard(area);
+            {
+                _cachedCoveringWard = GetEffectiveWard(area);
+                return _cachedCoveringWard;
+            }
         }
 
+        _cachedCoveringWard = null;
         return null;
     }
 
     public static ZDO GetCoveringWardZdo(Vector3 point, float radius = 0f)
     {
+        if (Time.frameCount == _lastZdoFrame && _lastZdoPoint == point && Mathf.Approximately(_lastZdoRadius, radius))
+            return _cachedCoveringZdo;
+
+        _lastZdoFrame = Time.frameCount;
+        _lastZdoPoint = point;
+        _lastZdoRadius = radius;
+
         PrivateArea area = GetCoveringWard(point, radius);
         if (area != null && area.m_nview != null && area.m_nview.IsValid())
-            return GetEffectiveWardZdo(area.m_nview.GetZDO());
+        {
+            _cachedCoveringZdo = GetEffectiveWardZdo(area.m_nview.GetZDO());
+            return _cachedCoveringZdo;
+        }
 
         KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
         if (known != null && ZDOMan.instance != null)
         {
             ZDO zdo = ZDOMan.instance.GetZDO(known.Id);
             if (zdo != null && zdo.IsValid())
-                return GetEffectiveWardZdo(zdo);
+            {
+                _cachedCoveringZdo = GetEffectiveWardZdo(zdo);
+                return _cachedCoveringZdo;
+            }
         }
 
+        _cachedCoveringZdo = null;
         return null;
     }
 

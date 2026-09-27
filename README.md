@@ -95,6 +95,14 @@
 * **Underwater Construction**: Displaces water inside the dome for dry seabed building.
 * **Minimap Overlay & Fast Travel**: Ward map pins with circular coverage rings and optional double-click fast travel.
 
+### 🔌 Extensibility & Developer API (`WardMeBruhAPI`)
+* **Register External Role Features**: Third-party mods can register custom capabilities using `WardMeBruhAPI.RegisterRoleFeature(...)`. Registered features appear dynamically in the **MANAGEMENT** tab under *External Mod Integrations*, allowing ward administrators to toggle them on or off per role (Guest, Resident, Manager, Owner, or custom roles).
+* **Player Capability Reflection**: Granted external capabilities display automatically under *Granted Role Capabilities* in the **OVERVIEW** tab for players possessing that clearance.
+* **Permission & Territory Queries**: Fast spatial queries via `WardMeBruhAPI.HasFeatureAccess(...)`, `GetPlayerRole(...)`, `IsInsideWard(...)`, and `IsWardShieldActive(...)`.
+* **External Role Templates**: Register custom role templates with `WardMeBruhAPI.RegisterRoleTemplate(...)` to populate initial ward hierarchies.
+* **Zero Hard Dependencies**: External developers can either reference `WardMeBruh.dll` directly or drop the reflection wrapper [Docs/WardMeBruhAPI_Client.cs](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI_Client.cs) into their project.
+* **API Documentation**: Detailed method reference, parameters, and return types are documented in [Docs/WardMeBruhAPI.md](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI.md).
+
 ---
 
 ## 🕹️ Controls Summary
@@ -122,7 +130,7 @@ Configuration settings are stored in `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 * **Fast-Travel Combat Lockout**: Seconds out of combat required before fast travel is permitted (Default: `10.0s`).
 
 ### Local Config
-* **Open Ward Hub Keybind**: Key shortcut used to open the GUI (Default: `<kbd>G</kbd>`).
+* **Open Ward Hub Keybind**: Key shortcut used to open the GUI (Default: `<kbd>E</kbd>`).
 * **Show Splash on Startup**: Toggles display of the mod overview window upon game launch (Default: `true`).
 * **Enable Anonymous Telemetry**: Toggles anonymous telemetry reporting to track active mod versions and crashes (Default: `true`).
 

@@ -38,7 +38,7 @@
   "wmb_tab_roster": "ROSTER",
   "wmb_tab_management": "MANAGEMENT",
 
-  "wmb_role_guest": "Guest",
+  "wmb_role_guest": "Everyone",
   "wmb_role_resident": "Resident",
   "wmb_role_manager": "Manager",
   "wmb_role_owner": "Owner",
@@ -103,8 +103,8 @@
   "wmb_mgmt_card_actions": "Role Actions",
   "wmb_mgmt_add_role": "+ Add Custom Role",
   "wmb_mgmt_rename_role": "✏️ Rename Role",
-  "wmb_mgmt_tier_up": "⬆️ Tier Up",
-  "wmb_mgmt_tier_down": "⬇️ Tier Down",
+  "wmb_mgmt_move_up": "⬆️ Move Up",
+  "wmb_mgmt_move_down": "⬇️ Move Down",
   "wmb_mgmt_delete_role": "🗑️ Delete Role",
   "wmb_mgmt_owner_authority": "Owner Only",
   "wmb_mgmt_inherited": "Inherited",
@@ -187,6 +187,7 @@
 
   "wmb_roles_card_enroll": "Add Player to Ward",
   "wmb_roles_known_characters": "Known Players",
+  "wmb_roles_add": "+ ADD",
   "wmb_roles_add_resident": "+ RESIDENT",
   "wmb_roles_add_manager": "+ MANAGER",
   "wmb_roles_no_characters": "No Characters",

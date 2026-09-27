@@ -316,10 +316,15 @@ public class EntityRenameDialog : MonoBehaviour
             return;
 
         int currentRoleInt = _isDoor
-            ? zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Resident)
+            ? zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest)
             : zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
 
         WardRole nextRole = (WardRole)(((currentRoleInt + 1) % 4));
+
+        if (ZDOMan.instance != null)
+        {
+            zdo.SetOwner(ZDOMan.GetSessionID());
+        }
 
         if (_isDoor)
         {
@@ -347,6 +352,11 @@ public class EntityRenameDialog : MonoBehaviour
 
         bool currentFuel = zdo.GetBool(WardZdoKeys.ContainerIsFuel, false);
         bool nextFuel = !currentFuel;
+
+        if (ZDOMan.instance != null)
+        {
+            zdo.SetOwner(ZDOMan.GetSessionID());
+        }
 
         zdo.Set(WardZdoKeys.ContainerIsFuel, nextFuel);
         WardNetworkRouter.SendToggleFuelDepot(_activeEntityId, nextFuel);

@@ -183,11 +183,38 @@ internal static class Patch_Door
         int minRoleInt = doorZdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest);
         WardRole minRole = (WardRole)minRoleInt;
 
-        string prefix = string.IsNullOrEmpty(customName) ? string.Empty : $"<color=#38bdf8><b>[{customName}]</b></color>\n";
+        string localizedName = Localization.instance.Localize(__instance.m_name);
+        if (string.IsNullOrEmpty(localizedName))
+        {
+            Piece piece = __instance.GetComponent<Piece>();
+            if (piece != null)
+                localizedName = Localization.instance.Localize(piece.m_name);
+        }
+
+        bool hasCustomName = !string.IsNullOrEmpty(customName) && !customName.Equals("Door", StringComparison.OrdinalIgnoreCase);
+        if (hasCustomName)
+        {
+            int nameIndex = -1;
+            if (!string.IsNullOrEmpty(localizedName))
+            {
+                nameIndex = __result.IndexOf(localizedName, StringComparison.Ordinal);
+            }
+
+            if (nameIndex >= 0)
+            {
+                __result = __result.Substring(0, nameIndex) + $"<color=#38bdf8><b>{customName}</b></color>" + __result.Substring(nameIndex + localizedName.Length);
+            }
+            else
+            {
+                __result = $"<color=#38bdf8><b>{customName}</b></color>\n" + __result;
+            }
+        }
 
         PrivateArea coveringWard = WardQueryService.GetCoveringWard(__instance.transform.position);
         bool canRename = false;
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+
+        string statusLine = string.Empty;
 
         if (coveringWard != null)
         {
@@ -197,7 +224,7 @@ internal static class Patch_Door
             {
                 bool hasAccess = WardPermissions.CanOpenDoor(doorZdo, wardZdo, playerId);
                 string colorHex = hasAccess ? "#a3e635" : "#f87171";
-                prefix += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>\n";
+                statusLine += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>";
             }
 
             canRename = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
@@ -208,12 +235,24 @@ internal static class Patch_Door
             canRename = piece != null && (piece.IsCreator() || piece.GetCreator() == playerId || piece.GetCreator() == 0L);
         }
 
+        statusLine = statusLine.TrimEnd();
+        if (!string.IsNullOrEmpty(statusLine))
+        {
+            int firstNewline = __result.IndexOf('\n');
+            if (firstNewline >= 0)
+            {
+                __result = __result.Substring(0, firstNewline) + "\n" + statusLine + __result.Substring(firstNewline);
+            }
+            else
+            {
+                __result = __result + "\n" + statusLine;
+            }
+        }
+
         if (canRename)
         {
             string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_door".Localize()}");
             __result += renamePrompt;
         }
-
-        __result = prefix + __result;
     }
 }

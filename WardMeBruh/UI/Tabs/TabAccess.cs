@@ -150,6 +150,7 @@ public class TabAccess
             {
                 if (canManagePortals && _ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
                 {
+                    _ward.m_nview.ClaimOwnership();
                     _ward.m_nview.GetZDO().Set(WardZdoKeys.PortalAccess, val);
                     Refresh();
                 }
@@ -173,6 +174,11 @@ public class TabAccess
         else
         {
             WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_portal_disabled", "$wmb_access_portal_disabled_desc".Localize(), WardColorPalette.TextMuted, out _);
+        }
+
+        if (WardMainWindow.Instance != null)
+        {
+            WardMainWindow.ApplyFontSizeToHierarchy(_root, WardMainWindow.Instance.CurrentFontSizeMode);
         }
     }
 
@@ -220,6 +226,11 @@ public class TabAccess
         roleBtn.onClick.AddListener(() =>
         {
             WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            if (container != null && container.m_nview != null && container.m_nview.IsValid())
+            {
+                container.m_nview.ClaimOwnership();
+            }
+            zdo.Set(WardZdoKeys.ContainerMinRole, (int)nextRole);
             WardNetworkRouter.SendContainerRole(zdo.m_uid, (int)nextRole);
             Refresh();
         });
@@ -246,6 +257,11 @@ public class TabAccess
         fuelBtn.interactable = canManage;
         fuelBtn.onClick.AddListener(() =>
         {
+            if (container != null && container.m_nview != null && container.m_nview.IsValid())
+            {
+                container.m_nview.ClaimOwnership();
+            }
+            zdo.Set(WardZdoKeys.ContainerIsFuel, !isFuel);
             WardNetworkRouter.SendContainerFuel(zdo.m_uid, !isFuel);
             Refresh();
         });
@@ -294,6 +310,11 @@ public class TabAccess
         roleBtn.onClick.AddListener(() =>
         {
             WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            if (door != null && door.m_nview != null && door.m_nview.IsValid())
+            {
+                door.m_nview.ClaimOwnership();
+            }
+            zdo.Set(WardZdoKeys.DoorMinRole, (int)nextRole);
             WardNetworkRouter.SendDoorRole(zdo.m_uid, (int)nextRole);
             Refresh();
         });
@@ -333,6 +354,15 @@ public class TabAccess
         roleBtn.onClick.AddListener(() =>
         {
             WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            if (portal != null && portal.m_nview != null && portal.m_nview.IsValid())
+            {
+                portal.m_nview.ClaimOwnership();
+            }
+            zdo.Set(WardZdoKeys.PortalMinRole, (int)nextRole);
+            if (ZDOMan.instance != null)
+            {
+                ZDOMan.instance.SetDirtyPortals();
+            }
             WardNetworkRouter.SendPortalRole(zdo.m_uid, (int)nextRole);
             Refresh();
         });

@@ -47,12 +47,12 @@ public static class WardPermissionIds
     public const string CoreRename = "core.rename";
 
     /// <summary>
-    /// Clearance to configure individual door permissions, auto-close timers, and custom names. Default role: Resident.
+    /// Clearance to configure individual door permissions, auto-close timers, and custom names. Default role: Manager.
     /// </summary>
     public const string AccessDoors = "access.doors";
 
     /// <summary>
-    /// Clearance to configure storage container clearances, toggle Fuel Depots, and rename chests. Default role: Resident.
+    /// Clearance to configure storage container clearances, toggle Fuel Depots, and rename chests. Default role: Manager.
     /// </summary>
     public const string AccessChests = "access.chests";
 

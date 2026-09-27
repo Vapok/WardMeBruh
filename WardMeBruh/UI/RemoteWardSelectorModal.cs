@@ -99,9 +99,22 @@ public class RemoteWardSelectorModal
         Transform card = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_modal_registered_territories".Localize()} ({wards.Count})");
         _itemCards.Add(card.parent.parent.gameObject);
 
+        int offset = WardMainWindow.Instance != null ? WardMainWindow.Instance.CurrentFontSizeMode switch
+        {
+            WardFontSizeMode.Medium => 2,
+            WardFontSizeMode.Large => 4,
+            _ => 0
+        } : 0;
+        int subSize = 11 + offset;
+        float rowHeight = 44f + offset * 3f;
+
         if (wards.Count == 0)
         {
             WardUIFactory.CreateBadgeRow(card, "$wmb_modal_no_owned_wards".Localize(), "-", WardColorPalette.TextMuted, out _);
+            if (WardMainWindow.Instance != null && _panel != null)
+            {
+                WardMainWindow.ApplyFontSizeToHierarchy(_panel, WardMainWindow.Instance.CurrentFontSizeMode);
+            }
             return;
         }
 
@@ -122,9 +135,9 @@ public class RemoteWardSelectorModal
                 distStr = "$wmb_modal_current_location".Localize();
             }
 
-            string labelText = $"{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size=11><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
+            string labelText = $"{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
 
-            WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, 44f);
+            WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, rowHeight);
 
             GameObject statusBadgeObj = new GameObject("StatusBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
             statusBadgeObj.transform.SetParent(ctrlContainer, false);
@@ -179,6 +192,11 @@ public class RemoteWardSelectorModal
                     _onWardSelected?.Invoke(ward);
                 });
             }
+        }
+
+        if (WardMainWindow.Instance != null && _panel != null)
+        {
+            WardMainWindow.ApplyFontSizeToHierarchy(_panel, WardMainWindow.Instance.CurrentFontSizeMode);
         }
     }
 }

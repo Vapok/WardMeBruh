@@ -65,8 +65,8 @@ public class ConfigRegistry : ConfigSyncBase
             new ConfigDescription("Minimum distance required between perimeters of wards owned by different players.",
                 new AcceptableValueRange<float>(0.0f, 500.0f), new ConfigurationManagerAttributes { IsAdminOnly = true, Order = 11 }), ref WardSeparationDistance);
 
-        SyncedConfig("Server Settings", "Default Repair Threshold", 0.20f,
-            new ConfigDescription("Default damage fraction (0.20 = 20% damage) before area repair triggers.",
+        SyncedConfig("Server Settings", "Default Repair Threshold", 1.0f,
+            new ConfigDescription("Default health threshold (1.0 = 100% health) before area repair triggers.",
                 new AcceptableValueRange<float>(0.01f, 1.0f), new ConfigurationManagerAttributes { IsAdminOnly = true, Order = 12 }), ref AutoRepairThresholdDefault);
 
         SyncedConfig("Server Settings", "Default Auto-Close Delay", 5.0f,

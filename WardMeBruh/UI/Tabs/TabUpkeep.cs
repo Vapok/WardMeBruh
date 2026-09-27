@@ -142,6 +142,8 @@ public class TabUpkeep
         _setRepair?.Invoke(zdo.GetBool(WardZdoKeys.RepairEnabled, false));
 
         float repThresh = zdo.GetFloat(WardZdoKeys.RepairThreshold, (float)ConfigRegistry.AutoRepairThresholdDefault.Value);
+        if (repThresh > 1.0f)
+            repThresh /= 100f;
         _setRepairThresholdSlider?.Invoke(Mathf.Round(repThresh * 100f));
 
         _setAutoFuel?.Invoke(zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false));

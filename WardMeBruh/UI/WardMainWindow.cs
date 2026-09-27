@@ -48,6 +48,7 @@ public class WardMainWindow : MonoBehaviour
     }
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
+    public WardFontSizeMode CurrentFontSizeMode => _currentFontSizeMode;
 
     private void Awake()
     {
@@ -190,13 +191,13 @@ public class WardMainWindow : MonoBehaviour
         tabRt.anchorMin = new Vector2(0f, 1f);
         tabRt.anchorMax = new Vector2(1f, 1f);
         tabRt.pivot = new Vector2(0.5f, 1f);
-        tabRt.offsetMin = new Vector2(30f, -96f);
-        tabRt.offsetMax = new Vector2(-30f, -60f);
+        tabRt.offsetMin = new Vector2(24f, -96f);
+        tabRt.offsetMax = new Vector2(-24f, -60f);
 
         HorizontalLayoutGroup hlg = tabBar.AddComponent<HorizontalLayoutGroup>();
         hlg.childControlWidth = true;
         hlg.childControlHeight = true;
-        hlg.childForceExpandWidth = true;
+        hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = true;
         hlg.spacing = 8f;
 
@@ -210,10 +211,20 @@ public class WardMainWindow : MonoBehaviour
             {
                 btnTxt.font = GUIManager.Instance.AveriaSerifBold;
                 btnTxt.fontSize = 13;
+                btnTxt.alignment = TextAnchor.MiddleCenter;
+                btnTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
             }
+
+            LayoutElement le = btnObj.AddComponent<LayoutElement>();
+            le.minHeight = 36f;
+            le.preferredHeight = 36f;
+            le.flexibleWidth = 1f;
+
             _tabButtons[i] = btnObj.GetComponent<Button>();
             _tabButtons[i].onClick.AddListener(() => SwitchTab(index));
         }
+
+        UpdateTabButtonDimensions();
 
         GameObject contentArea = new GameObject("ContentArea");
         contentArea.transform.SetParent(_panel.transform, false);
@@ -318,6 +329,7 @@ public class WardMainWindow : MonoBehaviour
 
         SwitchTab(_currentTabIndex);
         ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
+        UpdateTabButtonDimensions();
     }
 
     public void Close()
@@ -421,6 +433,37 @@ public class WardMainWindow : MonoBehaviour
         }
 
         ApplyFontSizeToHierarchy(_panel, mode);
+        UpdateTabButtonDimensions();
+
+        if (_remoteSelector != null && _remoteSelector.IsOpen)
+        {
+            _remoteSelector.Refresh();
+        }
+    }
+
+    private void UpdateTabButtonDimensions()
+    {
+        for (int i = 0; i < _tabButtons.Length; i++)
+        {
+            Button btn = _tabButtons[i];
+            if (btn == null)
+                continue;
+
+            LayoutElement le = btn.GetComponent<LayoutElement>();
+            if (le == null)
+                le = btn.gameObject.AddComponent<LayoutElement>();
+
+            Text txt = btn.GetComponentInChildren<Text>();
+            if (txt != null)
+            {
+                float textWidth = txt.preferredWidth;
+                le.minWidth = textWidth + 24f;
+                le.preferredWidth = textWidth + 34f;
+                le.minHeight = 36f;
+                le.preferredHeight = 36f;
+                le.flexibleWidth = 1f;
+            }
+        }
     }
 
     public static void ApplyFontSizeToHierarchy(GameObject root, WardFontSizeMode mode)

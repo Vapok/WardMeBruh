@@ -1,7 +1,12 @@
-# 0.0.2
+# 0.0.2 - API Extensibility, Role Refinements & Quality of Life
 * Added developer API supporting custom roles and external mod permission registrations.
 * Automatic API documentation generated directly in repository documentation on build.
-* Resolved door closing race conditions and prevented doors from accidentally popping back open.
+* Streamlined member enrollment on the Roster tab with a single Add button and interactive role toggle.
+* Adjusted default permissions so configuring doors and chests access requires Manager or Owner rank.
+* Resolved door closing race conditions to prevent doors from accidentally reopening.
+* Fixed UI layout and font scaling consistency across modal windows, popups, and tab navigation.
+* Fixed structural repair threshold scaling and persistent saving for container and door access settings.
+* Restored projectile deflection under active forcefield shields.
 * Optimized performance across shields, water physics, base repairs, and player checks to improve frame rates and eliminate micro-stutters in large bases.
 
 # 0.0.1 - Initial Release

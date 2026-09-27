@@ -89,6 +89,15 @@ public static class WardNetworkRouter
 
     public static void SendEntityName(ZDOID entityId, int keyHash, string newName)
     {
+        if (ZDOMan.instance != null)
+        {
+            ZDO entityZdo = ZDOMan.instance.GetZDO(entityId);
+            if (entityZdo != null)
+            {
+                entityZdo.Set(keyHash, newName ?? string.Empty);
+            }
+        }
+
         if (ZRoutedRpc.instance == null)
             return;
 
@@ -105,6 +114,15 @@ public static class WardNetworkRouter
 
     public static void SendDoorRole(ZDOID doorId, int minRole)
     {
+        if (ZDOMan.instance != null)
+        {
+            ZDO doorZdo = ZDOMan.instance.GetZDO(doorId);
+            if (doorZdo != null)
+            {
+                doorZdo.Set(WardZdoKeys.DoorMinRole, minRole);
+            }
+        }
+
         if (ZRoutedRpc.instance == null)
             return;
 
@@ -120,6 +138,15 @@ public static class WardNetworkRouter
 
     public static void SendContainerRole(ZDOID containerId, int minRole)
     {
+        if (ZDOMan.instance != null)
+        {
+            ZDO containerZdo = ZDOMan.instance.GetZDO(containerId);
+            if (containerZdo != null)
+            {
+                containerZdo.Set(WardZdoKeys.ContainerMinRole, minRole);
+            }
+        }
+
         if (ZRoutedRpc.instance == null)
             return;
 
@@ -135,6 +162,15 @@ public static class WardNetworkRouter
 
     public static void SendContainerFuel(ZDOID containerId, bool isFuelDepot)
     {
+        if (ZDOMan.instance != null)
+        {
+            ZDO containerZdo = ZDOMan.instance.GetZDO(containerId);
+            if (containerZdo != null)
+            {
+                containerZdo.Set(WardZdoKeys.ContainerIsFuel, isFuelDepot);
+            }
+        }
+
         if (ZRoutedRpc.instance == null)
             return;
 
@@ -150,6 +186,16 @@ public static class WardNetworkRouter
 
     public static void SendPortalRole(ZDOID portalId, int minRole)
     {
+        if (ZDOMan.instance != null)
+        {
+            ZDO portalZdo = ZDOMan.instance.GetZDO(portalId);
+            if (portalZdo != null)
+            {
+                portalZdo.Set(WardZdoKeys.PortalMinRole, minRole);
+                ZDOMan.instance.SetDirtyPortals();
+            }
+        }
+
         if (ZRoutedRpc.instance == null)
             return;
 
@@ -161,15 +207,6 @@ public static class WardNetworkRouter
 
         long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
         ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcSetPortalRole, pkg);
-
-        if (ZDOMan.instance != null)
-        {
-            ZDO portalZdo = ZDOMan.instance.GetZDO(portalId);
-            if (portalZdo != null)
-            {
-                portalZdo.Set(WardZdoKeys.PortalMinRole, minRole);
-            }
-        }
     }
 
     public static void SendWardRole(ZDOID wardId, int minRole)
@@ -429,6 +466,7 @@ public static class WardNetworkRouter
         }
 
         portalZdo.Set(WardZdoKeys.PortalMinRole, minRole);
+        ZDOMan.instance.SetDirtyPortals();
         WardMeBruh.Log.Debug($"[ZDO] Set portal {portalId} MinRole to {(WardRole)minRole}");
     }
 

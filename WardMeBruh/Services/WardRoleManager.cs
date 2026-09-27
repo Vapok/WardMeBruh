@@ -154,9 +154,96 @@ public static class WardRoleManager
         else
         {
             bool modified = false;
-            foreach (KeyValuePair<string, FeaturePermission> kvp in _registeredPermissions)
+
+            for (int i = 0; i < roles.Count; i++)
             {
-                EnsurePermissionExists(roles, kvp.Key, (int)kvp.Value.DefaultRole, ref modified);
+                if (roles[i].Id == (int)WardRole.Owner)
+                {
+                    foreach (string permId in _registeredPermissions.Keys)
+                    {
+                        if (!roles[i].HasExplicitPermission(permId))
+                        {
+                            roles[i].AddPermission(permId);
+                            modified = true;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            for (int i = 0; i < roles.Count; i++)
+            {
+                if (roles[i].Id == (int)WardRole.Guest && (roles[i].Name == "Guest" || roles[i].Name == "$wmb_role_guest"))
+                {
+                    if (roles[i].Name != "$wmb_role_guest")
+                    {
+                        roles[i].Name = "$wmb_role_guest";
+                        modified = true;
+                    }
+                }
+            }
+
+            WardRoleDefinition residentRole = null;
+            WardRoleDefinition managerRole = null;
+            for (int i = 0; i < roles.Count; i++)
+            {
+                if (roles[i].Id == (int)WardRole.Resident)
+                    residentRole = roles[i];
+                else if (roles[i].Id == (int)WardRole.Manager)
+                    managerRole = roles[i];
+            }
+
+            if (residentRole != null && managerRole != null)
+            {
+                if (residentRole.HasExplicitPermission(WardPermissionIds.AccessDoors))
+                {
+                    residentRole.RemovePermission(WardPermissionIds.AccessDoors);
+                    if (!managerRole.HasExplicitPermission(WardPermissionIds.AccessDoors))
+                    {
+                        managerRole.AddPermission(WardPermissionIds.AccessDoors);
+                    }
+                    modified = true;
+                }
+
+                if (residentRole.HasExplicitPermission(WardPermissionIds.AccessChests))
+                {
+                    residentRole.RemovePermission(WardPermissionIds.AccessChests);
+                    if (!managerRole.HasExplicitPermission(WardPermissionIds.AccessChests))
+                    {
+                        managerRole.AddPermission(WardPermissionIds.AccessChests);
+                    }
+                    modified = true;
+                }
+            }
+
+            for (int i = 0; i < roles.Count; i++)
+            {
+                WardRoleDefinition role = roles[i];
+                if (role.Id == (int)WardRole.Owner)
+                    continue;
+
+                List<string> toRemove = null;
+                foreach (string permId in role.ExplicitPermissions)
+                {
+                    for (int j = 0; j < roles.Count; j++)
+                    {
+                        if (roles[j].Level < role.Level && roles[j].HasExplicitPermission(permId))
+                        {
+                            toRemove ??= new List<string>();
+                            toRemove.Add(permId);
+                            break;
+                        }
+                    }
+                }
+
+                if (toRemove != null && toRemove.Count > 0)
+                {
+                    for (int r = 0; r < toRemove.Count; r++)
+                    {
+                        role.RemovePermission(toRemove[r]);
+                    }
+                    modified = true;
+                }
             }
 
             for (int i = 0; i < _registeredRoleTemplates.Count; i++)
@@ -191,25 +278,6 @@ public static class WardRoleManager
 
         roles.Sort((a, b) => a.Level.CompareTo(b.Level));
         return roles;
-    }
-
-    private static void EnsurePermissionExists(List<WardRoleDefinition> roles, string permId, int defaultRoleId, ref bool modified)
-    {
-        for (int i = 0; i < roles.Count; i++)
-        {
-            if (roles[i].HasExplicitPermission(permId))
-                return;
-        }
-
-        for (int i = 0; i < roles.Count; i++)
-        {
-            if (roles[i].Id == defaultRoleId)
-            {
-                roles[i].AddPermission(permId);
-                modified = true;
-                break;
-            }
-        }
     }
 
     public static void SaveRoleDefinitions(ZDO wardZdo, List<WardRoleDefinition> roles)
@@ -310,7 +378,7 @@ public static class WardRoleManager
         if (targetRole == null)
             return false;
 
-        if (targetRole.Id == (int)WardRole.Owner)
+        if (targetRole.Id == (int)WardRole.Owner || targetRole.Level >= roles.Count - 1)
             return true;
 
         if (targetRole.HasExplicitPermission(permissionId))
@@ -318,12 +386,8 @@ public static class WardRoleManager
 
         for (int i = 0; i < roles.Count; i++)
         {
-            WardRoleDefinition lowerRole = roles[i];
-            if (lowerRole.Level < targetRole.Level)
-            {
-                if (lowerRole.HasExplicitPermission(permissionId))
-                    return true;
-            }
+            if (roles[i].Level < targetRole.Level && roles[i].HasExplicitPermission(permissionId))
+                return true;
         }
 
         return false;
@@ -349,7 +413,7 @@ public static class WardRoleManager
         if (targetRole == null)
             return false;
 
-        if (targetRole.Id == (int)WardRole.Owner)
+        if (targetRole.Id == (int)WardRole.Owner || targetRole.Level >= roles.Count - 1)
         {
             inheritedFromRoleName = "$wmb_mgmt_owner_authority";
             return true;
@@ -357,14 +421,11 @@ public static class WardRoleManager
 
         for (int i = 0; i < roles.Count; i++)
         {
-            WardRoleDefinition lowerRole = roles[i];
-            if (lowerRole.Level < targetRole.Level)
+            WardRoleDefinition otherRole = roles[i];
+            if (otherRole.Level < targetRole.Level && otherRole.HasExplicitPermission(permissionId))
             {
-                if (lowerRole.HasExplicitPermission(permissionId))
-                {
-                    inheritedFromRoleName = lowerRole.Name;
-                    return true;
-                }
+                inheritedFromRoleName = otherRole.Name;
+                return true;
             }
         }
 
@@ -542,8 +603,8 @@ public static class WardRoleManager
         RegisterPermission(new FeaturePermission(WardPermissionIds.CorePower, "$wmb_perm_core_power_name", WardCapabilityCategory.Core, "$wmb_perm_core_power_desc", WardRole.Manager, 6));
         RegisterPermission(new FeaturePermission(WardPermissionIds.CoreRename, "$wmb_perm_core_rename_name", WardCapabilityCategory.Core, "$wmb_perm_core_rename_desc", WardRole.Manager, 7));
 
-        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessDoors, "$wmb_perm_access_doors_name", WardCapabilityCategory.Access, "$wmb_perm_access_doors_desc", WardRole.Resident, 10));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessChests, "$wmb_perm_access_chests_name", WardCapabilityCategory.Access, "$wmb_perm_access_chests_desc", WardRole.Resident, 11));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessDoors, "$wmb_perm_access_doors_name", WardCapabilityCategory.Access, "$wmb_perm_access_doors_desc", WardRole.Manager, 10));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessChests, "$wmb_perm_access_chests_name", WardCapabilityCategory.Access, "$wmb_perm_access_chests_desc", WardRole.Manager, 11));
         RegisterPermission(new FeaturePermission(WardPermissionIds.AccessPortals, "$wmb_perm_access_portals_name", WardCapabilityCategory.Access, "$wmb_perm_access_portals_desc", WardRole.Manager, 12));
 
         RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesDomeSize, "$wmb_perm_defenses_dome_size_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_dome_size_desc", WardRole.Owner, 19));

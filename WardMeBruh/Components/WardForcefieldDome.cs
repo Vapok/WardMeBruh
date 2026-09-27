@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
@@ -8,11 +9,12 @@ namespace WardMeBruh.Components;
 
 public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 {
+    public static readonly List<WardForcefieldDome> Instances = new();
+
     private static ShieldDomeImageEffect _shieldDomeEffect;
     private static float _lastDomeEffectSearchTime = -1f;
 
     private PrivateArea _area;
-    private SphereCollider _domeCollider;
     private ShieldGenerator _proxyGenerator;
     private CircleProjector _areaMarker;
     private float _lastRadius = -1f;
@@ -23,11 +25,15 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
     private float _lastRegisteredHitTime = -1f;
     private bool _isTintApplied;
 
+    public bool IsActive => _area != null && _area.IsEnabled() && (ConfigRegistry.Enabled == null || ConfigRegistry.Enabled.Value);
+    public float CurrentRadius => _lastRadius > 0f ? _lastRadius : (_area != null ? WardQueryService.GetWardRadius(_area) : 0f);
+    public PrivateArea Area => _area;
+
     private void Awake()
     {
+        Instances.Add(this);
         _area = GetComponent<PrivateArea>();
         _areaMarker = _area != null ? _area.m_areaMarker : GetComponentInChildren<CircleProjector>(true);
-        SetupCollider();
         SetupProxyGenerator();
     }
 
@@ -39,13 +45,6 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
             _proxyGenerator = gameObject.AddComponent<ShieldGenerator>();
             _proxyGenerator.enabled = false;
         }
-    }
-
-    private void SetupCollider()
-    {
-        _domeCollider = gameObject.AddComponent<SphereCollider>();
-        _domeCollider.isTrigger = true;
-        _domeCollider.center = Vector3.zero;
     }
 
     private void Start()
@@ -60,6 +59,7 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
     private void OnDestroy()
     {
+        Instances.Remove(this);
         UnregisterDome();
         if (_areaMarker != null && _areaMarker.gameObject != null)
         {
@@ -69,7 +69,7 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
     private void UpdateVisuals()
     {
-        if (_area == null || _domeCollider == null)
+        if (_area == null)
             return;
 
         bool modEnabled = ConfigRegistry.Enabled == null || ConfigRegistry.Enabled.Value;
@@ -79,15 +79,12 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
         if (!Mathf.Approximately(_lastRadius, currentRadius))
         {
             _lastRadius = currentRadius;
-            _domeCollider.radius = currentRadius;
             if (_areaMarker != null)
             {
                 _areaMarker.m_radius = currentRadius;
                 _areaMarker.m_nrOfSegments = Mathf.Clamp((int)(currentRadius * 1.5f), 30, 180);
             }
         }
-
-        _domeCollider.enabled = isWardActive;
 
         ZDO zdo = (_area.m_nview != null && _area.m_nview.IsValid()) ? _area.m_nview.GetZDO() : null;
         bool showDome = isWardActive && (zdo == null || zdo.GetBool(WardZdoKeys.ShowShieldDome, true));

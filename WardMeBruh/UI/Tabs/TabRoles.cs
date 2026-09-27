@@ -121,49 +121,26 @@ public class TabRoles
             _knownPlayerDropdown = dropdownObj.GetComponent<Dropdown>();
             _knownPlayerDropdown.ClearOptions();
 
-            GameObject dropResBtn = GUIManager.Instance.CreateButton(
-                "$wmb_roles_add_resident".Localize(),
+            GameObject dropAddBtn = GUIManager.Instance.CreateButton(
+                "$wmb_roles_add".Localize(),
                 dropCtrlContainer,
                 Vector2.zero,
                 Vector2.zero,
                 Vector2.zero,
-                100f,
+                85f,
                 28f);
-            dropResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
-            dropResBtn.SetLayoutDimensions(100f, 28f);
-            Text dropResTxt = dropResBtn.GetComponentInChildren<Text>();
-            if (dropResTxt != null)
+            dropAddBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(85f, 28f);
+            dropAddBtn.SetLayoutDimensions(85f, 28f);
+            Text dropAddTxt = dropAddBtn.GetComponentInChildren<Text>();
+            if (dropAddTxt != null)
             {
-                dropResTxt.fontSize = 11;
-                dropResTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                dropResTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                dropResTxt.alignment = TextAnchor.MiddleCenter;
+                dropAddTxt.font = GUIManager.Instance.AveriaSerifBold;
+                dropAddTxt.fontSize = 11;
+                dropAddTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                dropAddTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                dropAddTxt.alignment = TextAnchor.MiddleCenter;
             }
-            dropResBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Resident));
-
-            GameObject dropMgrBtn = null;
-            if (isOwner)
-            {
-                dropMgrBtn = GUIManager.Instance.CreateButton(
-                    "$wmb_roles_add_manager".Localize(),
-                    dropCtrlContainer,
-                    Vector2.zero,
-                    Vector2.zero,
-                    Vector2.zero,
-                    100f,
-                    28f);
-                dropMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
-                dropMgrBtn.SetLayoutDimensions(100f, 28f);
-                Text dropMgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
-                if (dropMgrTxt != null)
-                {
-                    dropMgrTxt.fontSize = 11;
-                    dropMgrTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                    dropMgrTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                    dropMgrTxt.alignment = TextAnchor.MiddleCenter;
-                }
-                dropMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Manager));
-            }
+            dropAddBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Resident));
 
             if (knownPlayers.Count == 0)
             {
@@ -172,17 +149,9 @@ public class TabRoles
                 _knownPlayerDropdown.value = 0;
                 _knownPlayerDropdown.RefreshShownValue();
 
-                dropResBtn.GetComponent<Button>().interactable = false;
-                if (dropResTxt != null)
-                    dropResTxt.color = WardColorPalette.TextMuted;
-
-                if (dropMgrBtn != null)
-                {
-                    dropMgrBtn.GetComponent<Button>().interactable = false;
-                    Text mgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
-                    if (mgrTxt != null)
-                        mgrTxt.color = WardColorPalette.TextMuted;
-                }
+                dropAddBtn.GetComponent<Button>().interactable = false;
+                if (dropAddTxt != null)
+                    dropAddTxt.color = WardColorPalette.TextMuted;
             }
             else
             {
@@ -199,32 +168,16 @@ public class TabRoles
                 _knownPlayerDropdown.value = 0;
                 _knownPlayerDropdown.RefreshShownValue();
 
-                dropResBtn.GetComponent<Button>().interactable = false;
-                if (dropResTxt != null)
-                    dropResTxt.color = WardColorPalette.TextMuted;
-
-                if (dropMgrBtn != null)
-                {
-                    dropMgrBtn.GetComponent<Button>().interactable = false;
-                    Text mgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
-                    if (mgrTxt != null)
-                        mgrTxt.color = WardColorPalette.TextMuted;
-                }
+                dropAddBtn.GetComponent<Button>().interactable = false;
+                if (dropAddTxt != null)
+                    dropAddTxt.color = WardColorPalette.TextMuted;
 
                 _knownPlayerDropdown.onValueChanged.AddListener((int index) =>
                 {
                     bool hasSelection = index > 0 && index - 1 < _dropdownPlayers.Count;
-                    dropResBtn.GetComponent<Button>().interactable = hasSelection;
-                    if (dropResTxt != null)
-                        dropResTxt.color = hasSelection ? WardColorPalette.ValheimOrange : WardColorPalette.TextMuted;
-
-                    if (dropMgrBtn != null)
-                    {
-                        dropMgrBtn.GetComponent<Button>().interactable = hasSelection;
-                        Text mgrTxt = dropMgrBtn.GetComponentInChildren<Text>();
-                        if (mgrTxt != null)
-                            mgrTxt.color = hasSelection ? WardColorPalette.ValheimOrange : WardColorPalette.TextMuted;
-                    }
+                    dropAddBtn.GetComponent<Button>().interactable = hasSelection;
+                    if (dropAddTxt != null)
+                        dropAddTxt.color = hasSelection ? WardColorPalette.ValheimOrange : WardColorPalette.TextMuted;
 
                     if (hasSelection && _addPlayerInput != null)
                     {
@@ -249,48 +202,26 @@ public class TabRoles
             inputObj.SetLayoutDimensions(210f, 28f);
             _addPlayerInput = inputObj.GetComponent<InputField>();
 
-            GameObject addResBtn = GUIManager.Instance.CreateButton(
-                "$wmb_roles_add_resident".Localize(),
+            GameObject addManualBtn = GUIManager.Instance.CreateButton(
+                "$wmb_roles_add".Localize(),
                 inputCtrlContainer,
                 Vector2.zero,
                 Vector2.zero,
                 Vector2.zero,
-                100f,
+                85f,
                 28f);
-            addResBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
-            addResBtn.SetLayoutDimensions(100f, 28f);
-            Text addResTxt = addResBtn.GetComponentInChildren<Text>();
-            if (addResTxt != null)
+            addManualBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(85f, 28f);
+            addManualBtn.SetLayoutDimensions(85f, 28f);
+            Text addManualTxt = addManualBtn.GetComponentInChildren<Text>();
+            if (addManualTxt != null)
             {
-                addResTxt.fontSize = 11;
-                addResTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                addResTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                addResTxt.alignment = TextAnchor.MiddleCenter;
+                addManualTxt.font = GUIManager.Instance.AveriaSerifBold;
+                addManualTxt.fontSize = 11;
+                addManualTxt.verticalOverflow = VerticalWrapMode.Overflow;
+                addManualTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+                addManualTxt.alignment = TextAnchor.MiddleCenter;
             }
-            addResBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Resident));
-
-            if (isOwner)
-            {
-                GameObject addMgrBtn = GUIManager.Instance.CreateButton(
-                    "$wmb_roles_add_manager".Localize(),
-                    inputCtrlContainer,
-                    Vector2.zero,
-                    Vector2.zero,
-                    Vector2.zero,
-                    100f,
-                    28f);
-                addMgrBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
-                addMgrBtn.SetLayoutDimensions(100f, 28f);
-                Text addMgrTxt = addMgrBtn.GetComponentInChildren<Text>();
-                if (addMgrTxt != null)
-                {
-                    addMgrTxt.fontSize = 11;
-                    addMgrTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                    addMgrTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                    addMgrTxt.alignment = TextAnchor.MiddleCenter;
-                }
-                addMgrBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Manager));
-            }
+            addManualBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Resident));
         }
 
         int totalCount = assignments.Entries.Count;
@@ -307,6 +238,11 @@ public class TabRoles
             {
                 CreateRosterRow(rosterCard, assignments.Entries[i], rosterRoles, allRoles, canManage, isOwner, callerLevel);
             }
+        }
+
+        if (WardMainWindow.Instance != null)
+        {
+            WardMainWindow.ApplyFontSizeToHierarchy(_root, WardMainWindow.Instance.CurrentFontSizeMode);
         }
     }
 
@@ -336,119 +272,89 @@ public class TabRoles
             currentRole = new WardRoleDefinition(entry.RoleId, $"Role {entry.RoleId}", 1, WardColorPalette.ColorHex(WardColorPalette.IceBlue));
         }
 
-        int currentIndex = -1;
+        List<WardRoleDefinition> assignableRoles = new();
         for (int i = 0; i < rosterRoles.Count; i++)
         {
-            if (rosterRoles[i].Id == entry.RoleId)
+            WardRoleDefinition r = rosterRoles[i];
+            if (isOwner || (canManage && callerLevel > r.Level))
             {
-                currentIndex = i;
-                break;
+                assignableRoles.Add(r);
             }
         }
-        if (currentIndex == -1)
+
+        bool canEditThisPlayer = canManage && (isOwner || callerLevel > currentRole.Level);
+        bool canChangeRole = canEditThisPlayer && assignableRoles.Count > 1;
+        bool canRemove = canEditThisPlayer;
+
+        string roleBtnText = $"[ {"$wmb_role".Localize()}: {currentRole.Name.Localize()} ]";
+        float roleBtnWidth = Mathf.Clamp(roleBtnText.Length * 8f + 25f, 135f, 200f);
+
+        GameObject roleBtnObj = GUIManager.Instance.CreateButton(
+            roleBtnText,
+            ctrlContainer,
+            Vector2.zero,
+            Vector2.zero,
+            Vector2.zero,
+            roleBtnWidth,
+            28f);
+        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(roleBtnWidth, 28f);
+        roleBtnObj.SetLayoutDimensions(roleBtnWidth, 28f);
+
+        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
+        if (roleTxt != null)
         {
-            for (int i = 0; i < rosterRoles.Count; i++)
+            roleTxt.font = GUIManager.Instance.AveriaSerifBold;
+            roleTxt.fontSize = 12;
+            if (!string.IsNullOrEmpty(currentRole.ColorHex) && ColorUtility.TryParseHtmlString(currentRole.ColorHex, out Color parsedColor))
             {
-                if (rosterRoles[i].Level == currentRole.Level)
+                roleTxt.color = parsedColor;
+            }
+            else if (currentRole.Level >= 2)
+            {
+                roleTxt.color = WardColorPalette.GoldAmber;
+            }
+            else
+            {
+                roleTxt.color = WardColorPalette.IceBlue;
+            }
+            roleTxt.verticalOverflow = VerticalWrapMode.Overflow;
+            roleTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
+            roleTxt.alignment = TextAnchor.MiddleCenter;
+        }
+
+        Button roleBtn = roleBtnObj.GetComponent<Button>();
+        roleBtn.interactable = canChangeRole;
+        if (!canChangeRole && roleTxt != null && !canManage)
+        {
+            roleTxt.color = WardColorPalette.TextMuted;
+        }
+
+        roleBtn.onClick.AddListener(() =>
+        {
+            int currIdx = -1;
+            for (int i = 0; i < assignableRoles.Count; i++)
+            {
+                if (assignableRoles[i].Id == entry.RoleId)
                 {
-                    currentIndex = i;
+                    currIdx = i;
                     break;
                 }
             }
-        }
-        if (currentIndex == -1 && rosterRoles.Count > 0)
-        {
-            currentIndex = 0;
-        }
-
-        WardRoleDefinition prevRole = (currentIndex > 0) ? rosterRoles[currentIndex - 1] : null;
-        WardRoleDefinition nextRole = (currentIndex >= 0 && currentIndex < rosterRoles.Count - 1) ? rosterRoles[currentIndex + 1] : null;
-
-        bool canDemote = prevRole != null && (isOwner || (canManage && callerLevel > currentRole.Level));
-        bool canPromote = nextRole != null && (isOwner || (canManage && callerLevel > currentRole.Level && callerLevel > nextRole.Level));
-        bool canRemove = canManage && (isOwner || callerLevel > currentRole.Level);
-
-        GameObject roleBadgeObj = new GameObject("RoleBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
-        roleBadgeObj.transform.SetParent(ctrlContainer, false);
-        float badgeWidth = Mathf.Clamp(currentRole.Name.Length * 9f + 24f, 80f, 150f);
-        roleBadgeObj.SetLayoutDimensions(badgeWidth, 28f);
-
-        Color badgeColor = WardColorPalette.IceBlue;
-        if (!string.IsNullOrEmpty(currentRole.ColorHex) && ColorUtility.TryParseHtmlString(currentRole.ColorHex, out Color parsedColor))
-        {
-            badgeColor = parsedColor;
-        }
-        else if (currentRole.Level >= 2)
-        {
-            badgeColor = WardColorPalette.GoldAmber;
-        }
-
-        Text roleBadge = roleBadgeObj.GetComponent<Text>();
-        roleBadge.text = $"[{currentRole.Name.Localize()}]";
-        roleBadge.font = GUIManager.Instance.AveriaSerifBold;
-        roleBadge.fontSize = 13;
-        roleBadge.color = badgeColor;
-        roleBadge.alignment = TextAnchor.MiddleRight;
-
-        if (canDemote)
-        {
-            string demoteText = $"{"$wmb_roles_demote".Localize()} ({prevRole.Name.Localize()})";
-            float demoteWidth = Mathf.Clamp(demoteText.Length * 7.5f + 16f, 85f, 175f);
-
-            GameObject demoteBtn = GUIManager.Instance.CreateButton(
-                demoteText,
-                ctrlContainer,
-                Vector2.zero,
-                Vector2.zero,
-                Vector2.zero,
-                demoteWidth,
-                26f);
-            demoteBtn.SetLayoutDimensions(demoteWidth, 26f);
-
-            Text demTxt = demoteBtn.GetComponentInChildren<Text>();
-            if (demTxt != null)
+            if (currIdx == -1)
             {
-                demTxt.font = GUIManager.Instance.AveriaSerifBold;
-                demTxt.fontSize = 11;
-                demTxt.color = WardColorPalette.ValheimOrange;
-                demTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                demTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                demTxt.alignment = TextAnchor.MiddleCenter;
+                for (int i = 0; i < assignableRoles.Count; i++)
+                {
+                    if (assignableRoles[i].Level == currentRole.Level)
+                    {
+                        currIdx = i;
+                        break;
+                    }
+                }
             }
-
-            int targetRoleId = prevRole.Id;
-            demoteBtn.GetComponent<Button>().onClick.AddListener(() => SetPlayerRole(entry.PlayerId, entry.PlayerName, targetRoleId));
-        }
-
-        if (canPromote)
-        {
-            string promoteText = $"{"$wmb_roles_promote".Localize()} ({nextRole.Name.Localize()})";
-            float promoteWidth = Mathf.Clamp(promoteText.Length * 7.5f + 16f, 85f, 175f);
-
-            GameObject promoteBtn = GUIManager.Instance.CreateButton(
-                promoteText,
-                ctrlContainer,
-                Vector2.zero,
-                Vector2.zero,
-                Vector2.zero,
-                promoteWidth,
-                26f);
-            promoteBtn.SetLayoutDimensions(promoteWidth, 26f);
-
-            Text promTxt = promoteBtn.GetComponentInChildren<Text>();
-            if (promTxt != null)
-            {
-                promTxt.font = GUIManager.Instance.AveriaSerifBold;
-                promTxt.fontSize = 11;
-                promTxt.color = WardColorPalette.ValheimOrange;
-                promTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                promTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                promTxt.alignment = TextAnchor.MiddleCenter;
-            }
-
-            int targetRoleId = nextRole.Id;
-            promoteBtn.GetComponent<Button>().onClick.AddListener(() => SetPlayerRole(entry.PlayerId, entry.PlayerName, targetRoleId));
-        }
+            int nextIdx = currIdx >= 0 ? (currIdx + 1) % assignableRoles.Count : 0;
+            WardRoleDefinition nextRole = assignableRoles[nextIdx];
+            SetPlayerRole(entry.PlayerId, entry.PlayerName, nextRole.Id);
+        });
 
         if (canRemove)
         {
@@ -459,8 +365,9 @@ public class TabRoles
                 Vector2.zero,
                 Vector2.zero,
                 75f,
-                26f);
-            removeBtn.SetLayoutDimensions(75f, 26f);
+                28f);
+            removeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(75f, 28f);
+            removeBtn.SetLayoutDimensions(75f, 28f);
 
             Text rmTxt = removeBtn.GetComponentInChildren<Text>();
             if (rmTxt != null)

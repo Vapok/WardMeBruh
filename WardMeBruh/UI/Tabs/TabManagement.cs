@@ -6,6 +6,7 @@ using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Networking;
 using WardMeBruh.Services;
+using WardMeBruh.UI.Elements;
 
 namespace WardMeBruh.UI.Tabs;
 
@@ -19,6 +20,10 @@ public class TabManagement
     private int _selectedRoleId = (int)WardRole.Manager;
     private readonly List<GameObject> _roleButtons = new();
     private readonly List<GameObject> _permRows = new();
+    private GameObject _hoverTooltip;
+    private Text _tooltipTitle;
+    private Text _tooltipDesc;
+    private RectTransform _tooltipRt;
 
     public GameObject Root => _root;
 
@@ -63,6 +68,7 @@ public class TabManagement
 
     public void Refresh()
     {
+        HideHoverTooltip();
         ScrollRect rightSr = _rightContainer != null ? _rightContainer.GetComponentInParent<ScrollRect>() : null;
         float rightScrollY = rightSr != null ? rightSr.verticalNormalizedPosition : 1f;
 
@@ -95,6 +101,11 @@ public class TabManagement
         BuildRoleList(roles, canManageGovernance);
         BuildPermissionsView(roles, canManageGovernance);
 
+        if (WardMainWindow.Instance != null)
+        {
+            WardMainWindow.ApplyFontSizeToHierarchy(_root, WardMainWindow.Instance.CurrentFontSizeMode);
+        }
+
         if (rightSr != null && WardMainWindow.Instance != null)
         {
             WardMainWindow.Instance.StartCoroutine(RestoreScroll(rightSr, rightScrollY));
@@ -114,6 +125,12 @@ public class TabManagement
     {
         Transform card = WardUIFactory.CreateCard(_leftContainer, "$wmb_mgmt_card_hierarchy");
         _roleButtons.Add(card.parent.parent.gameObject);
+        VerticalLayoutGroup cardVlg = card.GetComponent<VerticalLayoutGroup>();
+        if (cardVlg != null)
+        {
+            cardVlg.spacing = 4f;
+            cardVlg.padding = new RectOffset(4, 4, 4, 4);
+        }
 
         List<WardRoleDefinition> sortedRoles = new(roles);
         sortedRoles.Sort((a, b) => b.Level.CompareTo(a.Level));
@@ -127,13 +144,13 @@ public class TabManagement
             string roleIcon = role.Id switch
             {
                 (int)WardRole.Owner => "👑",
-                (int)WardRole.Manager => "⚔️",
+                (int)WardRole.Manager => string.Empty,
                 (int)WardRole.Resident => "🌲",
                 (int)WardRole.Guest => "👤",
                 _ => "🛡️"
             };
 
-            string title = $"{roleIcon} {role.Name.Localize()} ({"$wmb_mgmt_tier_label".Localize()} {role.Level})";
+            string title = string.IsNullOrEmpty(roleIcon) ? role.Name.Localize() : $"{roleIcon} {role.Name.Localize()}";
             GameObject btnObj = GUIManager.Instance.CreateButton(
                 title,
                 card,
@@ -174,6 +191,12 @@ public class TabManagement
         {
             Transform actionsCard = WardUIFactory.CreateCard(_leftContainer, "$wmb_mgmt_card_actions");
             _roleButtons.Add(actionsCard.parent.parent.gameObject);
+            VerticalLayoutGroup actionsVlg = actionsCard.GetComponent<VerticalLayoutGroup>();
+            if (actionsVlg != null)
+            {
+                actionsVlg.spacing = 6f;
+                actionsVlg.padding = new RectOffset(4, 4, 4, 4);
+            }
 
             GameObject addBtnObj = GUIManager.Instance.CreateButton(
                 "$wmb_mgmt_add_role".Localize(),
@@ -191,6 +214,59 @@ public class TabManagement
 
             Button addBtn = addBtnObj.GetComponent<Button>();
             addBtn.onClick.AddListener(() => OnAddCustomRole(roles));
+
+            int selectedIndex = -1;
+            for (int i = 0; i < sortedRoles.Count; i++)
+            {
+                if (sortedRoles[i].Id == _selectedRoleId)
+                {
+                    selectedIndex = i;
+                    break;
+                }
+            }
+
+            if (selectedIndex > 0 && selectedIndex < sortedRoles.Count - 1)
+            {
+                if (selectedIndex > 1)
+                {
+                    GameObject moveUpBtnObj = GUIManager.Instance.CreateButton(
+                        "$wmb_mgmt_move_up".Localize(),
+                        actionsCard,
+                        Vector2.zero,
+                        Vector2.zero,
+                        Vector2.zero,
+                        200f,
+                        28f);
+
+                    LayoutElement tuLe = moveUpBtnObj.AddComponent<LayoutElement>();
+                    tuLe.minHeight = 28f;
+                    tuLe.preferredHeight = 28f;
+                    tuLe.flexibleWidth = 1f;
+
+                    Button tuBtn = moveUpBtnObj.GetComponent<Button>();
+                    tuBtn.onClick.AddListener(() => OnMoveRole(roles, 1));
+                }
+
+                if (selectedIndex < sortedRoles.Count - 2)
+                {
+                    GameObject moveDownBtnObj = GUIManager.Instance.CreateButton(
+                        "$wmb_mgmt_move_down".Localize(),
+                        actionsCard,
+                        Vector2.zero,
+                        Vector2.zero,
+                        Vector2.zero,
+                        200f,
+                        28f);
+
+                    LayoutElement tdLe = moveDownBtnObj.AddComponent<LayoutElement>();
+                    tdLe.minHeight = 28f;
+                    tdLe.preferredHeight = 28f;
+                    tdLe.flexibleWidth = 1f;
+
+                    Button tdBtn = moveDownBtnObj.GetComponent<Button>();
+                    tdBtn.onClick.AddListener(() => OnMoveRole(roles, -1));
+                }
+            }
 
             if (_selectedRoleId >= 100)
             {
@@ -210,40 +286,6 @@ public class TabManagement
 
                 Button renBtn = renameBtnObj.GetComponent<Button>();
                 renBtn.onClick.AddListener(() => OnRenameCustomRole(roles));
-
-                GameObject tierUpBtnObj = GUIManager.Instance.CreateButton(
-                    "$wmb_mgmt_tier_up".Localize(),
-                    actionsCard,
-                    Vector2.zero,
-                    Vector2.zero,
-                    Vector2.zero,
-                    200f,
-                    28f);
-
-                LayoutElement tuLe = tierUpBtnObj.AddComponent<LayoutElement>();
-                tuLe.minHeight = 28f;
-                tuLe.preferredHeight = 28f;
-                tuLe.flexibleWidth = 1f;
-
-                Button tuBtn = tierUpBtnObj.GetComponent<Button>();
-                tuBtn.onClick.AddListener(() => OnChangeCustomRoleTier(roles, 1));
-
-                GameObject tierDownBtnObj = GUIManager.Instance.CreateButton(
-                    "$wmb_mgmt_tier_down".Localize(),
-                    actionsCard,
-                    Vector2.zero,
-                    Vector2.zero,
-                    Vector2.zero,
-                    200f,
-                    28f);
-
-                LayoutElement tdLe = tierDownBtnObj.AddComponent<LayoutElement>();
-                tdLe.minHeight = 28f;
-                tdLe.preferredHeight = 28f;
-                tdLe.flexibleWidth = 1f;
-
-                Button tdBtn = tierDownBtnObj.GetComponent<Button>();
-                tdBtn.onClick.AddListener(() => OnChangeCustomRoleTier(roles, -1));
 
                 GameObject delBtnObj = GUIManager.Instance.CreateButton(
                     "$wmb_mgmt_delete_role".Localize(),
@@ -329,71 +371,53 @@ public class TabManagement
     {
         bool isInherited = WardRoleManager.IsPermissionInherited(roles, selectedRole.Id, perm.Id, out string inheritedFrom);
         bool hasExplicit = selectedRole.HasExplicitPermission(perm.Id);
-        bool isOwner = selectedRole.Id == (int)WardRole.Owner || selectedRole.Level >= 3;
+        bool isOwner = selectedRole.Id == (int)WardRole.Owner;
 
         GameObject rowObj = new GameObject($"Perm_{perm.Id}", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         rowObj.transform.SetParent(parent, false);
 
         LayoutElement rowLe = rowObj.GetComponent<LayoutElement>();
-        rowLe.minHeight = 44f;
-        rowLe.preferredHeight = 44f;
+        rowLe.minHeight = 36f;
+        rowLe.preferredHeight = 36f;
         rowLe.flexibleWidth = 1f;
 
         Image rowBg = rowObj.GetComponent<Image>();
         rowBg.color = (parent.childCount % 2 == 1) ? WardColorPalette.RowOdd : WardColorPalette.RowEven;
 
         HorizontalLayoutGroup hlg = rowObj.GetComponent<HorizontalLayoutGroup>();
-        hlg.padding = new RectOffset(10, 10, 3, 3);
-        hlg.spacing = 10f;
+        hlg.padding = new RectOffset(10, 10, 4, 4);
+        hlg.spacing = 8f;
         hlg.childControlWidth = true;
         hlg.childControlHeight = true;
         hlg.childForceExpandWidth = false;
         hlg.childForceExpandHeight = false;
         hlg.childAlignment = TextAnchor.MiddleLeft;
 
-        GameObject textCol = new GameObject("TextCol", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
-        textCol.transform.SetParent(rowObj.transform, false);
+        GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(LayoutElement), typeof(WardTextElement));
+        labelObj.transform.SetParent(rowObj.transform, false);
 
-        LayoutElement textLe = textCol.GetComponent<LayoutElement>();
-        textLe.minWidth = 320f;
-        textLe.preferredWidth = 340f;
-        textLe.flexibleWidth = 1f;
+        LayoutElement labelLe = labelObj.GetComponent<LayoutElement>();
+        labelLe.minWidth = 280f;
+        labelLe.preferredWidth = 360f;
+        labelLe.flexibleWidth = 1f;
+        labelLe.minHeight = 28f;
+        labelLe.preferredHeight = 28f;
 
-        VerticalLayoutGroup textVlg = textCol.GetComponent<VerticalLayoutGroup>();
-        textVlg.childControlWidth = true;
-        textVlg.childControlHeight = true;
-        textVlg.childForceExpandWidth = true;
-        textVlg.childForceExpandHeight = false;
-        textVlg.childAlignment = TextAnchor.MiddleLeft;
-        textVlg.spacing = 2f;
+        Text label = labelObj.GetComponent<Text>();
+        label.text = perm.DisplayName.Localize();
+        label.font = GUIManager.Instance.AveriaSerifBold;
+        label.fontSize = 13;
+        label.color = WardColorPalette.ValheimBeige;
+        label.alignment = TextAnchor.MiddleLeft;
+        label.horizontalOverflow = HorizontalWrapMode.Wrap;
+        label.verticalOverflow = VerticalWrapMode.Overflow;
 
-        GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
-        titleObj.transform.SetParent(textCol.transform, false);
-        LayoutElement titleLe = titleObj.GetComponent<LayoutElement>();
-        titleLe.minHeight = 16f;
-        titleLe.preferredHeight = 16f;
-        titleLe.flexibleHeight = 0f;
+        WardTextElement wte = labelObj.GetComponent<WardTextElement>();
+        wte.baseFontSize = 13;
 
-        Text titleTxt = titleObj.GetComponent<Text>();
-        titleTxt.text = perm.DisplayName.Localize();
-        titleTxt.font = GUIManager.Instance.AveriaSerifBold;
-        titleTxt.fontSize = 12;
-        titleTxt.color = WardColorPalette.ValheimOrange;
-        titleTxt.verticalOverflow = VerticalWrapMode.Overflow;
-
-        GameObject descObj = new GameObject("Desc", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
-        descObj.transform.SetParent(textCol.transform, false);
-        LayoutElement descLe = descObj.GetComponent<LayoutElement>();
-        descLe.minHeight = 14f;
-        descLe.preferredHeight = 14f;
-        descLe.flexibleHeight = 0f;
-
-        Text descTxt = descObj.GetComponent<Text>();
-        descTxt.text = perm.Description.Localize();
-        descTxt.font = GUIManager.Instance.AveriaSerif;
-        descTxt.fontSize = 10;
-        descTxt.color = WardColorPalette.TextMuted;
-        descTxt.verticalOverflow = VerticalWrapMode.Overflow;
+        RowHoverTooltipTrigger hoverTrigger = rowObj.AddComponent<RowHoverTooltipTrigger>();
+        hoverTrigger.Permission = perm;
+        hoverTrigger.Tab = this;
 
         GameObject btnObj = GUIManager.Instance.CreateButton(
             "...",
@@ -401,14 +425,14 @@ public class TabManagement
             Vector2.zero,
             Vector2.zero,
             Vector2.zero,
-            160f,
-            26f);
+            175f,
+            28f);
 
         LayoutElement btnLe = btnObj.AddComponent<LayoutElement>();
-        btnLe.minWidth = 160f;
-        btnLe.preferredWidth = 160f;
-        btnLe.minHeight = 26f;
-        btnLe.preferredHeight = 26f;
+        btnLe.minWidth = 175f;
+        btnLe.preferredWidth = 175f;
+        btnLe.minHeight = 28f;
+        btnLe.preferredHeight = 28f;
         btnLe.flexibleWidth = 0f;
 
         Button btn = btnObj.GetComponent<Button>();
@@ -476,6 +500,138 @@ public class TabManagement
         }
     }
 
+    public void ShowHoverTooltip(FeaturePermission perm, Vector2 screenPos)
+    {
+        if (perm == null)
+            return;
+
+        EnsureHoverTooltip();
+
+        _tooltipTitle.text = perm.DisplayName.Localize();
+        _tooltipDesc.text = perm.Description.Localize();
+
+        if (WardMainWindow.Instance != null)
+        {
+            WardMainWindow.ApplyFontSizeToHierarchy(_hoverTooltip, WardMainWindow.Instance.CurrentFontSizeMode);
+        }
+
+        UpdateHoverTooltipPosition(screenPos);
+
+        _hoverTooltip.SetActive(true);
+        _hoverTooltip.transform.SetAsLastSibling();
+    }
+
+    public void UpdateHoverTooltipPosition(Vector2 screenPos)
+    {
+        if (_hoverTooltip == null || _tooltipRt == null)
+            return;
+
+        _tooltipRt.pivot = new Vector2(0f, 1f);
+        _hoverTooltip.transform.position = new Vector3(screenPos.x + 16f, screenPos.y - 12f, 0f);
+        Utils.ClampUIToScreen(_tooltipRt);
+    }
+
+    public void HideHoverTooltip()
+    {
+        if (_hoverTooltip != null)
+        {
+            _hoverTooltip.SetActive(false);
+        }
+    }
+
+    private void EnsureHoverTooltip()
+    {
+        if (_hoverTooltip != null)
+            return;
+
+        Transform canvasTransform = _root != null && _root.GetComponentInParent<Canvas>() != null
+            ? _root.GetComponentInParent<Canvas>().transform
+            : (_root != null ? _root.transform : null);
+
+        if (canvasTransform == null)
+            return;
+
+        _hoverTooltip = new GameObject("PermHoverTooltip", typeof(RectTransform), typeof(CanvasGroup));
+        _hoverTooltip.transform.SetParent(canvasTransform, false);
+
+        CanvasGroup cg = _hoverTooltip.GetComponent<CanvasGroup>();
+        cg.blocksRaycasts = false;
+        cg.interactable = false;
+
+        _tooltipRt = _hoverTooltip.GetComponent<RectTransform>();
+        _tooltipRt.anchorMin = new Vector2(0f, 1f);
+        _tooltipRt.anchorMax = new Vector2(0f, 1f);
+        _tooltipRt.pivot = new Vector2(0f, 1f);
+        _tooltipRt.sizeDelta = new Vector2(320f, 0f);
+
+        GameObject borderObj = new GameObject("Border", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        borderObj.transform.SetParent(_hoverTooltip.transform, false);
+
+        RectTransform borderRt = borderObj.GetComponent<RectTransform>();
+        borderRt.anchorMin = Vector2.zero;
+        borderRt.anchorMax = Vector2.one;
+        borderRt.offsetMin = Vector2.zero;
+        borderRt.offsetMax = Vector2.zero;
+
+        Image borderImg = borderObj.GetComponent<Image>();
+        borderImg.color = WardColorPalette.IceBlue;
+
+        VerticalLayoutGroup borderVlg = borderObj.GetComponent<VerticalLayoutGroup>();
+        borderVlg.padding = new RectOffset(1, 1, 1, 1);
+        borderVlg.childControlWidth = true;
+        borderVlg.childControlHeight = true;
+        borderVlg.childForceExpandWidth = true;
+        borderVlg.childForceExpandHeight = false;
+
+        ContentSizeFitter borderCsf = borderObj.GetComponent<ContentSizeFitter>();
+        borderCsf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        GameObject box = new GameObject("Box", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        box.transform.SetParent(borderObj.transform, false);
+
+        RectTransform boxRt = box.GetComponent<RectTransform>();
+        boxRt.anchorMin = new Vector2(0f, 1f);
+        boxRt.anchorMax = new Vector2(0f, 1f);
+        boxRt.pivot = new Vector2(0f, 1f);
+        boxRt.anchoredPosition = Vector2.zero;
+        boxRt.sizeDelta = new Vector2(318f, 0f);
+
+        Image boxImg = box.GetComponent<Image>();
+        boxImg.color = new Color(0.06f, 0.08f, 0.12f, 0.98f);
+
+        VerticalLayoutGroup vlg = box.GetComponent<VerticalLayoutGroup>();
+        vlg.padding = new RectOffset(10, 10, 8, 8);
+        vlg.spacing = 3f;
+        vlg.childControlWidth = true;
+        vlg.childControlHeight = true;
+        vlg.childForceExpandWidth = true;
+        vlg.childForceExpandHeight = false;
+
+        ContentSizeFitter csf = box.GetComponent<ContentSizeFitter>();
+        csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(Text), typeof(WardTextElement));
+        titleObj.transform.SetParent(box.transform, false);
+        _tooltipTitle = titleObj.GetComponent<Text>();
+        _tooltipTitle.font = GUIManager.Instance.AveriaSerifBold;
+        _tooltipTitle.fontSize = 13;
+        _tooltipTitle.color = WardColorPalette.ValheimOrange;
+        WardTextElement titleWte = titleObj.GetComponent<WardTextElement>();
+        titleWte.baseFontSize = 13;
+
+        GameObject descObj = new GameObject("Desc", typeof(RectTransform), typeof(Text), typeof(WardTextElement));
+        descObj.transform.SetParent(box.transform, false);
+        _tooltipDesc = descObj.GetComponent<Text>();
+        _tooltipDesc.font = GUIManager.Instance.AveriaSerif;
+        _tooltipDesc.fontSize = 13;
+        _tooltipDesc.color = WardColorPalette.ValheimBeige;
+        _tooltipDesc.horizontalOverflow = HorizontalWrapMode.Wrap;
+        WardTextElement descWte = descObj.GetComponent<WardTextElement>();
+        descWte.baseFontSize = 13;
+
+        _hoverTooltip.SetActive(false);
+    }
+
     private void OnAddCustomRole(List<WardRoleDefinition> roles)
     {
         int nextId = 100;
@@ -492,6 +648,13 @@ public class TabManagement
         string roleName = $"{"$wmb_mgmt_custom_rank".Localize()} {customCount + 1}";
         WardRoleDefinition newRole = new WardRoleDefinition(nextId, roleName, 2, "#93c5fd");
         roles.Add(newRole);
+
+        List<WardRoleDefinition> sorted = new(roles);
+        sorted.Sort((a, b) => b.Level.CompareTo(a.Level));
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            sorted[i].Level = sorted.Count - 1 - i;
+        }
 
         SaveAndBroadcast(roles);
         _selectedRoleId = nextId;
@@ -542,15 +705,35 @@ public class TabManagement
         TextInput.instance.transform.SetAsLastSibling();
     }
 
-    private void OnChangeCustomRoleTier(List<WardRoleDefinition> roles, int delta)
+    private void OnMoveRole(List<WardRoleDefinition> roles, int delta)
     {
-        for (int i = 0; i < roles.Count; i++)
+        List<WardRoleDefinition> sorted = new(roles);
+        sorted.Sort((a, b) => b.Level.CompareTo(a.Level));
+
+        int currentIndex = -1;
+        for (int i = 0; i < sorted.Count; i++)
         {
-            if (roles[i].Id == _selectedRoleId)
+            if (sorted[i].Id == _selectedRoleId)
             {
-                roles[i].Level = Mathf.Clamp(roles[i].Level + delta, 1, 10);
+                currentIndex = i;
                 break;
             }
+        }
+
+        if (currentIndex <= 0 || currentIndex >= sorted.Count - 1)
+            return;
+
+        int targetIndex = currentIndex - delta;
+        if (targetIndex < 1 || targetIndex > sorted.Count - 2)
+            return;
+
+        WardRoleDefinition temp = sorted[currentIndex];
+        sorted[currentIndex] = sorted[targetIndex];
+        sorted[targetIndex] = temp;
+
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            sorted[i].Level = sorted.Count - 1 - i;
         }
 
         SaveAndBroadcast(roles);
@@ -566,6 +749,13 @@ public class TabManagement
                 roles.RemoveAt(i);
                 break;
             }
+        }
+
+        List<WardRoleDefinition> sorted = new(roles);
+        sorted.Sort((a, b) => b.Level.CompareTo(a.Level));
+        for (int i = 0; i < sorted.Count; i++)
+        {
+            sorted[i].Level = sorted.Count - 1 - i;
         }
 
         SaveAndBroadcast(roles);
@@ -597,6 +787,7 @@ public class TabManagement
 
     private void ClearRight()
     {
+        HideHoverTooltip();
         for (int i = 0; i < _permRows.Count; i++)
         {
             if (_permRows[i] != null)

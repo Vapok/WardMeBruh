@@ -350,14 +350,14 @@ Pass these constants to WardMeBruhAPI methods such as HasFeatureAccess.
 
 ##### Summary
 
-Clearance to configure storage container clearances, toggle Fuel Depots, and rename chests. Default role: Resident.
+Clearance to configure storage container clearances, toggle Fuel Depots, and rename chests. Default role: Manager.
 
 <a name='F-WardMeBruh-API-WardPermissionIds-AccessDoors'></a>
 ### AccessDoors `constants`
 
 ##### Summary
 
-Clearance to configure individual door permissions, auto-close timers, and custom names. Default role: Resident.
+Clearance to configure individual door permissions, auto-close timers, and custom names. Default role: Manager.
 
 <a name='F-WardMeBruh-API-WardPermissionIds-AccessPortals'></a>
 ### AccessPortals `constants`

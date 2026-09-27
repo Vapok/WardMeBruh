@@ -8,8 +8,8 @@ namespace WardMeBruh.Services;
 public class AreaRepairService : MonoBehaviour
 {
     private static AreaRepairService _instance;
-    private const float CheckIntervalSeconds = 5.0f;
-    private const int MaxRepairsPerWardPerTick = 5;
+    private const float CheckIntervalSeconds = 3.0f;
+    private const int MaxRepairsPerWardPerTick = 10;
 
     public static AreaRepairService Instance
     {
@@ -48,15 +48,29 @@ public class AreaRepairService : MonoBehaviour
             for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
             {
                 PrivateArea ward = PrivateArea.m_allAreas[i];
-                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+                    continue;
+
+                if (!ward.IsEnabled())
                     continue;
 
                 ZDO zdo = ward.m_nview.GetZDO();
-                if (zdo != null && zdo.GetBool(WardZdoKeys.RepairEnabled, false))
-                {
-                    activeRepairWards ??= new List<PrivateArea>();
-                    activeRepairWards.Add(ward);
-                }
+                if (zdo == null)
+                    continue;
+
+                ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+                if (effectiveZdo == null || !effectiveZdo.GetBool(WardZdoKeys.RepairEnabled, false))
+                    continue;
+
+                bool isServer = ZNet.instance != null && ZNet.instance.IsServer();
+                bool isWardOwner = ward.m_nview.IsOwner();
+                bool isPlayerInside = Player.m_localPlayer != null && WardQueryService.IsInsideWard(ward, Player.m_localPlayer.transform.position);
+
+                if (!isServer && !isWardOwner && !isPlayerInside)
+                    continue;
+
+                activeRepairWards ??= new List<PrivateArea>();
+                activeRepairWards.Add(ward);
             }
 
             if (activeRepairWards == null || activeRepairWards.Count == 0)
@@ -69,17 +83,26 @@ public class AreaRepairService : MonoBehaviour
             for (int wardIndex = 0; wardIndex < activeRepairWards.Count; wardIndex++)
             {
                 PrivateArea ward = activeRepairWards[wardIndex];
-                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.IsEnabled())
                     continue;
 
                 ZDO wardZdo = ward.m_nview.GetZDO();
                 if (wardZdo == null)
                     continue;
 
+                ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+                if (effectiveZdo == null || !effectiveZdo.GetBool(WardZdoKeys.RepairEnabled, false))
+                    continue;
+
                 float radius = WardQueryService.GetWardRadius(ward);
-                float thresholdPercent = wardZdo.GetFloat(
+                float thresholdPercent = effectiveZdo.GetFloat(
                     WardZdoKeys.RepairThreshold, 
-                    (float)ConfigRegistry.AutoRepairThresholdDefault.Value) / 100f;
+                    (float)ConfigRegistry.AutoRepairThresholdDefault.Value);
+
+                if (thresholdPercent > 1.0f)
+                {
+                    thresholdPercent /= 100f;
+                }
 
                 Vector3 wardPos = ward.transform.position;
                 int repairedCount = 0;
@@ -99,6 +122,12 @@ public class AreaRepairService : MonoBehaviour
                         if (piece.Repair())
                         {
                             repairedCount++;
+                            Piece pieceComp = piece.GetComponent<Piece>();
+                            if (pieceComp != null && pieceComp.m_placeEffect != null)
+                            {
+                                pieceComp.m_placeEffect.Create(piece.transform.position, piece.transform.rotation, null, 1f, -1, ZDOID.None);
+                            }
+
                             if (repairedCount >= MaxRepairsPerWardPerTick)
                                 break;
                         }
@@ -107,8 +136,8 @@ public class AreaRepairService : MonoBehaviour
 
                 if (repairedCount > 0)
                 {
-                    string wardName = wardZdo.GetString(WardZdoKeys.CustomName, "Ward");
-                    WardMeBruh.Log.Debug($"[AutoRepair] Ward '{wardName}' ({wardZdo.m_uid}) auto-repaired {repairedCount} damaged piece(s)");
+                    string wardName = effectiveZdo.GetString(WardZdoKeys.CustomName, "Ward");
+                    WardMeBruh.Log.Info($"[AutoRepair] Ward '{wardName}' ({effectiveZdo.m_uid}) auto-repaired {repairedCount} damaged piece(s)");
                 }
             }
         }

@@ -24,7 +24,7 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
 {
     private const string _pluginId = "vapok.mods.wardmebruh";
     private const string _displayName = "WardMeBruh";
-    private const string _version = "0.0.0";
+    private const string _version = "0.0.1";
     public static bool ValheimAwake;
     public static Waiting Waiter;
 

@@ -29,21 +29,42 @@
 ## 🛡️ Features
 
 ### Centralized Management GUI & Remote Overview
-* **Ward Hub GUI**: Dedicated 5-tab interface opened directly at the ward stone (`[G]` or `<E>`).
+* **Ward Hub GUI**: Dedicated 6-tab interface opened directly at the ward stone (`[G]` or `<E>`) featuring **Overview**, **Access**, **Defenses**, **Upkeep**, **Roles**, and **Management**.
+* **Player Capability Summary**: Overview tab displays current character clearance tier alongside a comprehensive, real-time list of all functional capabilities granted to that role.
+* **Dynamic Font Size Scaling**: Instant toggle button in the window header to cycle between **Small** (default), **Medium**, and **Large** font sizes across all tabs and modal inspectors.
 * **"Your Ward's Bruh" Overview**: Inspect and remotely configure any ward owned by your character across the world, even in unloaded sectors.
-* **Perimeter Adjustment**: Dynamic radius slider (32m up to server cap) with in-world boundary preview ring.
 
-### 4-Tier Role Governance & Feature Clearance
-* **Hierarchical Tiers**: Granular authorization across **Owner**, **Manager**, **Resident**, and **Guest**.
-* **Dome Access Clearance**: Configurable minimum rank required to enter the dome and gain base access (defaults to Guest).
-* **Per-Feature Role Gating**: Every defense and upkeep perk has an independent role requirement (`Guest` ➔ `Resident` ➔ `Manager` ➔ `Owner`), allowing fine-grained base access control.
+### Seamless Base Extensions (Multi-Ward Linking)
+* **Satellite & Extension Wards**: Building an additional ward stone inside an active shield automatically links it as a **Base Extension** rather than creating a separate ward.
+* **Unified Base Territory**: Extension wards project their own forcefield dome, boundary, and in-range effects, expanding the total protected perimeter of the base.
+* **Shared Governance & Power**: Extension stones share the parent base's settings, custom roles, permissions, name, and power state. Toggling power or interacting with any ward stone in the complex opens and operates the single unified base matrix.
+* **Consolidated Access Scanner**: The Access tab scans and manages chests, doors, and portals across the parent base and all of its connected extensions.
+* **Clean Remote Registry**: Extension wards do not clutter the "Your Ward's Bruh" remote selector, keeping base navigation clean and organized.
+
+
+### Extensible Role-Based Governance & Capability Management
+* **Dedicated MANAGEMENT Tab**: Separate administrative governance from gameplay settings. Control who has the authority to configure which systems, add custom roles, or edit settlement parameters.
+* **Custom & Per-Ward Roles**: Define custom roles per ward stone with customized display names, hierarchy levels, and color badges on top of the default slate (**Guest**, **Resident**, **Manager**, **Owner**).
+* **Hierarchical Permission Inheritance**: Higher-tier roles automatically inherit all capabilities granted to subordinate roles. The Management matrix displays active grants (`[ ✔ ]`) alongside greyed-out inherited grants (`[ ✔ ] (Inherited from [LowerRole])`).
+* **Operational vs. Administrative Separation**: Door, container, and portal clearance requirements remain strictly per-object, while the Management tab governs which roles are authorized to configure those objects or activate fortress defenses.
+* **Granular Core & Defense Clearances**:
+  * **Dome Access Clearance** (`core.dome_access`, default: Guest): Controls who can cross the forcefield perimeter and enter the base without being repelled or shocked.
+  * **Shield Sanctuary Benefits** (`core.benefits`, default: Resident): Controls who receives base territory perks (HUD status display, max comfort, food decay pause, death skill shield, and health/stamina/eitr regen boost).
+  * **Building & Construction** (`core.building`, default: Resident): Controls who is authorized to construct, place, repair, and deconstruct pieces, structures, and furniture within the protected perimeter.
+  * **Farming & Cultivation** (`core.farming`, default: Resident): Controls who is authorized to cultivate soil, replant grass, and plant seeds, crops, and saplings using the Cultivator.
+  * **Harvest Crops & Pickables** (`core.harvest`, default: Resident): Controls who is authorized to harvest mature crops, berry bushes, mushrooms, and pickable resources within the protected perimeter.
+  * **Perimeter Dome Size** (`defenses.dome_size`, default: Owner): Controls who is authorized to adjust the ward shield perimeter and coverage radius.
+* **Persistent World Player Registry**: Keeps an active, world-level tally of all characters that have joined the world so that offline players remain available in the Roster enrollment dropdown across sessions.
 * **Character Independence**: Admin auto-elevation is strictly scoped to dedicated servers; singleplayer and player-hosted characters on the same account are treated as separate individuals.
 
 ### Territorial Defense & 3D Airspace
+* **Territorial Domain & Coverage**: Stepped dome radius slider (10m–100m in 5m notched increments with visual hashmarks) with real-time square meter land coverage readout and in-world boundary marker.
 * **3D Hemispherical Dome**: Deflects both ground attackers and flying siege mobs (Drakes, Gjall, Valkyries).
 * **Pushback & Shock**: Configurable physical knockback impulse and retaliatory electrical shock damage to hostile intruders.
 * **"Ghost Base" AI Camouflage**: Hides structures from enemy pathfinding so mobs don't aggro on walls.
 * **Raid & Mob Spawn Suppression**: Cancels base raid events and suppresses mob spawns inside the dome.
+* **Dome Power Deactivation**: Toggling the ward dome off disables all shield defenses (pushback, shock, camouflage, raid/spawn suppression, hazard shields) and dome status perks (faked fire/shelter, forced max comfort, food decay pause, skill shield, regen boost). Standard vanilla rules apply for fire, shelter, and resting.
+* **Continuous Upkeep & Access Protection**: Base automations (Area Repair, Auto-Fuel, Auto-Door) and security access settings (Door clearances, Chest locks, Portal gating, Building permissions, and Harvesting/Farming restrictions) remain active and enforced even when the dome is powered down.
 
 ### Base Automation & Upkeep
 * **Free Area Repair**: Automatically repairs damaged structures with a configurable weathering threshold slider (20%–100%).
@@ -69,7 +90,7 @@
 
 ### Agricultural & World Security
 * **Tamed Animal Immunity**: Tamed livestock take zero damage inside the active perimeter.
-* **Harvesting & Terrain Locks**: Restricts crop harvesting and terraforming (hoe, cultivator, pickaxe) to Residents and above.
+* **Harvesting & Farming Clearances**: Restricts crop harvesting and cultivating/planting seeds to authorized roles via granular role capabilities.
 * **Vehicle Locking**: Secures ship rudders and carts against unauthorized guests.
 * **Underwater Construction**: Displaces water inside the dome for dry seabed building.
 * **Minimap Overlay & Fast Travel**: Ward map pins with circular coverage rings and optional double-click fast travel.
@@ -92,7 +113,7 @@ Configuration settings are stored in `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 
 ### Server Settings (Synced)
 * **Enable Ward Me Bruh**: Master mod toggle (Default: `true`).
-* **Max Ward Radius**: Maximum radius in meters a ward can be expanded to (Default: `400.0m`).
+* **Max Ward Radius**: Maximum radius in meters a ward can be expanded to (Default: `100.0m`).
 * **Ward Separation Distance**: Minimum buffer distance enforced between unowned ward perimeters (Default: `50.0m`).
 * **Default Repair Threshold**: Damage fraction required before area repair triggers (Default: `0.20`).
 * **Default Auto-Close Delay**: Seconds before an open door automatically closes (Default: `5.0s`).

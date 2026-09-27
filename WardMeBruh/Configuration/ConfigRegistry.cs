@@ -3,6 +3,7 @@ using BepInEx.Configuration;
 using UnityEngine;
 using Vapok.Common.Abstractions;
 using Vapok.Common.Managers.Configuration;
+using WardMeBruh.Models;
 
 namespace WardMeBruh.Configuration;
 
@@ -12,6 +13,7 @@ public class ConfigRegistry : ConfigSyncBase
     internal static ConfigEntry<KeyboardShortcut> OpenWardHubKey;
     internal static ConfigEntry<bool> ShowSplashOnStartup;
     internal static ConfigEntry<bool> EnableTelemetry;
+    internal static ConfigEntry<WardFontSizeMode> GuiFontSize;
 
     internal static ConfigEntry<float> MaxWardRadius;
     internal static ConfigEntry<float> WardSeparationDistance;
@@ -39,7 +41,7 @@ public class ConfigRegistry : ConfigSyncBase
             new ConfigDescription("If enabled, enables WardMeBruh features.",
                 null, new ConfigurationManagerAttributes { IsAdminOnly = true, Order = 1 }), ref Enabled);
 
-        UnsyncedConfig("Local Config", "Open Ward Hub Keybind", new KeyboardShortcut(KeyCode.G),
+        UnsyncedConfig("Local Config", "Open Ward Hub Keybind", new KeyboardShortcut(KeyCode.E),
             new ConfigDescription("Key shortcut used to open the Ward Hub GUI when looking at a ward.",
                 null, new ConfigurationManagerAttributes { Order = 2 }), ref OpenWardHubKey);
 
@@ -51,9 +53,13 @@ public class ConfigRegistry : ConfigSyncBase
             new ConfigDescription("If enabled, sends anonymous mod launch and heartbeat telemetry to help improve mod stability and track active versions.",
                 null, new ConfigurationManagerAttributes { Order = 5 }), ref EnableTelemetry);
 
-        SyncedConfig("Server Settings", "Max Ward Radius", 400.0f,
+        UnsyncedConfig("Local Config", "UI Font Size", WardFontSizeMode.Small,
+            new ConfigDescription("Font size mode for the Ward Hub GUI (Small, Medium, Large).",
+                null, new ConfigurationManagerAttributes { Order = 6 }), ref GuiFontSize);
+
+        SyncedConfig("Server Settings", "Max Ward Radius", 100.0f,
             new ConfigDescription("Maximum radius in meters that any ward can be expanded to.",
-                new AcceptableValueRange<float>(10.0f, 1000.0f), new ConfigurationManagerAttributes { IsAdminOnly = true, Order = 10 }), ref MaxWardRadius);
+                new AcceptableValueRange<float>(10.0f, 100.0f), new ConfigurationManagerAttributes { IsAdminOnly = true, Order = 10 }), ref MaxWardRadius);
 
         SyncedConfig("Server Settings", "Ward Separation Distance", 50.0f,
             new ConfigDescription("Minimum distance required between perimeters of wards owned by different players.",

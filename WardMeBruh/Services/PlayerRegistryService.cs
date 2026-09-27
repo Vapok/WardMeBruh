@@ -1,14 +1,17 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.Networking;
 
 namespace WardMeBruh.Services;
 
 public static class PlayerRegistryService
 {
     private static readonly Dictionary<long, string> _knownPlayers = new();
+    private static string _currentWorldName = string.Empty;
 
     public static List<KeyValuePair<long, string>> GetKnownPlayers()
     {
@@ -19,23 +22,140 @@ public static class PlayerRegistryService
         return list;
     }
 
+    public static Dictionary<long, string> GetAllRegisteredPlayers()
+    {
+        return new Dictionary<long, string>(_knownPlayers);
+    }
+
     public static void RegisterPlayer(long playerId, string playerName)
+    {
+        RegisterAndPersistPlayer(playerId, playerName, true);
+    }
+
+    public static void RegisterAndPersistPlayer(long playerId, string playerName, bool broadcast = true)
     {
         if (playerId == 0L || string.IsNullOrEmpty(playerName))
             return;
 
+        bool isNewOrChanged = !_knownPlayers.TryGetValue(playerId, out string existingName) || existingName != playerName;
         _knownPlayers[playerId] = playerName;
+
+        if (isNewOrChanged)
+        {
+            SaveWorld();
+            if (broadcast && ZNet.instance != null && ZNet.instance.IsServer())
+            {
+                WardNetworkRouter.BroadcastPlayer(playerId, playerName);
+            }
+        }
+    }
+
+    public static void LoadWorld(string worldName)
+    {
+        if (string.IsNullOrEmpty(worldName))
+            worldName = "default";
+
+        _currentWorldName = worldName;
+        string filePath = GetStorageFilePath(worldName);
+        if (!File.Exists(filePath))
+            return;
+
+        try
+        {
+            string json = File.ReadAllText(filePath);
+            if (!string.IsNullOrEmpty(json))
+            {
+                SavedPlayerDatabase db = JsonUtility.FromJson<SavedPlayerDatabase>(json);
+                if (db != null && db.players != null)
+                {
+                    for (int i = 0; i < db.players.Count; i++)
+                    {
+                        SavedPlayerEntry entry = db.players[i];
+                        if (entry.id != 0L && !string.IsNullOrEmpty(entry.name))
+                        {
+                            _knownPlayers[entry.id] = entry.name;
+                        }
+                    }
+                    WardMeBruh.Log.Debug($"[PlayerRegistry] Loaded {_knownPlayers.Count} known players for world '{worldName}'");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            WardMeBruh.Log.Warning($"[PlayerRegistry] Error loading saved players for world {worldName}: {ex.Message}");
+        }
+    }
+
+    public static void SaveWorld()
+    {
+        if (string.IsNullOrEmpty(_currentWorldName))
+        {
+            if (ZNet.instance != null && !string.IsNullOrEmpty(ZNet.instance.GetWorldName()))
+            {
+                _currentWorldName = ZNet.instance.GetWorldName();
+            }
+            else
+            {
+                _currentWorldName = "default";
+            }
+        }
+
+        try
+        {
+            string dir = Path.Combine(BepInEx.Paths.ConfigPath, "WardMeBruh", "Players");
+            if (!Directory.Exists(dir))
+            {
+                Directory.CreateDirectory(dir);
+            }
+
+            string filePath = GetStorageFilePath(_currentWorldName);
+            SavedPlayerDatabase db = new();
+            foreach (KeyValuePair<long, string> kvp in _knownPlayers)
+            {
+                db.players.Add(new SavedPlayerEntry { id = kvp.Key, name = kvp.Value });
+            }
+
+            string json = JsonUtility.ToJson(db, true);
+            File.WriteAllText(filePath, json);
+        }
+        catch (Exception ex)
+        {
+            WardMeBruh.Log.Warning($"[PlayerRegistry] Error saving players for world {_currentWorldName}: {ex.Message}");
+        }
+    }
+
+    private static string GetStorageFilePath(string worldName)
+    {
+        string dir = Path.Combine(BepInEx.Paths.ConfigPath, "WardMeBruh", "Players");
+        string safeName = SanitizeFileName(worldName);
+        return Path.Combine(dir, $"{safeName}.json");
+    }
+
+    private static string SanitizeFileName(string name)
+    {
+        char[] invalid = Path.GetInvalidFileNameChars();
+        for (int i = 0; i < invalid.Length; i++)
+        {
+            name = name.Replace(invalid[i], '_');
+        }
+        return string.IsNullOrEmpty(name) ? "default" : name;
     }
 
     private static void UpdateRegistry()
     {
+        bool changed = false;
+
         if (Player.m_localPlayer != null)
         {
             long localId = Player.m_localPlayer.GetPlayerID();
             string localName = Player.m_localPlayer.GetPlayerName();
             if (localId != 0L && !string.IsNullOrEmpty(localName))
             {
-                _knownPlayers[localId] = localName;
+                if (!_knownPlayers.TryGetValue(localId, out string existing) || existing != localName)
+                {
+                    _knownPlayers[localId] = localName;
+                    changed = true;
+                }
             }
         }
 
@@ -49,7 +169,11 @@ public static class PlayerRegistryService
                 string name = p.GetPlayerName();
                 if (id != 0L && !string.IsNullOrEmpty(name))
                 {
-                    _knownPlayers[id] = name;
+                    if (!_knownPlayers.TryGetValue(id, out string existing) || existing != name)
+                    {
+                        _knownPlayers[id] = name;
+                        changed = true;
+                    }
                 }
             }
         }
@@ -79,7 +203,11 @@ public static class PlayerRegistryService
 
                     if (id != 0L && !string.IsNullOrEmpty(info.m_name))
                     {
-                        _knownPlayers[id] = info.m_name;
+                        if (!_knownPlayers.TryGetValue(id, out string existing) || existing != info.m_name)
+                        {
+                            _knownPlayers[id] = info.m_name;
+                            changed = true;
+                        }
                     }
                 }
             }
@@ -91,7 +219,11 @@ public static class PlayerRegistryService
             KnownWard ward = allWards[i];
             if (ward.CreatorId != 0L && !string.IsNullOrEmpty(ward.CreatorName))
             {
-                _knownPlayers[ward.CreatorId] = ward.CreatorName;
+                if (!_knownPlayers.TryGetValue(ward.CreatorId, out string existing) || existing != ward.CreatorName)
+                {
+                    _knownPlayers[ward.CreatorId] = ward.CreatorName;
+                    changed = true;
+                }
             }
 
             if (ZDOMan.instance != null)
@@ -108,7 +240,11 @@ public static class PlayerRegistryService
                             RosterEntry entry = mgrRoster.Entries[m];
                             if (entry.PlayerId != 0L && !string.IsNullOrEmpty(entry.PlayerName))
                             {
-                                _knownPlayers[entry.PlayerId] = entry.PlayerName;
+                                if (!_knownPlayers.TryGetValue(entry.PlayerId, out string existing) || existing != entry.PlayerName)
+                                {
+                                    _knownPlayers[entry.PlayerId] = entry.PlayerName;
+                                    changed = true;
+                                }
                             }
                         }
                     }
@@ -122,12 +258,21 @@ public static class PlayerRegistryService
                             RosterEntry entry = resRoster.Entries[r];
                             if (entry.PlayerId != 0L && !string.IsNullOrEmpty(entry.PlayerName))
                             {
-                                _knownPlayers[entry.PlayerId] = entry.PlayerName;
+                                if (!_knownPlayers.TryGetValue(entry.PlayerId, out string existing) || existing != entry.PlayerName)
+                                {
+                                    _knownPlayers[entry.PlayerId] = entry.PlayerName;
+                                    changed = true;
+                                }
                             }
                         }
                     }
                 }
             }
+        }
+
+        if (changed)
+        {
+            SaveWorld();
         }
     }
 }

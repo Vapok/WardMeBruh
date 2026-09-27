@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using HarmonyLib;
@@ -47,6 +48,91 @@ internal static class Patch_PrivateArea
         }
     }
 
+    [HarmonyPatch(nameof(PrivateArea.Setup))]
+    [HarmonyPostfix]
+    private static void SetupPostfix(PrivateArea __instance)
+    {
+        if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
+            return;
+
+        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
+            return;
+
+        if (!__instance.m_nview.IsOwner() && (ZNet.instance == null || !ZNet.instance.IsServer()))
+            return;
+
+        ZDO zdo = __instance.m_nview.GetZDO();
+        ZDOID existingParentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
+        if (existingParentId != ZDOID.None)
+            return;
+
+        PrivateArea coveringWard = null;
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area == null || area == __instance || !area.IsEnabled())
+                    continue;
+
+                if (WardQueryService.IsInsideWard(area, __instance.transform.position))
+                {
+                    coveringWard = area;
+                    break;
+                }
+            }
+        }
+
+        if (coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid())
+        {
+            ZDO coveringZdo = coveringWard.m_nview.GetZDO();
+            ZDO rootParentZdo = WardQueryService.GetEffectiveWardZdo(coveringZdo);
+            if (rootParentZdo != null && rootParentZdo.m_uid != zdo.m_uid)
+            {
+                zdo.Set(WardZdoKeys.ParentWard, rootParentZdo.m_uid);
+
+                string parentName = rootParentZdo.GetString(WardZdoKeys.CustomName, coveringWard.m_name);
+                zdo.Set(WardZdoKeys.CustomName, parentName);
+
+                float parentRadius = rootParentZdo.GetFloat(WardZdoKeys.Radius, 32.0f);
+                zdo.Set(WardZdoKeys.Radius, parentRadius);
+                if (__instance.m_areaMarker != null)
+                {
+                    __instance.m_areaMarker.m_radius = parentRadius;
+                }
+
+                bool parentEnabled = coveringWard.IsEnabled();
+                zdo.Set(ZDOVars.s_enabled, parentEnabled);
+
+                WardRegistryManager.Instance.RegisterOrUpdate(zdo);
+                WardMeBruh.Log.Info($"[Base Extension] New Ward {zdo.m_uid} placed inside active shield of Ward {rootParentZdo.m_uid} ('{parentName}'). Linked as extension.");
+            }
+        }
+    }
+
+    [HarmonyPatch(nameof(PrivateArea.IsEnabled))]
+    [HarmonyPrefix]
+    private static bool IsEnabledPrefix(PrivateArea __instance, ref bool __result)
+    {
+        if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
+            return true;
+
+        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
+            return true;
+
+        ZDO zdo = __instance.m_nview.GetZDO();
+        ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
+        if (parentId == ZDOID.None)
+            return true;
+
+        ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+        if (parentZdo == null || !parentZdo.IsValid())
+            return true;
+
+        __result = parentZdo.GetBool(ZDOVars.s_enabled, true);
+        return false;
+    }
+
     [HarmonyPatch(nameof(PrivateArea.OnDestroy))]
     [HarmonyPrefix]
     private static void OnDestroyPrefix(PrivateArea __instance)
@@ -75,12 +161,86 @@ internal static class Patch_PrivateArea
 
         long playerId = Player.m_localPlayer.GetPlayerID();
         ZDO zdo = __instance.m_nview.GetZDO();
-        WardRole playerRole = WardPermissions.GetPlayerRole(zdo, playerId);
-        bool hasAccess = WardPermissions.HasWardAccess(zdo, playerId);
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+        WardRole playerRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
 
-        WardMeBruh.Log.Debug($"[Access Check] HaveLocalAccess for Player {playerId} (Role: {playerRole}) in Ward {zdo.m_uid}: {hasAccess}");
+        bool isFarming = IsFarmingAction(Player.m_localPlayer);
+        bool allowed = isFarming
+            ? WardPermissions.CanFarm(effectiveZdo, playerId)
+            : WardPermissions.CanBuild(effectiveZdo, playerId);
 
-        __result = hasAccess;
+        WardMeBruh.Log.Debug($"[Placement Check] HaveLocalAccess (Farming: {isFarming}) for Player {playerId} (Role: {playerRole}) in Ward {zdo.m_uid}: {allowed}");
+
+        __result = allowed;
+        return false;
+    }
+
+    private static bool IsFarmingAction(Player player)
+    {
+        if (player == null)
+            return false;
+
+        ItemDrop.ItemData rightItem = player.GetRightItem();
+        if (rightItem != null && rightItem.m_shared != null)
+        {
+            if (rightItem.m_dropPrefab != null && string.Equals(rightItem.m_dropPrefab.name, "Cultivator", System.StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (!string.IsNullOrEmpty(rightItem.m_shared.m_name) && rightItem.m_shared.m_name.IndexOf("cultivator", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+
+            if (rightItem.m_shared.m_buildPieces != null && rightItem.m_shared.m_buildPieces.name.IndexOf("cultivator", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                return true;
+        }
+
+        if (player.m_placementGhost != null)
+        {
+            Piece ghostPiece = player.m_placementGhost.GetComponent<Piece>();
+            if (ghostPiece != null)
+            {
+                if (ghostPiece.m_cultivatedGroundOnly)
+                    return true;
+
+                Plant plant = ghostPiece.GetComponent<Plant>();
+                if (plant != null)
+                    return true;
+
+                Pickable pickable = ghostPiece.GetComponent<Pickable>();
+                if (pickable != null)
+                    return true;
+            }
+        }
+
+        Piece selectedPiece = player.m_buildPieces != null ? player.m_buildPieces.GetSelectedPiece() : null;
+        if (selectedPiece != null)
+        {
+            if (selectedPiece.m_cultivatedGroundOnly)
+                return true;
+
+            Plant plant = selectedPiece.GetComponent<Plant>();
+            if (plant != null)
+                return true;
+
+            Pickable pickable = selectedPiece.GetComponent<Pickable>();
+            if (pickable != null)
+                return true;
+        }
+
+        Piece hoveringPiece = player.GetHoveringPiece();
+        if (hoveringPiece != null)
+        {
+            if (hoveringPiece.m_cultivatedGroundOnly)
+                return true;
+
+            Plant plant = hoveringPiece.GetComponent<Plant>();
+            if (plant != null)
+                return true;
+
+            Pickable pickable = hoveringPiece.GetComponent<Pickable>();
+            if (pickable != null)
+                return true;
+        }
+
         return false;
     }
 
@@ -101,12 +261,98 @@ internal static class Patch_PrivateArea
         return false;
     }
 
+    [HarmonyPatch(nameof(PrivateArea.CheckAccess))]
+    [HarmonyPrefix]
+    private static bool CheckAccessPrefix(Vector3 point, float radius, bool flash, bool wardCheck, ref bool __result)
+    {
+        if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
+            return true;
+
+        List<PrivateArea> list = new();
+        bool flag = true;
+        if (wardCheck)
+        {
+            flag = true;
+            if (PrivateArea.m_allAreas != null)
+            {
+                for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+                {
+                    PrivateArea allArea = PrivateArea.m_allAreas[i];
+                    if (allArea != null && allArea.IsInside(point, radius) && !allArea.HaveLocalAccess())
+                    {
+                        flag = false;
+                        list.Add(allArea);
+                    }
+                }
+            }
+        }
+        else
+        {
+            flag = false;
+            bool insideAnyWard = false;
+            if (PrivateArea.m_allAreas != null)
+            {
+                for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+                {
+                    PrivateArea allArea2 = PrivateArea.m_allAreas[i];
+                    if (allArea2 != null && allArea2.IsInside(point, radius))
+                    {
+                        insideAnyWard = true;
+                        if (allArea2.HaveLocalAccess())
+                        {
+                            flag = true;
+                        }
+                        else
+                        {
+                            list.Add(allArea2);
+                        }
+                    }
+                }
+            }
+            if (!insideAnyWard)
+            {
+                flag = true;
+            }
+        }
+
+        if (!flag && list.Count > 0)
+        {
+            if (flash)
+            {
+                for (int i = 0; i < list.Count; i++)
+                {
+                    PrivateArea item = list[i];
+                    if (item != null && item.IsEnabled())
+                    {
+                        item.FlashShield(flashConnected: false);
+                    }
+                }
+            }
+            __result = false;
+            return false;
+        }
+
+        __result = true;
+        return false;
+    }
+
     public static void RequestOpenWardGui(PrivateArea ward)
     {
         OnOpenWardGuiRequested?.Invoke(ward);
     }
 
     private static readonly MethodInfo SetEnabledMethod = AccessTools.Method(typeof(PrivateArea), "SetEnabled", new[] { typeof(bool) });
+
+    [HarmonyPatch(nameof(PrivateArea.SetEnabled))]
+    [HarmonyPostfix]
+    private static void SetEnabledPostfix(PrivateArea __instance, bool enabled)
+    {
+        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
+            return;
+
+        ZDO zdo = __instance.m_nview.GetZDO();
+        WardRegistryManager.Instance.UpdateWardEnabled(zdo.m_uid, enabled);
+    }
 
     [HarmonyPatch("RPC_ToggleEnabled")]
     [HarmonyPrefix]
@@ -117,6 +363,16 @@ internal static class Patch_PrivateArea
 
         if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
             return true;
+
+        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(__instance);
+        if (effectiveWard != __instance)
+        {
+            if (effectiveWard.m_nview != null && effectiveWard.m_nview.IsValid())
+            {
+                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerID);
+                return false;
+            }
+        }
 
         if (!__instance.m_nview.IsOwner())
             return false;
@@ -130,6 +386,22 @@ internal static class Patch_PrivateArea
             bool newState = !__instance.IsEnabled();
             WardMeBruh.Log.Debug($"[Ward Power] Ward {zdo.m_uid} toggled power state to {(newState ? "ENABLED" : "DISABLED")}");
             SetEnabledMethod?.Invoke(__instance, new object[] { newState });
+
+            if (PrivateArea.m_allAreas != null)
+            {
+                for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+                {
+                    PrivateArea area = PrivateArea.m_allAreas[i];
+                    if (area != null && area != __instance && area.m_nview != null && area.m_nview.IsValid())
+                    {
+                        if (area.m_nview.GetZDO().GetZDOID(WardZdoKeys.ParentWard) == zdo.m_uid)
+                        {
+                            SetEnabledMethod?.Invoke(area, new object[] { newState });
+                        }
+                    }
+                }
+            }
+
             return false;
         }
 
@@ -167,21 +439,24 @@ internal static class Patch_PrivateArea
 
         long playerId = player.GetPlayerID();
         ZDO zdo = __instance.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(__instance);
+
         bool isMoving = player.IsRunning() || player.m_run || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
         bool hasUseInput = ZInput.GetButton("Use") || ZInput.GetButtonDown("Use") || ZInput.GetButton("JoyUse") || ZInput.GetButtonDown("JoyUse");
         bool isAlt = hasUseInput && ((alt && !isMoving) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
 
         if (isAlt)
         {
-            if (WardPermissions.CanManageWard(zdo, playerId))
+            if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {zdo.m_uid}");
-                __instance.m_nview.InvokeRPC("ToggleEnabled", playerId);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {effectiveZdo.m_uid}");
+                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerId);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {zdo.m_uid} (Manager clearance required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {effectiveZdo.m_uid} (core.power permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }
@@ -189,15 +464,15 @@ internal static class Patch_PrivateArea
 
         if (ConfigRegistry.OpenWardHubKey == null || ConfigRegistry.OpenWardHubKey.Value.MainKey == KeyCode.E)
         {
-            if (WardPermissions.CanManageWard(zdo, playerId))
+            if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {zdo.m_uid}");
-                OnOpenWardGuiRequested?.Invoke(__instance);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {effectiveZdo.m_uid}");
+                OnOpenWardGuiRequested?.Invoke(effectiveWard);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {zdo.m_uid} (Manager clearance required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {effectiveZdo.m_uid} (core.view_gui permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }
@@ -225,32 +500,44 @@ internal static class Patch_PrivateArea
         __instance.ShowAreaMarker();
 
         ZDO zdo = __instance.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+        bool isExtension = effectiveZdo.m_uid != zdo.m_uid;
         long playerId = Player.m_localPlayer.GetPlayerID();
-        string customName = zdo.GetString(WardZdoKeys.CustomName, string.Empty);
+        string customName = effectiveZdo.GetString(WardZdoKeys.CustomName, string.Empty);
         string baseName = string.IsNullOrEmpty(customName) ? __instance.m_name : customName;
 
         StringBuilder sb = new(256);
         bool isEnabled = __instance.IsEnabled();
         string statusToken = isEnabled ? "$piece_guardstone_active" : "$piece_guardstone_inactive";
-        sb.Append($"{baseName} ( {statusToken} )");
+        if (isExtension)
+        {
+            sb.Append($"{baseName} (Base Extension) ( {statusToken} )");
+        }
+        else
+        {
+            sb.Append($"{baseName} ( {statusToken} )");
+        }
 
-        string creatorName = zdo.GetString(ZDOVars.s_creatorName, string.Empty);
+        string creatorName = effectiveZdo.GetString(ZDOVars.s_creatorName, string.Empty);
         if (!string.IsNullOrEmpty(creatorName))
         {
             sb.Append($"\n$piece_guardstone_owner: {creatorName}");
         }
 
-        WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
+        WardRole role = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
         string roleColor = role >= WardRole.Manager ? "#fcd34d" : "#38bdf8";
         sb.Append($"\nClearance: <color={roleColor}><b>[{role}]</b></color>");
 
-        if (WardPermissions.CanManageWard(zdo, playerId))
+        if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
             string hubKey = (ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
                 ? ConfigRegistry.OpenWardHubKey.Value.ToString()
                 : "E";
             sb.Append($"\n[<color=yellow><b>{hubKey}</b></color>] Open Ward Hub");
+        }
 
+        if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
+        {
             string toggleAction = isEnabled ? "$piece_guardstone_deactivate" : "$piece_guardstone_activate";
             sb.Append($"\n[<color=yellow><b>LeftShift + E</b></color>] {toggleAction}");
         }

@@ -57,4 +57,9 @@ public static class WardZdoKeys
     public static readonly int RegenBoostMinRole = "wmb_role_regen_boost".GetStableHashCode();
     public static readonly int DeathSkillShieldMinRole = "wmb_role_death_skill".GetStableHashCode();
     public static readonly int FoodFreezeMinRole = "wmb_role_food_freeze".GetStableHashCode();
+
+    public static readonly int RoleDefinitions = "wmb_role_definitions".GetStableHashCode();
+    public static readonly int RoleAssignments = "wmb_role_assignments".GetStableHashCode();
+    public static readonly System.Collections.Generic.KeyValuePair<int, int> ParentWard = ZDO.GetHashZDOID("wmb_parent_ward");
 }
+

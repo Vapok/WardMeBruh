@@ -366,17 +366,100 @@ public static class WardUIFactory
         Action<float> onValueChanged, 
         out Action<float> setValue)
     {
-        CreateSettingRow(parent, labelText, out Transform controlContainer);
+        CreateSliderRow(parent, labelText, min, max, initialValue, wholeNumbers, unit, onValueChanged, out setValue, out _);
+    }
 
-        GameObject sliderObj = WardUIExtensions.CreateValheimSlider(controlContainer, min, max, initialValue, wholeNumbers, 250f, 18f);
-        sliderObj.GetComponent<RectTransform>().sizeDelta = new Vector2(250f, 18f);
-        sliderObj.SetLayoutDimensions(250f, 18f);
+    public static void CreateSliderRow(
+        Transform parent, 
+        string labelText, 
+        float min, 
+        float max, 
+        float initialValue, 
+        bool wholeNumbers, 
+        string unit, 
+        Action<float> onValueChanged, 
+        out Action<float> setValue,
+        out Action<bool> setInteractable,
+        float step = 0f,
+        bool showTicks = false)
+    {
+        float rowHeight = showTicks ? 48f : 34f;
+        CreateSettingRow(parent, labelText, out Transform controlContainer, rowHeight);
+
+        GameObject sliderWrapper = new GameObject("SliderWrapper", typeof(RectTransform), typeof(LayoutElement));
+        sliderWrapper.transform.SetParent(controlContainer, false);
+        sliderWrapper.GetComponent<RectTransform>().sizeDelta = new Vector2(250f, showTicks ? 38f : 18f);
+        sliderWrapper.SetLayoutDimensions(250f, showTicks ? 38f : 18f);
+
+        CanvasGroup ticksCg = null;
+        if (showTicks && step > 0f)
+        {
+            GameObject ticksObj = new GameObject("Ticks", typeof(RectTransform), typeof(CanvasGroup));
+            ticksObj.transform.SetParent(sliderWrapper.transform, false);
+            RectTransform ticksRt = ticksObj.GetComponent<RectTransform>();
+            ticksRt.anchorMin = Vector2.zero;
+            ticksRt.anchorMax = Vector2.one;
+            ticksRt.offsetMin = new Vector2(10f, 0f);
+            ticksRt.offsetMax = new Vector2(-10f, 0f);
+            ticksCg = ticksObj.GetComponent<CanvasGroup>();
+
+            int count = Mathf.RoundToInt((max - min) / step);
+            for (int i = 0; i <= count; i++)
+            {
+                float val = min + i * step;
+                float t = (float)i / count;
+
+                bool isMajor = Mathf.Approximately(val, min) || Mathf.Approximately(val, max) || Mathf.Approximately(val % 25f, 0f);
+                float tickH = isMajor ? 7f : 4f;
+                float tickW = isMajor ? 2f : 1.5f;
+                Color tickColor = isMajor ? WardColorPalette.GoldAmber : new Color(0.55f, 0.48f, 0.38f, 0.70f);
+
+                GameObject tickMark = new GameObject($"Tick_{val}", typeof(RectTransform), typeof(Image));
+                tickMark.transform.SetParent(ticksObj.transform, false);
+                RectTransform tmRt = tickMark.GetComponent<RectTransform>();
+                tmRt.anchorMin = new Vector2(t, 0.5f);
+                tmRt.anchorMax = new Vector2(t, 0.5f);
+                tmRt.pivot = new Vector2(0.5f, 1f);
+                tmRt.anchoredPosition = new Vector2(0f, 3.5f);
+                tmRt.sizeDelta = new Vector2(tickW, tickH);
+
+                Image tickImg = tickMark.GetComponent<Image>();
+                tickImg.color = tickColor;
+
+                if (isMajor)
+                {
+                    GameObject labelObj = new GameObject($"TickLabel_{val}", typeof(RectTransform), typeof(Text));
+                    labelObj.transform.SetParent(ticksObj.transform, false);
+                    RectTransform lblRt = labelObj.GetComponent<RectTransform>();
+                    lblRt.anchorMin = new Vector2(t, 0.5f);
+                    lblRt.anchorMax = new Vector2(t, 0.5f);
+                    lblRt.pivot = new Vector2(0.5f, 1f);
+                    lblRt.anchoredPosition = new Vector2(0f, -5f);
+                    lblRt.sizeDelta = new Vector2(28f, 12f);
+
+                    Text lblText = labelObj.GetComponent<Text>();
+                    lblText.font = GUIManager.Instance.AveriaSerifBold;
+                    lblText.fontSize = 9;
+                    lblText.color = WardColorPalette.ValheimBeige;
+                    lblText.alignment = TextAnchor.UpperCenter;
+                    lblText.text = $"{Mathf.RoundToInt(val)}";
+                }
+            }
+        }
+
+        GameObject sliderObj = WardUIExtensions.CreateValheimSlider(sliderWrapper.transform, min, max, initialValue, wholeNumbers, 250f, 18f);
+        RectTransform sRt = sliderObj.GetComponent<RectTransform>();
+        sRt.anchorMin = new Vector2(0f, 0.5f);
+        sRt.anchorMax = new Vector2(1f, 0.5f);
+        sRt.pivot = new Vector2(0.5f, 0.5f);
+        sRt.anchoredPosition = new Vector2(0f, showTicks ? 8f : 0f);
+        sRt.sizeDelta = new Vector2(0f, 18f);
         Slider slider = sliderObj.GetComponent<Slider>();
 
         GameObject readoutObj = new GameObject("Readout", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
         readoutObj.transform.SetParent(controlContainer, false);
-        readoutObj.GetComponent<RectTransform>().sizeDelta = new Vector2(65f, 28f);
-        readoutObj.SetLayoutDimensions(65f, 28f);
+        readoutObj.GetComponent<RectTransform>().sizeDelta = new Vector2(65f, rowHeight);
+        readoutObj.SetLayoutDimensions(65f, rowHeight);
 
         Text readoutText = readoutObj.GetComponent<Text>();
         readoutText.font = GUIManager.Instance.AveriaSerifBold;
@@ -389,18 +472,44 @@ public static class WardUIFactory
             return wholeNumbers ? $"{Mathf.RoundToInt(v)}{unit}" : $"{v:F1}{unit}";
         }
 
-        readoutText.text = FormatValue(initialValue);
+        float SnapValue(float v)
+        {
+            if (step > 0f)
+            {
+                float snapped = Mathf.Round((v - min) / step) * step + min;
+                return Mathf.Clamp(snapped, min, max);
+            }
+            return v;
+        }
+
+        float currentVal = SnapValue(initialValue);
+        readoutText.text = FormatValue(currentVal);
 
         slider.onValueChanged.AddListener(v =>
         {
-            readoutText.text = FormatValue(v);
-            onValueChanged?.Invoke(v);
+            float val = SnapValue(v);
+            if (Mathf.Abs(slider.value - val) > 0.001f)
+            {
+                slider.SetValueWithoutNotify(val);
+            }
+            readoutText.text = FormatValue(val);
+            onValueChanged?.Invoke(val);
         });
 
         setValue = v =>
         {
-            slider.SetValueWithoutNotify(v);
-            readoutText.text = FormatValue(v);
+            float val = SnapValue(v);
+            slider.SetValueWithoutNotify(val);
+            readoutText.text = FormatValue(val);
+        };
+
+        setInteractable = interactable =>
+        {
+            slider.interactable = interactable;
+            if (ticksCg != null)
+            {
+                ticksCg.alpha = interactable ? 1f : 0.4f;
+            }
         };
     }
 
@@ -411,7 +520,7 @@ public static class WardUIFactory
         Color initialBadgeColor, 
         string initialButtonText, 
         Action onButtonClicked, 
-        out Action<string, Color, string> updateVisual)
+        out Action<string, Color, string, bool> updateVisual)
     {
         CreateSettingRow(parent, labelText, out Transform controlContainer);
 
@@ -447,12 +556,13 @@ public static class WardUIFactory
             onButtonClicked?.Invoke();
         });
 
-        updateVisual = (text, color, buttonLabel) =>
+        updateVisual = (text, color, buttonLabel, canPower) =>
         {
             badgeText.text = text;
             badgeText.color = color;
             btnText.text = buttonLabel;
             btnText.color = buttonLabel == "DEACTIVATE" ? WardColorPalette.DangerRed : WardColorPalette.RunicGreen;
+            btnObj.SetActive(canPower);
         };
     }
 
@@ -505,9 +615,9 @@ public static class WardUIFactory
         };
     }
 
-    public static void CreateBadgeRow(Transform parent, string labelText, string initialBadge, Color badgeColor, out Action<string, Color> setBadge)
+    public static GameObject CreateBadgeRow(Transform parent, string labelText, string initialBadge, Color badgeColor, out Action<string, Color> setBadge)
     {
-        CreateSettingRow(parent, labelText, out Transform controlContainer);
+        GameObject rowObj = CreateSettingRow(parent, labelText, out Transform controlContainer);
 
         GameObject badgeObj = new GameObject("Badge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
         badgeObj.transform.SetParent(controlContainer, false);
@@ -526,11 +636,30 @@ public static class WardUIFactory
             badgeText.text = text;
             badgeText.color = color;
         };
+
+        return rowObj;
     }
 
-    public static void CreateInputRow(Transform parent, string labelText, string initialValue, string buttonText, Action<string> onCommit, out Action<string> setValue)
+    public static void CreateInputRow(
+        Transform parent, 
+        string labelText, 
+        string initialValue, 
+        string buttonText, 
+        Action<string> onCommit, 
+        out Action<string, bool> updateVisual)
     {
         CreateSettingRow(parent, labelText, out Transform controlContainer);
+
+        GameObject badgeObj = new GameObject("StaticBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        badgeObj.transform.SetParent(controlContainer, false);
+        badgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(330f, 28f);
+        badgeObj.SetLayoutDimensions(330f, 28f);
+        Text badgeText = badgeObj.GetComponent<Text>();
+        badgeText.text = initialValue;
+        badgeText.font = GUIManager.Instance.AveriaSerifBold;
+        badgeText.fontSize = 13;
+        badgeText.color = WardColorPalette.ValheimBeige;
+        badgeText.alignment = TextAnchor.MiddleRight;
 
         GameObject inputObj = GUIManager.Instance.CreateInputField(
             controlContainer,
@@ -571,6 +700,16 @@ public static class WardUIFactory
             onCommit?.Invoke(input.text);
         });
 
-        setValue = v => input.text = v;
+        updateVisual = (val, canEdit) =>
+        {
+            badgeText.text = val;
+            badgeObj.SetActive(!canEdit);
+            inputObj.SetActive(canEdit);
+            btnObj.SetActive(canEdit);
+            if (canEdit && input.text != val)
+            {
+                input.text = val;
+            }
+        };
     }
 }

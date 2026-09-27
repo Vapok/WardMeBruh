@@ -51,7 +51,7 @@ public class AreaRepairService : MonoBehaviour
             for (int wardIndex = 0; wardIndex < PrivateArea.m_allAreas.Count; wardIndex++)
             {
                 PrivateArea ward = PrivateArea.m_allAreas[wardIndex];
-                if (ward == null || !ward.IsEnabled() || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
+                if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid() || !ward.m_nview.IsOwner())
                     continue;
 
                 ZDO wardZdo = ward.m_nview.GetZDO();

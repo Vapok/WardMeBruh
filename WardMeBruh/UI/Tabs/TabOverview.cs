@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
@@ -12,13 +13,13 @@ public class TabOverview
     private GameObject _root;
     private PrivateArea _ward;
 
-    private Action<string> _setNameInput;
+    private Action<string, bool> _setNameInput;
     private Action<string, Color> _setOwnerBadge;
     private Action<string, Color> _setRoleBadge;
-    private Action<string, Color, string> _setPowerRow;
-    private Action<string, Color, bool> _setWardRoleRow;
-    private Action<float> _setRadiusSlider;
-    private Action<string, Color> _setAreaBadge;
+    private Action<string, Color, string, bool> _setPowerRow;
+    private Transform _grantedContainer;
+    private GameObject _grantedCardRoot;
+    private readonly List<GameObject> _grantedRows = new();
 
     private Action<string, Color> _setWeatherRoofBadge;
     private Action<string, Color> _setRegenBadge;
@@ -56,20 +57,10 @@ public class TabOverview
         WardUIFactory.CreateBadgeRow(card1, "Owner & Creator", "-", WardColorPalette.ValheimBeige, out _setOwnerBadge);
         WardUIFactory.CreateBadgeRow(card1, "Your Clearance Tier", "-", WardColorPalette.GoldAmber, out _setRoleBadge);
         WardUIFactory.CreatePowerRow(card1, "Ward Power State", "...", WardColorPalette.RunicGreen, "TOGGLE", OnTogglePowerClicked, out _setPowerRow);
-        WardUIFactory.CreateRoleRow(card1, "Dome Access Clearance", "[ Role: Guest ]", WardColorPalette.TextMuted, OnCycleWardRoleClicked, out _setWardRoleRow);
 
-        Transform card2 = WardUIFactory.CreateCard(listContainer, "Territorial Domain");
-        WardUIFactory.CreateSliderRow(
-            card2, 
-            "Ward Perimeter Radius", 
-            10f, 
-            (float)ConfigRegistry.MaxWardRadius.Value, 
-            32f, 
-            true, 
-            "m", 
-            OnRadiusChanged, 
-            out _setRadiusSlider);
-        WardUIFactory.CreateBadgeRow(card2, "Protected Land Coverage", "~3,217 m²", WardColorPalette.ValheimBeige, out _setAreaBadge);
+        Transform card2 = WardUIFactory.CreateCard(listContainer, "Granted Role Capabilities");
+        _grantedContainer = card2;
+        _grantedCardRoot = card2.parent.parent.gameObject;
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "Active Sanctuary & Territorial Protections");
         WardUIFactory.CreateBadgeRow(card3, "Weather Proofing (Rain Rot & Ash)", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
@@ -105,7 +96,8 @@ public class TabOverview
 
         string customName = zdo.GetString(WardZdoKeys.CustomName, "Ward Stone");
         _currentEnteredName = customName;
-        _setNameInput?.Invoke(customName);
+        bool canRename = WardRoleManager.CanPerform(zdo, playerId, "core.rename");
+        _setNameInput?.Invoke(customName, canRename);
 
         long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
         string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "Unknown");
@@ -118,67 +110,56 @@ public class TabOverview
         string statusText = isEnabled ? "● ACTIVE" : "○ INACTIVE";
         Color statusColor = isEnabled ? WardColorPalette.RunicGreen : WardColorPalette.DangerRed;
         string btnText = isEnabled ? "DEACTIVATE" : "ACTIVATE";
-        _setPowerRow?.Invoke(statusText, statusColor, btnText);
+        bool canPower = WardRoleManager.CanPerform(zdo, playerId, "core.power");
+        _setPowerRow?.Invoke(statusText, statusColor, btnText, canPower);
 
-        int minRoleInt = zdo.GetInt(WardZdoKeys.WardMinRole, (int)WardRole.Guest);
-        WardRole minRole = (WardRole)minRoleInt;
-        Color minRoleColor = minRole >= WardRole.Manager 
-            ? WardColorPalette.GoldAmber 
-            : (minRole == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        bool canManage = WardPermissions.CanManageWard(zdo, playerId);
-        _setWardRoleRow?.Invoke($"[ Role: {minRole} ]", minRoleColor, canManage);
+        for (int i = 0; i < _grantedRows.Count; i++)
+        {
+            if (_grantedRows[i] != null)
+            {
+                UnityEngine.Object.Destroy(_grantedRows[i]);
+            }
+        }
+        _grantedRows.Clear();
 
-        float currentRadius = zdo.GetFloat(WardZdoKeys.Radius, 32.0f);
-        _setRadiusSlider?.Invoke(currentRadius);
+        List<FeaturePermission> granted = WardRoleManager.GetGrantedPermissions(zdo, playerId);
+        if (_grantedCardRoot != null)
+        {
+            _grantedCardRoot.SetActive(granted.Count > 0);
+        }
 
-        float areaSqMeters = Mathf.PI * currentRadius * currentRadius;
-        _setAreaBadge?.Invoke($"~{Mathf.RoundToInt(areaSqMeters):N0} m²", WardColorPalette.ValheimBeige);
+        for (int i = 0; i < granted.Count; i++)
+        {
+            FeaturePermission perm = granted[i];
+            GameObject row = WardUIFactory.CreateBadgeRow(_grantedContainer, perm.DisplayName, $"✔  {perm.Category}", WardColorPalette.RunicGreen, out _);
+            _grantedRows.Add(row);
+        }
 
-        UpdatePerkBadge(_setWeatherRoofBadge, zdo.GetBool(WardZdoKeys.WeatherRoof, false), (WardRole)zdo.GetInt(WardZdoKeys.WeatherRoofMinRole, 0));
-        UpdatePerkBadge(_setRegenBadge, zdo.GetBool(WardZdoKeys.RegenBoost, true), (WardRole)zdo.GetInt(WardZdoKeys.RegenBoostMinRole, 0));
-        UpdatePerkBadge(_setDeathSkillBadge, zdo.GetBool(WardZdoKeys.DeathSkillShield, true), (WardRole)zdo.GetInt(WardZdoKeys.DeathSkillShieldMinRole, 0));
-        UpdatePerkBadge(_setFoodFreezeBadge, zdo.GetBool(WardZdoKeys.FoodFreeze, true), (WardRole)zdo.GetInt(WardZdoKeys.FoodFreezeMinRole, 0));
+        UpdatePerkBadge(_setWeatherRoofBadge, zdo.GetBool(WardZdoKeys.WeatherRoof, false));
+        UpdatePerkBadge(_setRegenBadge, zdo.GetBool(WardZdoKeys.RegenBoost, true));
+        UpdatePerkBadge(_setDeathSkillBadge, zdo.GetBool(WardZdoKeys.DeathSkillShield, true));
+        UpdatePerkBadge(_setFoodFreezeBadge, zdo.GetBool(WardZdoKeys.FoodFreeze, true));
 
-        UpdatePerkBadge(_setGhostBaseBadge, zdo.GetBool(WardZdoKeys.GhostBase, false), (WardRole)zdo.GetInt(WardZdoKeys.GhostBaseMinRole, 0));
-        UpdatePerkBadge(_setRaidBadge, zdo.GetBool(WardZdoKeys.RaidSuppress, false), (WardRole)zdo.GetInt(WardZdoKeys.RaidSuppressMinRole, 0));
-        UpdatePerkBadge(_setSpawnBadge, zdo.GetBool(WardZdoKeys.SpawnSuppress, false), (WardRole)zdo.GetInt(WardZdoKeys.SpawnSuppressMinRole, 0));
+        UpdatePerkBadge(_setGhostBaseBadge, zdo.GetBool(WardZdoKeys.GhostBase, false));
+        UpdatePerkBadge(_setRaidBadge, zdo.GetBool(WardZdoKeys.RaidSuppress, false));
+        UpdatePerkBadge(_setSpawnBadge, zdo.GetBool(WardZdoKeys.SpawnSuppress, false));
         UpdatePerkBadge(_setTamesBadge, isEnabled);
-        UpdatePerkBadge(_setRepairBadge, zdo.GetBool(WardZdoKeys.RepairEnabled, false), (WardRole)zdo.GetInt(WardZdoKeys.RepairMinRole, 0));
-        UpdatePerkBadge(_setFuelBadge, zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false), (WardRole)zdo.GetInt(WardZdoKeys.AutoFuelMinRole, 0));
-        UpdatePerkBadge(_setDoorBadge, zdo.GetBool(WardZdoKeys.AutoCloseDoors, false), (WardRole)zdo.GetInt(WardZdoKeys.AutoCloseDoorsMinRole, 0));
+        UpdatePerkBadge(_setRepairBadge, zdo.GetBool(WardZdoKeys.RepairEnabled, false));
+        UpdatePerkBadge(_setFuelBadge, zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false));
+        UpdatePerkBadge(_setDoorBadge, zdo.GetBool(WardZdoKeys.AutoCloseDoors, false));
 
         bool maxComfortEnabled = zdo.GetBool(WardZdoKeys.MaxComfort, false);
         if (maxComfortEnabled && isEnabled)
         {
             int comfortLvl = WardComfortService.GetWardComfort(_ward);
-            WardRole comfortMinRole = (WardRole)zdo.GetInt(WardZdoKeys.MaxComfortMinRole, 0);
-            string roleSuffix = comfortMinRole > WardRole.Guest ? $" [{comfortMinRole}]" : string.Empty;
-            _setComfortBadge?.Invoke($"✔  LVL {comfortLvl}{roleSuffix}", WardColorPalette.RunicGreen);
+            _setComfortBadge?.Invoke($"✔  LVL {comfortLvl}", WardColorPalette.RunicGreen);
         }
         else
         {
             UpdatePerkBadge(_setComfortBadge, false);
         }
 
-        UpdatePerkBadge(_setPortalBadge, zdo.GetBool(WardZdoKeys.PortalAccess, false), (WardRole)zdo.GetInt(WardZdoKeys.PortalMinRole, 0));
-    }
-
-    private void OnCycleWardRoleClicked()
-    {
-        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
-            return;
-
-        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        ZDO zdo = _ward.m_nview.GetZDO();
-        if (!WardPermissions.CanManageWard(zdo, playerId))
-            return;
-
-        int currentRoleInt = zdo.GetInt(WardZdoKeys.WardMinRole, (int)WardRole.Guest);
-        WardRole nextRole = (WardRole)(((int)currentRoleInt + 1) % 4);
-
-        zdo.Set(WardZdoKeys.WardMinRole, (int)nextRole);
-        WardNetworkRouter.SendWardRole(zdo.m_uid, (int)nextRole);
-        Refresh();
+        UpdatePerkBadge(_setPortalBadge, zdo.GetBool(WardZdoKeys.PortalAccess, false));
     }
 
     private void OnTogglePowerClicked()
@@ -187,6 +168,10 @@ public class TabOverview
             return;
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        ZDO zdo = _ward.m_nview.GetZDO();
+        if (!WardRoleManager.CanPerform(zdo, playerId, "core.power"))
+            return;
+
         _ward.m_nview.InvokeRPC("ToggleEnabled", playerId);
 
         if (WardMainWindow.Instance != null)
@@ -201,15 +186,14 @@ public class TabOverview
         Refresh();
     }
 
-    private static void UpdatePerkBadge(Action<string, Color> badgeSetter, bool isActive, WardRole minRole = WardRole.Guest)
+    private static void UpdatePerkBadge(Action<string, Color> badgeSetter, bool isActive)
     {
         if (badgeSetter == null)
             return;
 
         if (isActive)
         {
-            string roleSuffix = minRole > WardRole.Guest ? $" [{minRole}]" : string.Empty;
-            badgeSetter($"✔  ACTIVE{roleSuffix}", WardColorPalette.RunicGreen);
+            badgeSetter("✔  ACTIVE", WardColorPalette.RunicGreen);
         }
         else
         {
@@ -222,26 +206,16 @@ public class TabOverview
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
 
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        ZDO zdo = _ward.m_nview.GetZDO();
+        if (!WardRoleManager.CanPerform(zdo, playerId, "core.rename"))
+            return;
+
         string trimmed = (newName ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(trimmed))
             trimmed = "Ward Stone";
 
         _currentEnteredName = trimmed;
-        WardNetworkRouter.SendRenameWard(_ward.m_nview.GetZDO().m_uid, trimmed);
-    }
-
-    private void OnRadiusChanged(float value)
-    {
-        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
-            return;
-
-        _ward.m_nview.GetZDO().Set(WardZdoKeys.Radius, value);
-        if (_ward.m_areaMarker != null)
-        {
-            _ward.m_areaMarker.m_radius = value;
-        }
-
-        float areaSqMeters = Mathf.PI * value * value;
-        _setAreaBadge?.Invoke($"~{Mathf.RoundToInt(areaSqMeters):N0} m²", WardColorPalette.ValheimBeige);
+        WardNetworkRouter.SendRenameWard(zdo.m_uid, trimmed);
     }
 }

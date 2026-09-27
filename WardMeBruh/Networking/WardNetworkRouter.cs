@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
@@ -18,6 +19,9 @@ public static class WardNetworkRouter
     private const string RpcSetPortalRole = "WMB_SetPortalRole";
     private const string RpcSetWardRole = "WMB_SetWardRole";
     private const string RpcSetFeatureRole = "WMB_SetFeatureRole";
+    private const string RpcSetRoleDefinitions = "WMB_SetRoleDefinitions";
+    private const string RpcSyncAllPlayers = "WMB_SyncAllPlayers";
+    private const string RpcSyncSinglePlayer = "WMB_SyncSinglePlayer";
 
     public static void Register()
     {
@@ -34,6 +38,9 @@ public static class WardNetworkRouter
         ZRoutedRpc.instance.Register(RpcSetPortalRole, new Action<long, ZPackage>(RPC_SetPortalRole));
         ZRoutedRpc.instance.Register(RpcSetWardRole, new Action<long, ZPackage>(RPC_SetWardRole));
         ZRoutedRpc.instance.Register(RpcSetFeatureRole, new Action<long, ZPackage>(RPC_SetFeatureRole));
+        ZRoutedRpc.instance.Register(RpcSetRoleDefinitions, new Action<long, ZPackage>(RPC_SetRoleDefinitions));
+        ZRoutedRpc.instance.Register(RpcSyncAllPlayers, new Action<long, ZPackage>(RPC_SyncAllPlayers));
+        ZRoutedRpc.instance.Register(RpcSyncSinglePlayer, new Action<long, ZPackage>(RPC_SyncSinglePlayer));
     }
 
     public static void RequestRegistrySync()
@@ -261,6 +268,8 @@ public static class WardNetworkRouter
         WardMeBruh.Log.Debug($"[Network] Received ward registry sync request from peer {sender}");
         ZPackage pkg = WardRegistryManager.Instance.Pack();
         ZRoutedRpc.instance.InvokeRoutedRPC(sender, RpcSyncRegistry, pkg);
+
+        SendKnownPlayers(sender);
     }
 
     private static void RPC_TransferOwnership(long sender, ZPackage pkg)
@@ -461,5 +470,111 @@ public static class WardNetworkRouter
 
         wardZdo.Set(featureRoleKey, minRole);
         WardMeBruh.Log.Debug($"[ZDO] Set ward {wardId} Key {featureRoleKey} MinRole to {(WardRole)minRole}");
+    }
+
+    public static void SendRoleDefinitions(ZDOID wardId, string serializedRoles)
+    {
+        if (ZRoutedRpc.instance == null)
+            return;
+
+        WardMeBruh.Log.Debug($"[Network] Transmitting role definitions: Ward {wardId}");
+        ZPackage pkg = new();
+        pkg.Write(wardId);
+        pkg.Write(serializedRoles ?? string.Empty);
+
+        long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
+        ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcSetRoleDefinitions, pkg);
+
+        if (ZDOMan.instance != null)
+        {
+            ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+            if (wardZdo != null)
+            {
+                wardZdo.Set(WardZdoKeys.RoleDefinitions, serializedRoles ?? string.Empty);
+            }
+        }
+    }
+
+    private static void RPC_SetRoleDefinitions(long sender, ZPackage pkg)
+    {
+        if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null)
+            return;
+
+        if (pkg == null)
+            return;
+
+        ZDOID wardId = pkg.ReadZDOID();
+        string serializedRoles = pkg.ReadString();
+
+        WardMeBruh.Log.Debug($"[Network] Received role definitions update for Ward {wardId} from sender {sender}");
+
+        ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+        if (wardZdo == null)
+        {
+            WardMeBruh.Log.Debug($"[Network] Role definitions update failed: Ward ZDO {wardId} not found");
+            return;
+        }
+
+        wardZdo.Set(WardZdoKeys.RoleDefinitions, serializedRoles);
+        WardMeBruh.Log.Debug($"[ZDO] Updated Ward {wardId} RoleDefinitions");
+    }
+
+    public static void SendKnownPlayers(long targetPeerId)
+    {
+        if (ZRoutedRpc.instance == null || ZNet.instance == null || !ZNet.instance.IsServer())
+            return;
+
+        Dictionary<long, string> players = PlayerRegistryService.GetAllRegisteredPlayers();
+        ZPackage pkg = new();
+        pkg.Write(players.Count);
+        foreach (KeyValuePair<long, string> kvp in players)
+        {
+            pkg.Write(kvp.Key);
+            pkg.Write(kvp.Value ?? string.Empty);
+        }
+
+        ZRoutedRpc.instance.InvokeRoutedRPC(targetPeerId, RpcSyncAllPlayers, pkg);
+    }
+
+    public static void BroadcastPlayer(long playerId, string playerName)
+    {
+        if (ZRoutedRpc.instance == null || ZNet.instance == null || !ZNet.instance.IsServer())
+            return;
+
+        ZPackage pkg = new();
+        pkg.Write(playerId);
+        pkg.Write(playerName ?? string.Empty);
+
+        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, RpcSyncSinglePlayer, pkg);
+    }
+
+    private static void RPC_SyncAllPlayers(long sender, ZPackage pkg)
+    {
+        if (pkg == null)
+            return;
+
+        int count = pkg.ReadInt();
+        for (int i = 0; i < count; i++)
+        {
+            long id = pkg.ReadLong();
+            string name = pkg.ReadString();
+            if (id != 0L && !string.IsNullOrEmpty(name))
+            {
+                PlayerRegistryService.RegisterAndPersistPlayer(id, name, false);
+            }
+        }
+    }
+
+    private static void RPC_SyncSinglePlayer(long sender, ZPackage pkg)
+    {
+        if (pkg == null)
+            return;
+
+        long id = pkg.ReadLong();
+        string name = pkg.ReadString();
+        if (id != 0L && !string.IsNullOrEmpty(name))
+        {
+            PlayerRegistryService.RegisterAndPersistPlayer(id, name, false);
+        }
     }
 }

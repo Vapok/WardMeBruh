@@ -33,7 +33,7 @@ internal static class Patch_WardStatusEffect
             return;
 
         PrivateArea ward = WardQueryService.GetCoveringWard(__instance.transform.position);
-        if (ward != null && ward.IsEnabled() && WardPermissions.HasWardAccess(ward, __instance.GetPlayerID()))
+        if (ward != null && ward.m_nview != null && ward.m_nview.IsValid())
         {
             if (!__instance.GetSEMan().HaveStatusEffect(SE_WardTerritory.EffectHash))
             {

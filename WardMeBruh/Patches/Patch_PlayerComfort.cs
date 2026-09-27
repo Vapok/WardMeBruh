@@ -20,7 +20,7 @@ internal static class Patch_PlayerComfort
             return;
 
         PrivateArea ward = WardQueryService.GetCoveringWard(__instance.transform.position);
-        if (ward == null || !ward.IsEnabled() || !WardPermissions.HasWardAccess(ward, __instance.GetPlayerID()))
+        if (ward == null || !ward.IsEnabled() || !WardPermissions.HasBenefactorAccess(ward, __instance.GetPlayerID()))
             return;
 
         ZDO wardZdo = (ward.m_nview != null && ward.m_nview.IsValid()) ? ward.m_nview.GetZDO() : null;

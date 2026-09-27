@@ -4,6 +4,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.Services;
 using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
@@ -55,12 +56,14 @@ internal static class Patch_PlayerInput
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return;
 
+        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(ward);
         ZDO zdo = ward.m_nview.GetZDO();
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
         long playerId = __instance.GetPlayerID();
 
-        if (WardPermissions.CanManageWard(zdo, playerId))
+        if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
-            Patch_PrivateArea.RequestOpenWardGui(ward);
+            Patch_PrivateArea.RequestOpenWardGui(effectiveWard);
         }
     }
 

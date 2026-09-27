@@ -40,7 +40,7 @@ public class SE_WardTerritory : StatusEffect
 
         PrivateArea ward = WardQueryService.GetCoveringWard(m_character.transform.position);
         long playerId = (m_character is Player player) ? player.GetPlayerID() : 0L;
-        if (ward == null || !ward.IsEnabled() || ward.m_nview == null || !ward.m_nview.IsValid() || !WardPermissions.HasWardAccess(ward, playerId))
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
         {
             if (m_character.GetSEMan() != null)
             {
@@ -50,14 +50,15 @@ public class SE_WardTerritory : StatusEffect
         }
 
         ZDO zdo = ward.m_nview.GetZDO();
-        _baseName = zdo.GetString(WardZdoKeys.CustomName, ward.m_name);
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+        _baseName = effectiveZdo.GetString(WardZdoKeys.CustomName, ward.m_name);
         if (string.IsNullOrEmpty(_baseName))
         {
             _baseName = "Ward Stone";
         }
 
-        _currentRole = WardPermissions.GetPlayerRole(zdo, playerId);
-        _creatorName = zdo.GetString(ZDOVars.s_creatorName, "Unknown");
+        _currentRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
+        _creatorName = effectiveZdo.GetString(ZDOVars.s_creatorName, "Unknown");
         _wardRadius = WardQueryService.GetWardRadius(ward);
 
         m_name = _baseName;
@@ -80,7 +81,15 @@ public class SE_WardTerritory : StatusEffect
         sb.AppendLine($"<color=#38bdf8>Clearance:</color> {_currentRole}");
         sb.AppendLine($"<color=#9ca3af>Owner:</color> {_creatorName}");
         sb.AppendLine($"<color=#9ca3af>Perimeter:</color> {_wardRadius:F0}m");
-        sb.AppendLine("<color=#4ade80>Protected by Ward Shield</color>");
+        PrivateArea ward = (m_character != null) ? WardQueryService.GetCoveringWard(m_character.transform.position) : null;
+        if (ward != null && ward.IsEnabled())
+        {
+            sb.AppendLine("<color=#4ade80>Protected by Ward Shield</color>");
+        }
+        else
+        {
+            sb.AppendLine("<color=#ef4444>Ward Shield Inactive</color>");
+        }
         return sb.ToString();
     }
 }

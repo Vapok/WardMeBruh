@@ -55,16 +55,9 @@ public class TabRoles
 
         ZDO zdo = _ward.m_nview.GetZDO();
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        bool canManage = WardPermissions.CanManageWard(zdo, playerId);
+        bool canManage = WardRoleManager.CanPerform(zdo, playerId, "personnel.roster");
         bool isOwner = WardPermissions.GetPlayerRole(zdo, playerId) == WardRole.Owner;
 
-        Transform hierarchyCard = WardUIFactory.CreateCard(_listContainer, "Clearance Tier Privileges");
-        _rosterCards.Add(hierarchyCard.parent.parent.gameObject);
-
-        WardUIFactory.CreateBadgeRow(hierarchyCard, "Tier 3: Owner", "Master Control, Ownership Transfer, Role Grants", WardColorPalette.GoldAmber, out _);
-        WardUIFactory.CreateBadgeRow(hierarchyCard, "Tier 2: Manager", "Ward Configuration, Roster Management, Door & Chest Locks", WardColorPalette.GoldAmber, out _);
-        WardUIFactory.CreateBadgeRow(hierarchyCard, "Tier 1: Resident", "Access Doors & Chests, Fast-Travel, Harvesting Crops", WardColorPalette.IceBlue, out _);
-        WardUIFactory.CreateBadgeRow(hierarchyCard, "Tier 0: Guest", "Passive Sanctuary, No Storage or Gate Access", WardColorPalette.TextMuted, out _);
 
         string managersData = zdo.GetString(WardZdoKeys.RolesManagers, string.Empty);
         WardRoster managersRoster = WardRoster.Deserialize(managersData);

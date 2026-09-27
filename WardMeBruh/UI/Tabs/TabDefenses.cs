@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
-using WardMeBruh.Networking;
+using WardMeBruh.Services;
 
 namespace WardMeBruh.UI.Tabs;
 
@@ -11,18 +11,21 @@ public class TabDefenses
     private GameObject _root;
     private PrivateArea _ward;
 
+    private Action<float> _setRadiusSlider;
+    private Action<bool> _setRadiusSliderInteractable;
+    private Action<string, Color> _setAreaBadge;
+
     private Action<float> _setPushbackSlider;
     private Action<float> _setShockCreatureSlider;
     private Action<float> _setShockPlayerSlider;
 
-    private Action<bool, WardRole, bool> _setGhostBase;
-    private Action<bool, WardRole, bool> _setRaidSuppress;
-    private Action<bool, WardRole, bool> _setSpawnSuppress;
-    private Action<bool, WardRole, bool> _setMaxComfort;
-    private Action<bool, WardRole, bool> _setPortalAccess;
-    private Action<bool, WardRole, bool> _setRegenBoost;
-    private Action<bool, WardRole, bool> _setDeathSkill;
-    private Action<bool, WardRole, bool> _setFoodFreeze;
+    private Action<bool> _setGhostBase;
+    private Action<bool> _setRaidSuppress;
+    private Action<bool> _setSpawnSuppress;
+    private Action<bool> _setMaxComfort;
+    private Action<bool> _setRegenBoost;
+    private Action<bool> _setDeathSkill;
+    private Action<bool> _setFoodFreeze;
 
     private Action<bool> _setShowDomeToggle;
     private Action<bool> _setShowRingToggle;
@@ -41,6 +44,28 @@ public class TabDefenses
 
         WardUIFactory.CreateScrollArea(_root.transform, out Transform listContainer);
 
+        float maxRadius = 100f;
+        if (ConfigRegistry.MaxWardRadius != null && ConfigRegistry.MaxWardRadius.Value > 10f)
+        {
+            maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
+        }
+
+        Transform cardDomain = WardUIFactory.CreateCard(listContainer, "Territorial Domain & Coverage");
+        WardUIFactory.CreateSliderRow(
+            cardDomain, 
+            "Perimeter Dome Radius", 
+            10f, 
+            maxRadius, 
+            30f, 
+            true, 
+            "m", 
+            OnRadiusChanged, 
+            out _setRadiusSlider,
+            out _setRadiusSliderInteractable,
+            5f,
+            true);
+        WardUIFactory.CreateBadgeRow(cardDomain, "Protected Land Coverage", "~2,827 m²", WardColorPalette.ValheimBeige, out _setAreaBadge);
+
         Transform card1 = WardUIFactory.CreateCard(listContainer, "Intruder Repulsion & Electrical Shock");
         WardUIFactory.CreateSliderRow(
             card1, 
@@ -50,7 +75,7 @@ public class TabDefenses
             0f, 
             true, 
             " N", 
-            v => SetZdoFloat(WardZdoKeys.PushbackForce, v), 
+            v => SetZdoFloat(WardZdoKeys.PushbackForce, v, "defenses.combat"), 
             out _setPushbackSlider);
 
         WardUIFactory.CreateSliderRow(
@@ -61,7 +86,7 @@ public class TabDefenses
             0f, 
             true, 
             " dmg", 
-            v => SetZdoFloat(WardZdoKeys.ShockCreatureDmg, v), 
+            v => SetZdoFloat(WardZdoKeys.ShockCreatureDmg, v, "defenses.combat"), 
             out _setShockCreatureSlider);
 
         WardUIFactory.CreateSliderRow(
@@ -72,81 +97,58 @@ public class TabDefenses
             0f, 
             true, 
             " dmg", 
-            v => SetZdoFloat(WardZdoKeys.ShockPlayerDmg, v), 
+            v => SetZdoFloat(WardZdoKeys.ShockPlayerDmg, v, "defenses.combat"), 
             out _setShockPlayerSlider);
 
         Transform card2 = WardUIFactory.CreateCard(listContainer, "Base Camouflage & Territory Sanctuary");
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card2, 
             "Ghost Base (Monster Camouflage)", 
             false, 
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.GhostBase, v), 
-            r => SetFeatureRole(WardZdoKeys.GhostBaseMinRole, r),
+            v => SetZdoBool(WardZdoKeys.GhostBase, v, "defenses.camouflage"), 
             out _setGhostBase);
 
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card2, 
             "Raid Event Suppression", 
             false, 
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.RaidSuppress, v), 
-            r => SetFeatureRole(WardZdoKeys.RaidSuppressMinRole, r),
+            v => SetZdoBool(WardZdoKeys.RaidSuppress, v, "defenses.camouflage"), 
             out _setRaidSuppress);
 
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card2, 
             "Monster Spawn Suppression", 
             false, 
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.SpawnSuppress, v), 
-            r => SetFeatureRole(WardZdoKeys.SpawnSuppressMinRole, r),
+            v => SetZdoBool(WardZdoKeys.SpawnSuppress, v, "defenses.camouflage"), 
             out _setSpawnSuppress);
 
-        WardUIFactory.CreateFeatureToggleRow(
-            card2, 
+        Transform card3 = WardUIFactory.CreateCard(listContainer, "Player Sanctuary & Vitality Protections");
+        WardUIFactory.CreateToggleRow(
+            card3, 
             "Territory Max Comfort Aura", 
             false, 
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.MaxComfort, v), 
-            r => SetFeatureRole(WardZdoKeys.MaxComfortMinRole, r),
+            v => SetZdoBool(WardZdoKeys.MaxComfort, v, "upkeep.perks"), 
             out _setMaxComfort);
 
-        WardUIFactory.CreateFeatureToggleRow(
-            card2, 
-            "Portal Access Control", 
-            false, 
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.PortalAccess, v), 
-            r => SetFeatureRole(WardZdoKeys.PortalMinRole, r),
-            out _setPortalAccess);
-
-        Transform card3 = WardUIFactory.CreateCard(listContainer, "Player Sanctuary & Vitality Protections");
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card3,
             "Sanctuary Vitality Boost (50% Regen)",
             true,
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.RegenBoost, v),
-            r => SetFeatureRole(WardZdoKeys.RegenBoostMinRole, r),
+            v => SetZdoBool(WardZdoKeys.RegenBoost, v, "upkeep.perks"),
             out _setRegenBoost);
 
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card3,
             "Death Skill Loss Protection",
             true,
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.DeathSkillShield, v),
-            r => SetFeatureRole(WardZdoKeys.DeathSkillShieldMinRole, r),
+            v => SetZdoBool(WardZdoKeys.DeathSkillShield, v, "upkeep.perks"),
             out _setDeathSkill);
 
-        WardUIFactory.CreateFeatureToggleRow(
+        WardUIFactory.CreateToggleRow(
             card3,
             "Food Duration Freeze",
             true,
-            WardRole.Guest,
-            v => SetZdoBool(WardZdoKeys.FoodFreeze, v),
-            r => SetFeatureRole(WardZdoKeys.FoodFreezeMinRole, r),
+            v => SetZdoBool(WardZdoKeys.FoodFreeze, v, "upkeep.perks"),
             out _setFoodFreeze);
 
         Transform card4 = WardUIFactory.CreateCard(listContainer, "Shield Visuals & Property Boundary");
@@ -154,14 +156,14 @@ public class TabDefenses
             card4,
             "Show 3D Forcefield Dome",
             true,
-            v => SetZdoBool(WardZdoKeys.ShowShieldDome, v),
+            v => SetZdoBool(WardZdoKeys.ShowShieldDome, v, "defenses.combat"),
             out _setShowDomeToggle);
 
         WardUIFactory.CreateToggleRow(
             card4,
             "Show Ground Perimeter Ring",
             true,
-            v => SetZdoBool(WardZdoKeys.ShowPerimeterRing, v),
+            v => SetZdoBool(WardZdoKeys.ShowPerimeterRing, v, "defenses.combat"),
             out _setShowRingToggle);
     }
 
@@ -178,7 +180,25 @@ public class TabDefenses
 
         ZDO zdo = _ward.m_nview.GetZDO();
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        bool canManage = WardPermissions.CanManageWard(zdo, playerId);
+        bool canAdjustRadius = WardRoleManager.CanPerform(zdo, playerId, "defenses.dome_size");
+
+        float maxRadius = 100f;
+        if (ConfigRegistry.MaxWardRadius != null && ConfigRegistry.MaxWardRadius.Value > 10f)
+        {
+            maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
+        }
+
+        float currentRadius = zdo.GetFloat(WardZdoKeys.Radius, 30.0f);
+        if (currentRadius > maxRadius)
+        {
+            currentRadius = maxRadius;
+            zdo.Set(WardZdoKeys.Radius, currentRadius);
+        }
+        _setRadiusSlider?.Invoke(currentRadius);
+        _setRadiusSliderInteractable?.Invoke(canAdjustRadius);
+
+        float areaSqMeters = Mathf.PI * currentRadius * currentRadius;
+        _setAreaBadge?.Invoke($"~{Mathf.RoundToInt(areaSqMeters):N0} m²", WardColorPalette.ValheimBeige);
 
         float push = zdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
         _setPushbackSlider?.Invoke(push);
@@ -189,43 +209,72 @@ public class TabDefenses
         float shockP = zdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
         _setShockPlayerSlider?.Invoke(shockP);
 
-        _setGhostBase?.Invoke(zdo.GetBool(WardZdoKeys.GhostBase, false), (WardRole)zdo.GetInt(WardZdoKeys.GhostBaseMinRole, 0), canManage);
-        _setRaidSuppress?.Invoke(zdo.GetBool(WardZdoKeys.RaidSuppress, false), (WardRole)zdo.GetInt(WardZdoKeys.RaidSuppressMinRole, 0), canManage);
-        _setSpawnSuppress?.Invoke(zdo.GetBool(WardZdoKeys.SpawnSuppress, false), (WardRole)zdo.GetInt(WardZdoKeys.SpawnSuppressMinRole, 0), canManage);
-        _setMaxComfort?.Invoke(zdo.GetBool(WardZdoKeys.MaxComfort, false), (WardRole)zdo.GetInt(WardZdoKeys.MaxComfortMinRole, 0), canManage);
-        _setPortalAccess?.Invoke(zdo.GetBool(WardZdoKeys.PortalAccess, false), (WardRole)zdo.GetInt(WardZdoKeys.PortalMinRole, 0), canManage);
+        _setGhostBase?.Invoke(zdo.GetBool(WardZdoKeys.GhostBase, false));
+        _setRaidSuppress?.Invoke(zdo.GetBool(WardZdoKeys.RaidSuppress, false));
+        _setSpawnSuppress?.Invoke(zdo.GetBool(WardZdoKeys.SpawnSuppress, false));
 
-        _setRegenBoost?.Invoke(zdo.GetBool(WardZdoKeys.RegenBoost, true), (WardRole)zdo.GetInt(WardZdoKeys.RegenBoostMinRole, 0), canManage);
-        _setDeathSkill?.Invoke(zdo.GetBool(WardZdoKeys.DeathSkillShield, true), (WardRole)zdo.GetInt(WardZdoKeys.DeathSkillShieldMinRole, 0), canManage);
-        _setFoodFreeze?.Invoke(zdo.GetBool(WardZdoKeys.FoodFreeze, true), (WardRole)zdo.GetInt(WardZdoKeys.FoodFreezeMinRole, 0), canManage);
+        _setMaxComfort?.Invoke(zdo.GetBool(WardZdoKeys.MaxComfort, false));
+        _setRegenBoost?.Invoke(zdo.GetBool(WardZdoKeys.RegenBoost, true));
+        _setDeathSkill?.Invoke(zdo.GetBool(WardZdoKeys.DeathSkillShield, true));
+        _setFoodFreeze?.Invoke(zdo.GetBool(WardZdoKeys.FoodFreeze, true));
 
         _setShowDomeToggle?.Invoke(zdo.GetBool(WardZdoKeys.ShowShieldDome, true));
         _setShowRingToggle?.Invoke(zdo.GetBool(WardZdoKeys.ShowPerimeterRing, true));
     }
 
-    private void SetFeatureRole(int roleKey, WardRole role)
+    private void SetZdoBool(int key, bool val, string permissionId)
     {
         if (_ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
         {
+            long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
             ZDO zdo = _ward.m_nview.GetZDO();
-            zdo.Set(roleKey, (int)role);
-            WardNetworkRouter.SendFeatureRole(zdo.m_uid, roleKey, (int)role);
+            if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
+            {
+                zdo.Set(key, val);
+                Refresh();
+            }
+            else
+            {
+                Refresh();
+            }
         }
     }
 
-    private void SetZdoBool(int key, bool val)
+    private void SetZdoFloat(int key, float val, string permissionId)
     {
         if (_ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
         {
-            _ward.m_nview.GetZDO().Set(key, val);
+            long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+            ZDO zdo = _ward.m_nview.GetZDO();
+            if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
+            {
+                zdo.Set(key, val);
+            }
+            else
+            {
+                Refresh();
+            }
         }
     }
 
-    private void SetZdoFloat(int key, float val)
+    private void OnRadiusChanged(float value)
     {
-        if (_ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
+        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
+            return;
+
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        ZDO zdo = _ward.m_nview.GetZDO();
+        if (!WardRoleManager.CanPerform(zdo, playerId, "defenses.dome_size"))
+            return;
+
+        float clampedValue = Mathf.Clamp(value, 10f, 100f);
+        zdo.Set(WardZdoKeys.Radius, clampedValue);
+        if (_ward.m_areaMarker != null)
         {
-            _ward.m_nview.GetZDO().Set(key, val);
+            _ward.m_areaMarker.m_radius = clampedValue;
         }
+
+        float areaSqMeters = Mathf.PI * clampedValue * clampedValue;
+        _setAreaBadge?.Invoke($"~{Mathf.RoundToInt(areaSqMeters):N0} m²", WardColorPalette.ValheimBeige);
     }
 }

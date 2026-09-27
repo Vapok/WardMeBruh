@@ -7,6 +7,59 @@ namespace WardMeBruh.Services;
 
 public static class WardQueryService
 {
+    public static ZDO GetEffectiveWardZdo(ZDO zdo)
+    {
+        if (zdo == null || !zdo.IsValid())
+            return null;
+
+        ZDO current = zdo;
+        int depth = 0;
+        while (depth < 10)
+        {
+            ZDOID parentId = current.GetZDOID(WardZdoKeys.ParentWard);
+            if (parentId == ZDOID.None || parentId == current.m_uid)
+                break;
+
+            ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+            if (parentZdo == null || !parentZdo.IsValid())
+                break;
+
+            current = parentZdo;
+            depth++;
+        }
+
+        return current;
+    }
+
+    public static PrivateArea GetEffectiveWard(PrivateArea ward)
+    {
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+            return ward;
+
+        ZDO zdo = ward.m_nview.GetZDO();
+        if (zdo == null || !zdo.IsValid())
+            return ward;
+
+        ZDO effectiveZdo = GetEffectiveWardZdo(zdo);
+        if (effectiveZdo == null || effectiveZdo.m_uid == zdo.m_uid)
+            return ward;
+
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area != null && area.m_nview != null && area.m_nview.IsValid())
+                {
+                    if (area.m_nview.GetZDO().m_uid == effectiveZdo.m_uid)
+                        return area;
+                }
+            }
+        }
+
+        return ward;
+    }
+
     public static PrivateArea GetCoveringWard(Vector3 point, float radius = 0f)
     {
         if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
@@ -19,11 +72,11 @@ public static class WardQueryService
         for (int i = 0; i < allAreas.Count; i++)
         {
             PrivateArea area = allAreas[i];
-            if (area == null || !area.IsEnabled())
+            if (area == null)
                 continue;
 
             if (IsInsideWard(area, point, radius))
-                return area;
+                return GetEffectiveWard(area);
         }
 
         return null;
@@ -32,10 +85,42 @@ public static class WardQueryService
     public static ZDO GetCoveringWardZdo(Vector3 point, float radius = 0f)
     {
         PrivateArea area = GetCoveringWard(point, radius);
-        if (area == null || area.m_nview == null || !area.m_nview.IsValid())
-            return null;
+        if (area != null && area.m_nview != null && area.m_nview.IsValid())
+            return GetEffectiveWardZdo(area.m_nview.GetZDO());
 
-        return area.m_nview.GetZDO();
+        KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
+        if (known != null && ZDOMan.instance != null)
+        {
+            ZDO zdo = ZDOMan.instance.GetZDO(known.Id);
+            if (zdo != null && zdo.IsValid())
+                return GetEffectiveWardZdo(zdo);
+        }
+
+        return null;
+    }
+
+    public static bool IsCoveredByWardOrExtensions(ZDO parentWardZdo, Vector3 point)
+    {
+        if (parentWardZdo == null || !parentWardZdo.IsValid())
+            return false;
+
+        ZDO effectiveZdo = GetEffectiveWardZdo(parentWardZdo);
+        if (effectiveZdo == null || !effectiveZdo.IsValid())
+            return false;
+
+        float parentRadius = Mathf.Clamp(effectiveZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
+        if (Utils.DistanceXZ(effectiveZdo.GetPosition(), point) <= parentRadius)
+            return true;
+
+        List<KnownExtensionWard> extensions = WardRegistryManager.Instance.GetExtensionsForParent(effectiveZdo.m_uid);
+        for (int i = 0; i < extensions.Count; i++)
+        {
+            KnownExtensionWard ext = extensions[i];
+            if (Utils.DistanceXZ(ext.Position, point) <= ext.Radius)
+                return true;
+        }
+
+        return false;
     }
 
     public static bool IsInsideWard(PrivateArea area, Vector3 point, float radius = 0f)
@@ -72,7 +157,7 @@ public static class WardQueryService
         if (zdo == null)
             return 32.0f;
 
-        return zdo.GetFloat(WardZdoKeys.Radius, 32.0f);
+        return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
     }
 
     public static bool HasFeatureEnabled(Vector3 point, int featureKey, long playerId = 0L)
@@ -82,6 +167,9 @@ public static class WardQueryService
 
         ZDO wardZdo = GetCoveringWardZdo(point);
         if (wardZdo == null)
+            return false;
+
+        if (!wardZdo.GetBool(ZDOVars.s_enabled, true))
             return false;
 
         if (!wardZdo.GetBool(featureKey, false))

@@ -8,6 +8,7 @@ using JetBrains.Annotations;
 using Jotunn.Managers;
 using WardMeBruh.Configuration;
 using WardMeBruh.Logging;
+using WardMeBruh.Services;
 using Vapok.Common.Abstractions;
 using Vapok.Common.Managers;
 using Vapok.Common.Managers.Configuration;
@@ -48,6 +49,8 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
         _log = new DeduplicatingLog(baseLog);
 
         Initializer.LoadManagers(localization);
+
+        WardRoleManager.Initialize();
 
         _config = new ConfigRegistry(_instance);
 

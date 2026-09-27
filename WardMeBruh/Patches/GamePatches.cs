@@ -9,6 +9,11 @@ internal static class GameStartPatch
 {
     private static void Postfix()
     {
+        string worldName = ZNet.instance != null && !string.IsNullOrEmpty(ZNet.instance.GetWorldName())
+            ? ZNet.instance.GetWorldName()
+            : "default";
+        PlayerRegistryService.LoadWorld(worldName);
+
         WardNetworkRouter.Register();
 
         _ = AreaRepairService.Instance;

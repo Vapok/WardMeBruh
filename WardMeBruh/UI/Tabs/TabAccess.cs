@@ -54,7 +54,9 @@ public class TabAccess
         Vector3 wardPos = _ward.transform.position;
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         ZDO wardZdo = _ward.m_nview.GetZDO();
-        bool canManage = WardPermissions.CanManageWard(wardZdo, playerId);
+        bool canManageChests = WardRoleManager.CanPerform(wardZdo, playerId, "access.chests");
+        bool canManageDoors = WardRoleManager.CanPerform(wardZdo, playerId, "access.doors");
+        bool canManagePortals = WardRoleManager.CanPerform(wardZdo, playerId, "access.portals");
         bool portalAccessEnabled = wardZdo.GetBool(WardZdoKeys.PortalAccess, false);
 
         List<Container> allContainers = Patch_Container.AllContainers;
@@ -65,7 +67,7 @@ public class TabAccess
             if (c == null || c.m_nview == null || !c.m_nview.IsValid())
                 continue;
 
-            if (Utils.DistanceXZ(wardPos, c.transform.position) <= radius)
+            if (WardQueryService.IsCoveredByWardOrExtensions(wardZdo, c.transform.position))
             {
                 wardContainers.Add(c);
             }
@@ -79,7 +81,7 @@ public class TabAccess
             if (d == null || d.m_nview == null || !d.m_nview.IsValid())
                 continue;
 
-            if (Utils.DistanceXZ(wardPos, d.transform.position) <= radius)
+            if (WardQueryService.IsCoveredByWardOrExtensions(wardZdo, d.transform.position))
             {
                 wardDoors.Add(d);
             }
@@ -93,7 +95,7 @@ public class TabAccess
             if (p == null || p.m_nview == null || !p.m_nview.IsValid())
                 continue;
 
-            if (Utils.DistanceXZ(wardPos, p.transform.position) <= radius)
+            if (WardQueryService.IsCoveredByWardOrExtensions(wardZdo, p.transform.position))
             {
                 wardPortals.Add(p);
             }
@@ -118,7 +120,7 @@ public class TabAccess
         {
             for (int i = 0; i < wardContainers.Count; i++)
             {
-                CreateContainerRow(containerCard, wardContainers[i], canManage);
+                CreateContainerRow(containerCard, wardContainers[i], canManageChests);
             }
         }
 
@@ -133,7 +135,7 @@ public class TabAccess
         {
             for (int i = 0; i < wardDoors.Count; i++)
             {
-                CreateDoorRow(doorCard, wardDoors[i], canManage);
+                CreateDoorRow(doorCard, wardDoors[i], canManageDoors);
             }
         }
 
@@ -146,7 +148,7 @@ public class TabAccess
             portalAccessEnabled,
             val =>
             {
-                if (canManage && _ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
+                if (canManagePortals && _ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
                 {
                     _ward.m_nview.GetZDO().Set(WardZdoKeys.PortalAccess, val);
                     Refresh();
@@ -164,7 +166,7 @@ public class TabAccess
             {
                 for (int i = 0; i < wardPortals.Count; i++)
                 {
-                    CreatePortalRow(portalCard, wardPortals[i], canManage);
+                    CreatePortalRow(portalCard, wardPortals[i], canManagePortals);
                 }
             }
         }

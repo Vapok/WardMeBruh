@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Jotunn.Managers;
 using WardMeBruh.Configuration;
 using WardMeBruh.Networking;
+using WardMeBruh.Services;
 
 namespace WardMeBruh.Models;
 
@@ -21,6 +22,10 @@ public static class WardPermissions
     public static WardRole GetPlayerRole(ZDO wardZdo, long playerId)
     {
         if (wardZdo == null || playerId == 0L)
+            return WardRole.Guest;
+
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
             return WardRole.Guest;
 
         if (IsAdmin(playerId))
@@ -73,6 +78,10 @@ public static class WardPermissions
         if (wardZdo == null)
             return WardRole.Guest;
 
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
+            return WardRole.Guest;
+
         int minRoleInt = wardZdo.GetInt(WardZdoKeys.WardMinRole, (int)WardRole.Guest);
         return (WardRole)minRoleInt;
     }
@@ -82,8 +91,7 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
-        WardRole minRole = GetWardMinRole(wardZdo);
-        return HasRequiredRole(wardZdo, playerId, minRole);
+        return WardRoleManager.CanPerform(wardZdo, playerId, "core.dome_access");
     }
 
     public static bool HasWardAccess(PrivateArea ward, long playerId)
@@ -92,6 +100,70 @@ public static class WardPermissions
             return true;
 
         return HasWardAccess(ward.m_nview.GetZDO(), playerId);
+    }
+
+    public static bool HasBenefactorAccess(ZDO wardZdo, long playerId)
+    {
+        if (wardZdo == null)
+            return true;
+
+        return WardRoleManager.CanPerform(wardZdo, playerId, "core.benefits");
+    }
+
+    public static bool HasBenefactorAccess(PrivateArea ward, long playerId)
+    {
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+            return true;
+
+        return HasBenefactorAccess(ward.m_nview.GetZDO(), playerId);
+    }
+
+    public static bool CanBuild(ZDO wardZdo, long playerId)
+    {
+        if (wardZdo == null)
+            return true;
+
+        return WardRoleManager.CanPerform(wardZdo, playerId, "core.building");
+    }
+
+    public static bool CanBuild(PrivateArea ward, long playerId)
+    {
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+            return true;
+
+        return CanBuild(ward.m_nview.GetZDO(), playerId);
+    }
+
+    public static bool CanFarm(ZDO wardZdo, long playerId)
+    {
+        if (wardZdo == null)
+            return true;
+
+        return WardRoleManager.CanPerform(wardZdo, playerId, "core.farming");
+    }
+
+    public static bool CanFarm(PrivateArea ward, long playerId)
+    {
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+            return true;
+
+        return CanFarm(ward.m_nview.GetZDO(), playerId);
+    }
+
+    public static bool CanHarvest(ZDO wardZdo, long playerId)
+    {
+        if (wardZdo == null)
+            return true;
+
+        return WardRoleManager.CanPerform(wardZdo, playerId, "core.harvest");
+    }
+
+    public static bool CanHarvest(PrivateArea ward, long playerId)
+    {
+        if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
+            return true;
+
+        return CanHarvest(ward.m_nview.GetZDO(), playerId);
     }
 
     public static int GetFeatureRoleKey(int featureKey)
@@ -121,6 +193,10 @@ public static class WardPermissions
         if (wardZdo == null)
             return WardRole.Guest;
 
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
+            return WardRole.Guest;
+
         int roleKey = GetFeatureRoleKey(featureKey);
         if (roleKey == 0)
             return WardRole.Guest;
@@ -134,10 +210,14 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
+            return true;
+
         if (playerId == 0L)
             return true;
 
-        if (!HasWardAccess(wardZdo, playerId))
+        if (!HasBenefactorAccess(wardZdo, playerId))
             return false;
 
         WardRole minRole = GetFeatureMinRole(wardZdo, featureKey);

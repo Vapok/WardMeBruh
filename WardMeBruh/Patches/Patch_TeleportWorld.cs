@@ -30,7 +30,7 @@ internal static class Patch_TeleportWorld
 
         Vector3 localPos = __instance.transform.position;
         PrivateArea localWard = WardQueryService.GetCoveringWard(localPos);
-        if (localWard != null && localWard.IsEnabled() && localWard.m_nview != null && localWard.m_nview.IsValid())
+        if (localWard != null && localWard.m_nview != null && localWard.m_nview.IsValid())
         {
             ZDO localWardZdo = localWard.m_nview.GetZDO();
             if (localWardZdo != null && localWardZdo.GetBool(WardZdoKeys.PortalAccess, false))
@@ -56,7 +56,7 @@ internal static class Patch_TeleportWorld
                 Vector3 destPos = destZdo.GetPosition();
 
                 PrivateArea destWard = WardQueryService.GetCoveringWard(destPos);
-                if (destWard != null && destWard.IsEnabled() && destWard.m_nview != null && destWard.m_nview.IsValid())
+                if (destWard != null && destWard.m_nview != null && destWard.m_nview.IsValid())
                 {
                     ZDO destWardZdo = destWard.m_nview.GetZDO();
                     if (destWardZdo != null && destWardZdo.GetBool(WardZdoKeys.PortalAccess, false))
@@ -73,7 +73,7 @@ internal static class Patch_TeleportWorld
                 else
                 {
                     KnownWard knownWard = WardRegistryManager.Instance.GetWardCoveringPoint(destPos);
-                    if (knownWard != null && knownWard.IsEnabled)
+                    if (knownWard != null)
                     {
                         ZDO destWardZdo = ZDOMan.instance.GetZDO(knownWard.Id);
                         if (destWardZdo != null && destWardZdo.GetBool(WardZdoKeys.PortalAccess, false))

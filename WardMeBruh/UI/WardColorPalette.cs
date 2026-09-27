@@ -27,4 +27,11 @@ public static class WardColorPalette
     public static readonly Color AetherIceGlow = new(0.35f, 0.75f, 1.20f, 1.0f);
     public static readonly Color AetherIceTeal = new(0.18f, 0.85f, 0.88f, 0.85f);
     public static readonly Color AetherIcePurple = new(0.42f, 0.38f, 0.95f, 0.85f);
+    public static readonly Color ValheimGreen = new(0.06f, 0.72f, 0.51f, 1.0f);
+    public static readonly Color TextNormal = new(0.92f, 0.88f, 0.80f, 1.0f);
+
+    public static string ColorHex(Color c)
+    {
+        return $"#{ColorUtility.ToHtmlStringRGBA(c)}";
+    }
 }

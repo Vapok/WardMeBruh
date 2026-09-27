@@ -15,7 +15,8 @@ public class WardMainWindow : MonoBehaviour
     private static WardMainWindow _instance;
     private GameObject _panel;
     private Text _titleText;
-    private Text _roleBadge;
+    private Text _fontSizeBtnText;
+    private WardFontSizeMode _currentFontSizeMode = WardFontSizeMode.Small;
     private int _openedFrame = -1;
 
     private TabOverview _tabOverview;
@@ -23,13 +24,14 @@ public class WardMainWindow : MonoBehaviour
     private TabUpkeep _tabUpkeep;
     private TabAccess _tabAccess;
     private TabRoles _tabRoles;
+    private TabManagement _tabManagement;
     private bool _isInputBlocked;
 
     private RemoteWardSelectorModal _remoteSelector;
     private PrivateArea _activeWard;
     private int _currentTabIndex;
 
-    private readonly Button[] _tabButtons = new Button[5];
+    private readonly Button[] _tabButtons = new Button[6];
 
     public static WardMainWindow Instance
     {
@@ -80,6 +82,11 @@ public class WardMainWindow : MonoBehaviour
     {
         if (IsOpen)
         {
+            if (TextInput.IsVisible())
+            {
+                return;
+            }
+
             bool closeRequested = Input.GetKeyDown(KeyCode.Escape);
             bool isInputFieldFocused = EventSystem.current != null && 
                 EventSystem.current.currentSelectedGameObject != null && 
@@ -123,7 +130,7 @@ public class WardMainWindow : MonoBehaviour
         titleRt.anchorMax = new Vector2(0f, 1f);
         titleRt.pivot = new Vector2(0f, 1f);
         titleRt.anchoredPosition = new Vector2(30f, -20f);
-        titleRt.sizeDelta = new Vector2(380f, 32f);
+        titleRt.sizeDelta = new Vector2(520f, 32f);
 
         _titleText = titleObj.GetComponent<Text>();
         _titleText.text = "WARD CONTROL MATRIX";
@@ -132,21 +139,22 @@ public class WardMainWindow : MonoBehaviour
         _titleText.color = WardColorPalette.ValheimOrange;
         _titleText.alignment = TextAnchor.MiddleLeft;
 
-        GameObject roleBadgeObj = new GameObject("RoleBadge", typeof(RectTransform), typeof(Text));
-        roleBadgeObj.transform.SetParent(_panel.transform, false);
-        RectTransform roleRt = roleBadgeObj.GetComponent<RectTransform>();
-        roleRt.anchorMin = new Vector2(0f, 1f);
-        roleRt.anchorMax = new Vector2(0f, 1f);
-        roleRt.pivot = new Vector2(0f, 1f);
-        roleRt.anchoredPosition = new Vector2(400f, -22f);
-        roleRt.sizeDelta = new Vector2(160f, 30f);
-
-        _roleBadge = roleBadgeObj.GetComponent<Text>();
-        _roleBadge.text = "[Owner]";
-        _roleBadge.font = GUIManager.Instance.AveriaSerifBold;
-        _roleBadge.fontSize = 15;
-        _roleBadge.color = WardColorPalette.GoldAmber;
-        _roleBadge.alignment = TextAnchor.MiddleLeft;
+        GameObject fontBtn = GUIManager.Instance.CreateButton(
+            "FONT: SMALL", 
+            _panel.transform, 
+            new Vector2(1f, 1f), 
+            new Vector2(1f, 1f), 
+            new Vector2(-316f, -36f), 
+            125f, 
+            34f);
+        fontBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(125f, 34f);
+        _fontSizeBtnText = fontBtn.GetComponentInChildren<Text>();
+        if (_fontSizeBtnText != null)
+        {
+            _fontSizeBtnText.font = GUIManager.Instance.AveriaSerifBold;
+            _fontSizeBtnText.fontSize = 13;
+        }
+        fontBtn.GetComponent<Button>().onClick.AddListener(OnCycleFontSizeClicked);
 
         GameObject remoteBtn = GUIManager.Instance.CreateButton(
             "OTHER WARDS ▾", 
@@ -192,16 +200,16 @@ public class WardMainWindow : MonoBehaviour
         hlg.childForceExpandHeight = true;
         hlg.spacing = 8f;
 
-        string[] tabNames = { "OVERVIEW", "DEFENSES", "UPKEEP", "ACCESS", "ROSTER" };
+        string[] tabNames = { "OVERVIEW", "DEFENSES", "UPKEEP", "ACCESS", "ROSTER", "MANAGEMENT" };
         for (int i = 0; i < tabNames.Length; i++)
         {
             int index = i;
-            GameObject btnObj = GUIManager.Instance.CreateButton(tabNames[i], tabBar.transform, Vector2.zero, Vector2.zero, Vector2.zero, 150f, 36f);
+            GameObject btnObj = GUIManager.Instance.CreateButton(tabNames[i], tabBar.transform, Vector2.zero, Vector2.zero, Vector2.zero, 130f, 36f);
             Text btnTxt = btnObj.GetComponentInChildren<Text>();
             if (btnTxt != null)
             {
                 btnTxt.font = GUIManager.Instance.AveriaSerifBold;
-                btnTxt.fontSize = 14;
+                btnTxt.fontSize = 13;
             }
             _tabButtons[i] = btnObj.GetComponent<Button>();
             _tabButtons[i].onClick.AddListener(() => SwitchTab(index));
@@ -230,10 +238,15 @@ public class WardMainWindow : MonoBehaviour
         _tabRoles = new TabRoles();
         _tabRoles.Build(contentArea.transform);
 
+        _tabManagement = new TabManagement();
+        _tabManagement.Build(contentArea.transform);
+
         _remoteSelector = new RemoteWardSelectorModal();
         _remoteSelector.Build(_panel.transform, OnRemoteWardSelected);
 
         SwitchTab(0);
+        _currentFontSizeMode = ConfigRegistry.GuiFontSize != null ? ConfigRegistry.GuiFontSize.Value : WardFontSizeMode.Small;
+        ApplyFontSize(_currentFontSizeMode);
         _panel.SetActive(false);
     }
 
@@ -242,27 +255,69 @@ public class WardMainWindow : MonoBehaviour
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return;
 
+        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(ward);
+        if (effectiveWard == null || effectiveWard.m_nview == null || !effectiveWard.m_nview.IsValid())
+            effectiveWard = ward;
+
+        ZDO zdo = effectiveWard.m_nview.GetZDO();
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        if (!WardRoleManager.CanPerform(zdo, playerId, "core.view_gui"))
+            return;
+
         _openedFrame = Time.frameCount;
-        _activeWard = ward;
+        _activeWard = effectiveWard;
         _panel.SetActive(true);
         SetInputBlocked(true);
 
-        ZDO zdo = ward.m_nview.GetZDO();
-        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
 
         string customName = zdo.GetString(Configuration.WardZdoKeys.CustomName, "Ward Stone");
         _titleText.text = customName.ToUpperInvariant();
-        _roleBadge.text = $"[Role: {role}]";
-        _roleBadge.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+
+        bool canDefend = WardRoleManager.CanPerform(zdo, playerId, "defenses.dome_size") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "defenses.combat") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "defenses.camouflage") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "defenses.biome") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "defenses.tames");
+
+        bool canUpkeep = WardRoleManager.CanPerform(zdo, playerId, "upkeep.repair") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "upkeep.autofuel") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "upkeep.autodoors") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "upkeep.perks") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "upkeep.waterdrain") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "upkeep.security");
+
+        bool canAccess = WardRoleManager.CanPerform(zdo, playerId, "access.doors") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "access.chests") ||
+                         WardRoleManager.CanPerform(zdo, playerId, "access.portals");
+
+        bool canRoster = WardRoleManager.CanPerform(zdo, playerId, "personnel.roster");
+        bool canGovern = WardRoleManager.CanPerform(zdo, playerId, "personnel.governance");
+
+        if (_tabButtons[1] != null) _tabButtons[1].gameObject.SetActive(canDefend);
+        if (_tabButtons[2] != null) _tabButtons[2].gameObject.SetActive(canUpkeep);
+        if (_tabButtons[3] != null) _tabButtons[3].gameObject.SetActive(canAccess);
+        if (_tabButtons[4] != null) _tabButtons[4].gameObject.SetActive(canRoster);
+        if (_tabButtons[5] != null) _tabButtons[5].gameObject.SetActive(canGovern);
+
+        if ((_currentTabIndex == 1 && !canDefend) ||
+            (_currentTabIndex == 2 && !canUpkeep) ||
+            (_currentTabIndex == 3 && !canAccess) ||
+            (_currentTabIndex == 4 && !canRoster) ||
+            (_currentTabIndex == 5 && !canGovern))
+        {
+            _currentTabIndex = 0;
+        }
 
         _tabOverview.Bind(_activeWard);
         _tabDefenses.Bind(_activeWard);
         _tabUpkeep.Bind(_activeWard);
         _tabAccess.Bind(_activeWard);
         _tabRoles.Bind(_activeWard);
+        _tabManagement.Bind(_activeWard);
 
         SwitchTab(_currentTabIndex);
+        ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
     }
 
     public void Close()
@@ -302,12 +357,16 @@ public class WardMainWindow : MonoBehaviour
         _tabUpkeep.Root.SetActive(tabIndex == 2);
         _tabAccess.Root.SetActive(tabIndex == 3);
         _tabRoles.Root.SetActive(tabIndex == 4);
+        _tabManagement.Root.SetActive(tabIndex == 5);
 
         if (tabIndex == 0) _tabOverview.Refresh();
         else if (tabIndex == 1) _tabDefenses.Refresh();
         else if (tabIndex == 2) _tabUpkeep.Refresh();
         else if (tabIndex == 3) _tabAccess.Refresh();
         else if (tabIndex == 4) _tabRoles.Refresh();
+        else if (tabIndex == 5) _tabManagement.Refresh();
+
+        ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
     }
 
     private void OnOtherWardsClicked()
@@ -328,6 +387,64 @@ public class WardMainWindow : MonoBehaviour
                     return;
                 }
             }
+        }
+    }
+
+    private void OnCycleFontSizeClicked()
+    {
+        WardFontSizeMode nextMode = _currentFontSizeMode switch
+        {
+            WardFontSizeMode.Small => WardFontSizeMode.Medium,
+            WardFontSizeMode.Medium => WardFontSizeMode.Large,
+            _ => WardFontSizeMode.Small
+        };
+
+        ApplyFontSize(nextMode);
+    }
+
+    public void ApplyFontSize(WardFontSizeMode mode)
+    {
+        _currentFontSizeMode = mode;
+        if (ConfigRegistry.GuiFontSize != null)
+        {
+            ConfigRegistry.GuiFontSize.Value = mode;
+        }
+
+        if (_fontSizeBtnText != null)
+        {
+            _fontSizeBtnText.text = $"FONT: {mode.ToString().ToUpperInvariant()}";
+        }
+
+        ApplyFontSizeToHierarchy(_panel, mode);
+    }
+
+    public static void ApplyFontSizeToHierarchy(GameObject root, WardFontSizeMode mode)
+    {
+        if (root == null)
+            return;
+
+        int offset = mode switch
+        {
+            WardFontSizeMode.Medium => 2,
+            WardFontSizeMode.Large => 4,
+            _ => 0
+        };
+
+        Text[] texts = root.GetComponentsInChildren<Text>(true);
+        for (int i = 0; i < texts.Length; i++)
+        {
+            Text txt = texts[i];
+            if (txt == null)
+                continue;
+
+            WardTextElement el = txt.GetComponent<WardTextElement>();
+            if (el == null)
+            {
+                el = txt.gameObject.AddComponent<WardTextElement>();
+                el.baseFontSize = txt.fontSize;
+            }
+
+            txt.fontSize = el.baseFontSize + offset;
         }
     }
 }

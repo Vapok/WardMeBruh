@@ -7,6 +7,7 @@ using HarmonyLib;
 using JetBrains.Annotations;
 using Jotunn.Managers;
 using WardMeBruh.Configuration;
+using WardMeBruh.Logging;
 using Vapok.Common.Abstractions;
 using Vapok.Common.Managers;
 using Vapok.Common.Managers.Configuration;
@@ -43,7 +44,8 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
 
         Jotunn.Entities.CustomLocalization localization = LocalizationManager.Instance.GetLocalization();
 
-        LogManager.Init(PluginId, out _log);
+        LogManager.Init(PluginId, out ILogIt baseLog);
+        _log = new DeduplicatingLog(baseLog);
 
         Initializer.LoadManagers(localization);
 

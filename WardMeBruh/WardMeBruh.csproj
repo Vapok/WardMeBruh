@@ -108,10 +108,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="Configuration\ConfigRegistry.cs" />
-        <Compile Include="Patches\FejdStartup.cs" />
-        <Compile Include="Properties\AssemblyInfo.cs" />
-        <Compile Include="WardMeBruh.cs" />
+        <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
     </ItemGroup>
     <ItemGroup>
         <None Include="App.config" />

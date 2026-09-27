@@ -47,6 +47,22 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <NoWarn>MSB3245;MSB3243;1591</NoWarn>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'API|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\API\</OutputPath>
+        <AssemblyName>WardMeBruhAPI</AssemblyName>
+        <DefineConstants>API;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationMarkdown>$(MSBuildProjectDirectory)\..\Docs\WardMeBruhAPI.md</DocumentationMarkdown>
+        <DocumentationFile>bin\API\WardMeBruhAPI.xml</DocumentationFile>
+        <VsxmdAutoDeleteXml>True</VsxmdAutoDeleteXml>
+        <NoWarn>MSB3245;MSB3243;1591</NoWarn>
+    </PropertyGroup>
     <ItemGroup>
         <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(ReferencesRoot)\BepInEx\5.4.2350\BepInEx\core\0Harmony.dll</HintPath>

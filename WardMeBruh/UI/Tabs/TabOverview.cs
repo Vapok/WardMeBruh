@@ -63,7 +63,7 @@ public class TabOverview
         _grantedCardRoot = card2.parent.parent.gameObject;
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_protections");
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_weather_roof", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_weather_roof", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_regen_boost", "...", WardColorPalette.TextMuted, out _setRegenBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_death_skill", "...", WardColorPalette.TextMuted, out _setDeathSkillBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_food_freeze", "...", WardColorPalette.TextMuted, out _setFoodFreezeBadge);
@@ -71,11 +71,11 @@ public class TabOverview
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_ghost_base", "...", WardColorPalette.TextMuted, out _setGhostBaseBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_raid_suppression", "...", WardColorPalette.TextMuted, out _setRaidBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_spawn_suppression", "...", WardColorPalette.TextMuted, out _setSpawnBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_tames", "...", WardColorPalette.TextMuted, out _setTamesBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_defenses_tames_name", "...", WardColorPalette.TextMuted, out _setTamesBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_repair", "...", WardColorPalette.TextMuted, out _setRepairBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_card_fuel", "...", WardColorPalette.TextMuted, out _setFuelBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_upkeep_autodoors_name", "...", WardColorPalette.TextMuted, out _setDoorBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
+        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_max_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
         WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_portal", "...", WardColorPalette.TextMuted, out _setPortalBadge);
     }
 

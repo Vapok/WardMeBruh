@@ -84,7 +84,7 @@
 * **Portal Network Gating**: Restrict portal use by role, with bi-directional verification checking access at both departure and destination wards.
 
 ### Biome & Environmental Shields
-* **Virtual Roof**: Eliminates rain weathering on unroofed wood and structures.
+* **Virtual Roof**: Eliminates rain weathering on unroofed wood and structures, shields players from rain exposure, and prevents unroofed fires from extinguishing.
 * **Ashlands Shield**: Grants immunity against falling ash, despawns cinders, and blocks lava damage on structures.
 * **Deep North Shield**: Prevents structural collapse from heavy snow accumulation.
 

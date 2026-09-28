@@ -1,3 +1,9 @@
+# 0.0.3
+* Fixed Weather Roof shield to properly guard players from rain and prevent getting wet under active wards.
+* Fixed an issue where the resting indicator could repeatedly pulse when rain occurred.
+* Separated Weather Roof rain protection from Sanctuary Max Comfort so both features operate independently.
+* Moved Biome Hazard Shields controls from Upkeep to the Defenses tab to match permission categories.
+
 # 0.0.2 - API Extensibility, Role Refinements & Quality of Life
 * Added developer API supporting custom roles and external mod permission registrations.
 * Automatic API documentation generated directly in repository documentation on build.

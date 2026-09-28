@@ -1,3 +1,14 @@
+# 0.0.3
+* **Weather Roof & Environmental Cover Architecture (`Patch_Cover`, `Patch_PlayerComfort`)**:
+  * Restored `Patch_Cover` on `Cover.IsUnderRoof` returning `true` whenever covering ward has `WeatherRoof` enabled, restoring virtual roof coverage for `Player.UpdateCover`, `Fireplace.UpdateFireplace` (protecting unroofed fires), `Bed`, `Smelter`, and crafting stations.
+  * Added `s_underRoofRef` in `Patch_PlayerComfort.UpdateEnvStatusEffectsPrefix` to immediately synchronize `Player.m_underRoof` with `Cover.IsUnderRoof` on state changes, preventing polling delays from allowing rain ticks through.
+  * Decoupled `MaxComfort` from `Cover.IsUnderRoof` so rain penetration is strictly governed by `WeatherRoof`.
+  * Restored `InShelter` resolution in `Patch_PlayerComfort.InShelterPostfix` to satisfy shelter conditions when either `WeatherRoof` or `MaxComfort` is enabled.
+  * Guarded `Resting` application in `Patch_PlayerComfort.UpdateEnvStatusEffectsPostfix` against `SEMan.s_statusEffectWet`, resolving rapid state oscillation and HUD text pulsing during rain.
+* **UI Tab Hierarchy Alignment (`TabUpkeep`, `TabDefenses`)**:
+  * Relocated Biome Hazard Shields card (`WeatherRoof`, `AshShield`, `LavaShield`, `SnowShield`, `WaterDrain`) from `TabUpkeep` to `TabDefenses`.
+  * Aligned UI placement with underlying `defenses.biome` permission category.
+
 # 0.0.2 - API Extensibility, Role Refinements & Quality of Life
 * **Developer API & Extensibility Architecture**:
   * Implemented `WardMeBruh.API.WardMeBruhAPI` facilitating external mod integration.

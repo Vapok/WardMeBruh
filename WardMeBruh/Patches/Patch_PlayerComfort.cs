@@ -9,6 +9,9 @@ namespace WardMeBruh.Patches;
 [HarmonyPatch(typeof(Player))]
 internal static class Patch_PlayerComfort
 {
+    private static readonly AccessTools.FieldRef<Player, bool> s_underRoofRef = 
+        AccessTools.FieldRefAccess<Player, bool>("m_underRoof");
+
     [HarmonyPatch(nameof(Player.GetComfortLevel))]
     [HarmonyPostfix]
     private static void GetComfortLevelPostfix(Player __instance, ref int __result)
@@ -47,7 +50,8 @@ internal static class Patch_PlayerComfort
         if (__instance == null)
             return;
 
-        if (WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.MaxComfort, __instance.GetPlayerID()))
+        if (WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.WeatherRoof, __instance.GetPlayerID()) ||
+            WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.MaxComfort, __instance.GetPlayerID()))
         {
             __result = true;
         }
@@ -62,6 +66,15 @@ internal static class Patch_PlayerComfort
 
         if (__instance == null)
             return;
+
+        if (WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.WeatherRoof))
+        {
+            s_underRoofRef(__instance) = true;
+        }
+        else
+        {
+            s_underRoofRef(__instance) = Cover.IsUnderRoof(__instance.GetCenterPoint());
+        }
 
         if (WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.MaxComfort, __instance.GetPlayerID()))
         {
@@ -79,13 +92,24 @@ internal static class Patch_PlayerComfort
         if (__instance == null || __instance.GetSEMan() == null)
             return;
 
-        if (WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.MaxComfort, __instance.GetPlayerID()))
+        bool hasWeatherRoof = WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.WeatherRoof, __instance.GetPlayerID());
+        bool hasMaxComfort = WardQueryService.HasFeatureEnabled(__instance.transform.position, WardZdoKeys.MaxComfort, __instance.GetPlayerID());
+
+        if (hasWeatherRoof || hasMaxComfort)
+        {
+            __instance.GetSEMan().AddStatusEffect(SEMan.s_statusEffectShelter, resetTime: false, 0, 0f, -1);
+        }
+
+        if (hasMaxComfort)
         {
             if (!__instance.IsSensed() && !__instance.GetSEMan().HaveStatusEffect(SEMan.s_statusEffectBurning))
             {
-                __instance.GetSEMan().AddStatusEffect(SEMan.s_statusEffectResting, resetTime: false, 0, 0f, -1);
-                __instance.GetSEMan().AddStatusEffect(SEMan.s_statusEffectShelter, resetTime: false, 0, 0f, -1);
                 __instance.GetSEMan().AddStatusEffect(SEMan.s_statusEffectCampFire, resetTime: false, 0, 0f, -1);
+
+                if (!__instance.GetSEMan().HaveStatusEffect(SEMan.s_statusEffectWet) && __instance.InShelter())
+                {
+                    __instance.GetSEMan().AddStatusEffect(SEMan.s_statusEffectResting, resetTime: false, 0, 0f, -1);
+                }
             }
         }
     }

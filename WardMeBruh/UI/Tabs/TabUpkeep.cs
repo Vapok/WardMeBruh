@@ -18,11 +18,6 @@ public class TabUpkeep
     private Action<bool> _setAutoClose;
     private Action<float> _setAutoCloseSlider;
 
-    private Action<bool> _setWeatherRoof;
-    private Action<bool> _setAshShield;
-    private Action<bool> _setLavaShield;
-    private Action<bool> _setSnowShield;
-    private Action<bool> _setWaterDrain;
 
     public GameObject Root => _root;
 
@@ -89,41 +84,6 @@ public class TabUpkeep
             v => SetZdoFloat(WardZdoKeys.AutoCloseDelay, v, "upkeep.autodoors"), 
             out _setAutoCloseSlider);
 
-        Transform card4 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_biome");
-        WardUIFactory.CreateToggleRow(
-            card4, 
-            "$wmb_upkeep_weather_roof", 
-            false, 
-            v => SetZdoBool(WardZdoKeys.WeatherRoof, v, "defenses.biome"), 
-            out _setWeatherRoof);
-
-        WardUIFactory.CreateToggleRow(
-            card4, 
-            "$wmb_upkeep_ash_shield", 
-            false, 
-            v => SetZdoBool(WardZdoKeys.AshShield, v, "defenses.biome"), 
-            out _setAshShield);
-
-        WardUIFactory.CreateToggleRow(
-            card4, 
-            "$wmb_upkeep_lava_shield", 
-            false, 
-            v => SetZdoBool(WardZdoKeys.LavaShield, v, "defenses.biome"), 
-            out _setLavaShield);
-
-        WardUIFactory.CreateToggleRow(
-            card4, 
-            "$wmb_upkeep_snow_shield", 
-            false, 
-            v => SetZdoBool(WardZdoKeys.SnowShield, v, "defenses.biome"), 
-            out _setSnowShield);
-
-        WardUIFactory.CreateToggleRow(
-            card4, 
-            "$wmb_upkeep_water_drain", 
-            false, 
-            v => SetZdoBool(WardZdoKeys.WaterDrain, v, "upkeep.waterdrain"), 
-            out _setWaterDrain);
     }
 
     public void Bind(PrivateArea ward)
@@ -153,11 +113,6 @@ public class TabUpkeep
         float closeDelay = zdo.GetFloat(WardZdoKeys.AutoCloseDelay, (float)ConfigRegistry.AutoCloseDelayDefault.Value);
         _setAutoCloseSlider?.Invoke(closeDelay);
 
-        _setWeatherRoof?.Invoke(zdo.GetBool(WardZdoKeys.WeatherRoof, false));
-        _setAshShield?.Invoke(zdo.GetBool(WardZdoKeys.AshShield, false));
-        _setLavaShield?.Invoke(zdo.GetBool(WardZdoKeys.LavaShield, false));
-        _setSnowShield?.Invoke(zdo.GetBool(WardZdoKeys.SnowShield, false));
-        _setWaterDrain?.Invoke(zdo.GetBool(WardZdoKeys.WaterDrain, false));
     }
 
     private void SetZdoBool(int key, bool val, string permissionId)

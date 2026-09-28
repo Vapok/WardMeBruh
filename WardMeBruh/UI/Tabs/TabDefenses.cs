@@ -22,6 +22,13 @@ public class TabDefenses
     private Action<bool> _setGhostBase;
     private Action<bool> _setRaidSuppress;
     private Action<bool> _setSpawnSuppress;
+
+    private Action<bool> _setWeatherRoof;
+    private Action<bool> _setAshShield;
+    private Action<bool> _setLavaShield;
+    private Action<bool> _setSnowShield;
+    private Action<bool> _setWaterDrain;
+
     private Action<bool> _setMaxComfort;
     private Action<bool> _setRegenBoost;
     private Action<bool> _setDeathSkill;
@@ -122,6 +129,42 @@ public class TabDefenses
             v => SetZdoBool(WardZdoKeys.SpawnSuppress, v, "defenses.camouflage"), 
             out _setSpawnSuppress);
 
+        Transform cardBiome = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_biome");
+        WardUIFactory.CreateToggleRow(
+            cardBiome, 
+            "$wmb_upkeep_weather_roof", 
+            false, 
+            v => SetZdoBool(WardZdoKeys.WeatherRoof, v, "defenses.biome"), 
+            out _setWeatherRoof);
+
+        WardUIFactory.CreateToggleRow(
+            cardBiome, 
+            "$wmb_upkeep_ash_shield", 
+            false, 
+            v => SetZdoBool(WardZdoKeys.AshShield, v, "defenses.biome"), 
+            out _setAshShield);
+
+        WardUIFactory.CreateToggleRow(
+            cardBiome, 
+            "$wmb_upkeep_lava_shield", 
+            false, 
+            v => SetZdoBool(WardZdoKeys.LavaShield, v, "defenses.biome"), 
+            out _setLavaShield);
+
+        WardUIFactory.CreateToggleRow(
+            cardBiome, 
+            "$wmb_upkeep_snow_shield", 
+            false, 
+            v => SetZdoBool(WardZdoKeys.SnowShield, v, "defenses.biome"), 
+            out _setSnowShield);
+
+        WardUIFactory.CreateToggleRow(
+            cardBiome, 
+            "$wmb_upkeep_water_drain", 
+            false, 
+            v => SetZdoBool(WardZdoKeys.WaterDrain, v, "upkeep.waterdrain"), 
+            out _setWaterDrain);
+
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_sanctuary");
         WardUIFactory.CreateToggleRow(
             card3, 
@@ -212,6 +255,12 @@ public class TabDefenses
         _setGhostBase?.Invoke(zdo.GetBool(WardZdoKeys.GhostBase, false));
         _setRaidSuppress?.Invoke(zdo.GetBool(WardZdoKeys.RaidSuppress, false));
         _setSpawnSuppress?.Invoke(zdo.GetBool(WardZdoKeys.SpawnSuppress, false));
+
+        _setWeatherRoof?.Invoke(zdo.GetBool(WardZdoKeys.WeatherRoof, false));
+        _setAshShield?.Invoke(zdo.GetBool(WardZdoKeys.AshShield, false));
+        _setLavaShield?.Invoke(zdo.GetBool(WardZdoKeys.LavaShield, false));
+        _setSnowShield?.Invoke(zdo.GetBool(WardZdoKeys.SnowShield, false));
+        _setWaterDrain?.Invoke(zdo.GetBool(WardZdoKeys.WaterDrain, false));
 
         _setMaxComfort?.Invoke(zdo.GetBool(WardZdoKeys.MaxComfort, false));
         _setRegenBoost?.Invoke(zdo.GetBool(WardZdoKeys.RegenBoost, true));

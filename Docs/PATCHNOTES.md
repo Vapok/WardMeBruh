@@ -1,4 +1,7 @@
-# 0.0.3
+# 0.0.3 - Weather Protection & Shield Stability Fixes
+* **Shield Generator Proxy & Teardown Architecture (`Patch_ShieldGenerator_Start`, `Patch_ShieldGenerator_OnDestroy`)**:
+  * Added `Patch_ShieldGenerator_Start` Prefix on `ShieldGenerator.Start` setting `m_isPlacementGhost = true` and `enabled = false` for proxy components on `WardForcefieldDome`, preventing unwanted registration to `ShieldGenerator.m_instances` and avoiding binding shield RPCs to `PrivateArea`.
+  * Added `Patch_ShieldGenerator_OnDestroy` Prefix intercepting `ShieldGenerator.OnDestroy` to completely bypass teardown on proxy generators and null-guard `ShieldGenerator.m_shieldDomeEffect` on real shield generators, eliminating `NullReferenceException` crashes during world unload when the camera is destroyed first.
 * **Weather Roof & Environmental Cover Architecture (`Patch_Cover`, `Patch_PlayerComfort`)**:
   * Restored `Patch_Cover` on `Cover.IsUnderRoof` returning `true` whenever covering ward has `WeatherRoof` enabled, restoring virtual roof coverage for `Player.UpdateCover`, `Fireplace.UpdateFireplace` (protecting unroofed fires), `Bed`, `Smelter`, and crafting stations.
   * Added `s_underRoofRef` in `Patch_PlayerComfort.UpdateEnvStatusEffectsPrefix` to immediately synchronize `Player.m_underRoof` with `Cover.IsUnderRoof` on state changes, preventing polling delays from allowing rain ticks through.

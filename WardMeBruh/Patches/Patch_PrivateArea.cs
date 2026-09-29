@@ -106,8 +106,11 @@ internal static class Patch_PrivateArea
 
                 WardRegistryManager.Instance.RegisterOrUpdate(zdo);
                 WardMeBruh.Log.Info($"[Base Extension] New Ward {zdo.m_uid} placed inside active shield of Ward {rootParentZdo.m_uid} ('{parentName}'). Linked as extension.");
+                return;
             }
         }
+
+        WardRegistryManager.Instance.RegisterOrUpdate(zdo);
     }
 
     [HarmonyPatch(nameof(PrivateArea.IsEnabled))]
@@ -133,18 +136,6 @@ internal static class Patch_PrivateArea
         return false;
     }
 
-    [HarmonyPatch(nameof(PrivateArea.OnDestroy))]
-    [HarmonyPrefix]
-    private static void OnDestroyPrefix(PrivateArea __instance)
-    {
-        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
-            return;
-
-        ZDO zdo = __instance.m_nview.GetZDO();
-        string wardName = zdo.GetString(WardZdoKeys.CustomName, __instance.m_name);
-        WardMeBruh.Log.Debug($"[Ward Lifecycle] Unregistering Ward {zdo.m_uid} ('{wardName}') on destroy");
-        WardRegistryManager.Instance.Unregister(zdo.m_uid);
-    }
 
     [HarmonyPatch(nameof(PrivateArea.HaveLocalAccess))]
     [HarmonyPrefix]

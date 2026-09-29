@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.Models;
@@ -15,11 +16,13 @@ public class RemoteWardSelectorModal
     private readonly List<GameObject> _itemCards = new();
     private Action<KnownWard> _onWardSelected;
     private PrivateArea _activeWard;
+    private PrivateArea _physicalWard;
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
 
     public void Build(Transform parent, Action<KnownWard> onWardSelected)
     {
+        UIFonts.GetPrimaryFont();
         _onWardSelected = onWardSelected;
 
         _panel = GUIManager.Instance.CreateWoodpanel(
@@ -32,7 +35,7 @@ public class RemoteWardSelectorModal
             draggable: true);
         _panel.name = "RemoteWardSelectorModal";
 
-        GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(Text));
+        GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
         titleObj.transform.SetParent(_panel.transform, false);
         RectTransform titleRt = titleObj.GetComponent<RectTransform>();
         titleRt.anchorMin = new Vector2(0f, 1f);
@@ -41,12 +44,15 @@ public class RemoteWardSelectorModal
         titleRt.anchoredPosition = new Vector2(30f, -20f);
         titleRt.sizeDelta = new Vector2(450f, 32f);
 
-        Text titleText = titleObj.GetComponent<Text>();
+        TextMeshProUGUI titleText = titleObj.GetComponent<TextMeshProUGUI>();
         titleText.text = "$wmb_modal_territory_registry".Localize();
-        titleText.font = GUIManager.Instance.AveriaSerifBold;
-        titleText.fontSize = 18;
+        titleText.font = UIFonts.GetPrimaryFont();
+        titleText.fontSize = 18f;
         titleText.color = WardColorPalette.ValheimOrange;
-        titleText.alignment = TextAnchor.MiddleLeft;
+        titleText.alignment = TextAlignmentOptions.MidlineLeft;
+
+        WardTextElement titleWte = titleObj.GetComponent<WardTextElement>();
+        titleWte.baseFontSize = 18;
 
         GameObject closeBtn = GUIManager.Instance.CreateButton(
             "X", 
@@ -56,6 +62,8 @@ public class RemoteWardSelectorModal
             new Vector2(-30f, -32f), 
             34f, 
             32f);
+        closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(34f, 32f);
+        WardUIFactory.SetupButtonText(closeBtn, "X", 14f, WardColorPalette.DangerRed);
         closeBtn.GetComponent<Button>().onClick.AddListener(Close);
 
         GameObject scrollAreaObj = WardUIFactory.CreateScrollArea(_panel.transform, out _listContainer);
@@ -66,12 +74,13 @@ public class RemoteWardSelectorModal
         _panel.SetActive(false);
     }
 
-    public void Open(PrivateArea activeWard = null)
+    public void Open(PrivateArea activeWard = null, PrivateArea physicalWard = null)
     {
         if (_panel == null)
             return;
 
         _activeWard = activeWard;
+        _physicalWard = physicalWard;
         _panel.SetActive(true);
         Refresh();
     }
@@ -92,6 +101,15 @@ public class RemoteWardSelectorModal
                 UnityEngine.Object.Destroy(_itemCards[i]);
         }
         _itemCards.Clear();
+
+        if (_listContainer != null)
+        {
+            RectTransform listRt = _listContainer.GetComponent<RectTransform>();
+            if (listRt != null)
+            {
+                listRt.anchoredPosition = Vector2.zero;
+            }
+        }
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         List<KnownWard> wards = WardRegistryManager.Instance.GetPlayerOwnedWards(playerId);
@@ -119,18 +137,37 @@ public class RemoteWardSelectorModal
         }
 
         Vector3 playerPos = Player.m_localPlayer != null ? Player.m_localPlayer.transform.position : Vector3.zero;
-        ZDOID currentWardId = (_activeWard != null && _activeWard.m_nview != null && _activeWard.m_nview.IsValid()) 
+        ZDOID activeWardId = (_activeWard != null && _activeWard.m_nview != null && _activeWard.m_nview.IsValid()) 
             ? _activeWard.m_nview.GetZDO().m_uid 
-            : ZDOID.None;
+            : (WardMainWindow.Instance != null ? WardMainWindow.Instance.ActiveWardId : ZDOID.None);
+
+        ZDOID physicalWardId = ZDOID.None;
+        if (_physicalWard != null && _physicalWard.m_nview != null && _physicalWard.m_nview.IsValid())
+        {
+            physicalWardId = _physicalWard.m_nview.GetZDO().m_uid;
+        }
+        else if (WardMainWindow.Instance != null && WardMainWindow.Instance.PhysicalWardId != ZDOID.None)
+        {
+            physicalWardId = WardMainWindow.Instance.PhysicalWardId;
+        }
+        else if (Player.m_localPlayer != null)
+        {
+            KnownWard covering = WardRegistryManager.Instance.GetWardCoveringPoint(playerPos, false);
+            if (covering != null)
+            {
+                physicalWardId = covering.Id;
+            }
+        }
 
         for (int i = 0; i < wards.Count; i++)
         {
             KnownWard ward = wards[i];
-            bool isCurrent = ward.Id == currentWardId;
+            bool isManaging = ward.Id == activeWardId;
+            bool isPhysicalLocation = ward.Id == physicalWardId;
 
             float dist = Utils.DistanceXZ(playerPos, ward.Position);
             string distStr = dist < 1000f ? $"{Mathf.RoundToInt(dist)}{"$wmb_meters_away".Localize()}" : $"{dist / 1000f:F1}{"$wmb_km_away".Localize()}";
-            if (isCurrent)
+            if (isPhysicalLocation)
             {
                 distStr = "$wmb_modal_current_location".Localize();
             }
@@ -139,32 +176,29 @@ public class RemoteWardSelectorModal
 
             WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, rowHeight);
 
-            GameObject statusBadgeObj = new GameObject("StatusBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+            GameObject statusBadgeObj = new GameObject("StatusBadge", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
             statusBadgeObj.transform.SetParent(ctrlContainer, false);
             statusBadgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
             statusBadgeObj.SetLayoutDimensions(100f, 28f);
 
-            Text statusText = statusBadgeObj.GetComponent<Text>();
+            TextMeshProUGUI statusText = statusBadgeObj.GetComponent<TextMeshProUGUI>();
             statusText.text = ward.IsEnabled ? $"● {"$wmb_active".Localize()}" : $"○ {"$wmb_inactive".Localize()}";
-            statusText.font = GUIManager.Instance.AveriaSerifBold;
-            statusText.fontSize = 12;
+            statusText.font = UIFonts.GetPrimaryFont();
+            statusText.fontSize = 12f;
             statusText.color = ward.IsEnabled ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
-            statusText.alignment = TextAnchor.MiddleRight;
+            statusText.alignment = TextAlignmentOptions.MidlineRight;
+            statusText.overflowMode = TextOverflowModes.Overflow;
+            statusText.textWrappingMode = TextWrappingModes.NoWrap;
 
-            if (isCurrent)
+            WardTextElement statusWte = statusBadgeObj.GetComponent<WardTextElement>();
+            statusWte.baseFontSize = 12;
+
+            if (isManaging)
             {
-                GameObject currentBadgeObj = new GameObject("CurrentBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
-                currentBadgeObj.transform.SetParent(ctrlContainer, false);
-                currentBadgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
-                currentBadgeObj.SetLayoutDimensions(100f, 28f);
-
-                Text currentBadgeText = currentBadgeObj.GetComponent<Text>();
-                currentBadgeText.text = "$wmb_modal_current_badge".Localize();
-                currentBadgeText.font = GUIManager.Instance.AveriaSerifBold;
-                currentBadgeText.fontSize = 16;
-                currentBadgeText.color = WardColorPalette.GoldAmber;
-                currentBadgeText.alignment = TextAnchor.MiddleCenter;
-                currentBadgeText.horizontalOverflow = HorizontalWrapMode.Overflow;
+                GameObject spacerObj = new GameObject("Spacer", typeof(RectTransform), typeof(LayoutElement));
+                spacerObj.transform.SetParent(ctrlContainer, false);
+                spacerObj.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
+                spacerObj.SetLayoutDimensions(100f, 28f);
             }
             else
             {
@@ -179,13 +213,7 @@ public class RemoteWardSelectorModal
                 manageBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(100f, 28f);
                 manageBtn.SetLayoutDimensions(100f, 28f);
 
-                Text btnTxt = manageBtn.GetComponentInChildren<Text>();
-                if (btnTxt != null)
-                {
-                    btnTxt.font = GUIManager.Instance.AveriaSerifBold;
-                    btnTxt.fontSize = 12;
-                    btnTxt.color = WardColorPalette.ValheimBeige;
-                }
+                WardUIFactory.SetupButtonText(manageBtn, "$wmb_modal_manage_btn".Localize(), 12f, WardColorPalette.ValheimBeige);
 
                 manageBtn.GetComponent<Button>().onClick.AddListener(() =>
                 {

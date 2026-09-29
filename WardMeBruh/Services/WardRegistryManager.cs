@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Services;
 
@@ -107,16 +108,57 @@ public sealed class WardRegistryManager
         {
             WardMeBruh.Log.Debug($"[Registry] Unregistered Extension Ward {id}. Remaining Extensions: {_extensionWards.Count}");
         }
+
+        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        {
+            if (WardMainWindow.Instance.ActiveWardId == id)
+            {
+                WardMainWindow.Instance.Close();
+            }
+            else
+            {
+                WardMainWindow.Instance.RefreshRemoteSelector();
+            }
+        }
+    }
+
+    public void PruneDeadWards()
+    {
+        if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null)
+            return;
+
+        List<ZDOID> toRemove = null;
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            KnownWard ward = snapshot[i];
+            ZDO zdo = ZDOMan.instance.GetZDO(ward.Id);
+            if (zdo == null)
+            {
+                toRemove ??= new List<ZDOID>();
+                toRemove.Add(ward.Id);
+            }
+        }
+
+        if (toRemove != null)
+        {
+            for (int i = 0; i < toRemove.Count; i++)
+            {
+                Unregister(toRemove[i]);
+            }
+            Networking.WardNetworkRouter.BroadcastRegistry();
+        }
     }
 
     public List<KnownExtensionWard> GetExtensionsForParent(ZDOID parentId)
     {
         List<KnownExtensionWard> result = new();
-        foreach (KnownExtensionWard ext in _extensionWards.Values)
+        List<KnownExtensionWard> snapshot = new(_extensionWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
         {
-            if (ext.ParentId == parentId)
+            if (snapshot[i].ParentId == parentId)
             {
-                result.Add(ext);
+                result.Add(snapshot[i]);
             }
         }
         return result;
@@ -141,13 +183,16 @@ public sealed class WardRegistryManager
 
     public List<KnownWard> GetAllWards()
     {
+        PruneDeadWards();
         return new List<KnownWard>(_knownWards.Values);
     }
 
     public KnownWard GetWardCoveringPoint(Vector3 point, bool requireEnabled = false)
     {
-        foreach (KnownWard ward in _knownWards.Values)
+        List<KnownWard> wardSnapshot = new(_knownWards.Values);
+        for (int i = 0; i < wardSnapshot.Count; i++)
         {
+            KnownWard ward = wardSnapshot[i];
             if (requireEnabled && !ward.IsEnabled)
                 continue;
 
@@ -158,8 +203,10 @@ public sealed class WardRegistryManager
             }
         }
 
-        foreach (KnownExtensionWard ext in _extensionWards.Values)
+        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
+        for (int i = 0; i < extSnapshot.Count; i++)
         {
+            KnownExtensionWard ext = extSnapshot[i];
             if (requireEnabled && !ext.IsEnabled)
                 continue;
 
@@ -180,12 +227,15 @@ public sealed class WardRegistryManager
 
     public List<KnownWard> GetPlayerOwnedWards(long playerId)
     {
+        PruneDeadWards();
         List<KnownWard> result = new();
         if (playerId == 0L)
             return result;
 
-        foreach (KnownWard ward in _knownWards.Values)
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
         {
+            KnownWard ward = snapshot[i];
             long creatorId = ward.CreatorId;
             if (creatorId == 0L && ZDOMan.instance != null)
             {
@@ -211,12 +261,15 @@ public sealed class WardRegistryManager
 
     public List<KnownWard> GetWardsForPlayer(long playerId)
     {
+        PruneDeadWards();
         List<KnownWard> result = new();
         if (playerId == 0L)
             return result;
 
-        foreach (KnownWard ward in _knownWards.Values)
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
         {
+            KnownWard ward = snapshot[i];
             if (ward.CreatorId == playerId)
             {
                 result.Add(ward);
@@ -266,8 +319,10 @@ public sealed class WardRegistryManager
             }
         }
 
-        foreach (KnownWard otherWard in _knownWards.Values)
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
         {
+            KnownWard otherWard = snapshot[i];
             if (otherWard.Id == currentWardId)
                 continue;
 
@@ -307,10 +362,11 @@ public sealed class WardRegistryManager
             allWards[i].Pack(pkg);
         }
 
-        pkg.Write(_extensionWards.Count);
-        foreach (KnownExtensionWard ext in _extensionWards.Values)
+        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
+        pkg.Write(extSnapshot.Count);
+        for (int i = 0; i < extSnapshot.Count; i++)
         {
-            ext.Pack(pkg);
+            extSnapshot[i].Pack(pkg);
         }
 
         return pkg;

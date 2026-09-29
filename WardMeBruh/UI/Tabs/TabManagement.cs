@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.Configuration;
@@ -21,8 +22,8 @@ public class TabManagement
     private readonly List<GameObject> _roleButtons = new();
     private readonly List<GameObject> _permRows = new();
     private GameObject _hoverTooltip;
-    private Text _tooltipTitle;
-    private Text _tooltipDesc;
+    private TextMeshProUGUI _tooltipTitle;
+    private TextMeshProUGUI _tooltipDesc;
     private RectTransform _tooltipRt;
 
     public GameObject Root => _root;
@@ -141,16 +142,7 @@ public class TabManagement
             int roleId = role.Id;
             bool isSelected = (role.Id == _selectedRoleId);
 
-            string roleIcon = role.Id switch
-            {
-                (int)WardRole.Owner => "👑",
-                (int)WardRole.Manager => string.Empty,
-                (int)WardRole.Resident => "🌲",
-                (int)WardRole.Guest => "👤",
-                _ => "🛡️"
-            };
-
-            string title = string.IsNullOrEmpty(roleIcon) ? role.Name.Localize() : $"{roleIcon} {role.Name.Localize()}";
+            string title = role.Name.Localize();
             GameObject btnObj = GUIManager.Instance.CreateButton(
                 title,
                 card,
@@ -167,17 +159,15 @@ public class TabManagement
 
             Button btn = btnObj.GetComponent<Button>();
             Image btnImg = btnObj.GetComponent<Image>();
-            Text btnTxt = btnObj.GetComponentInChildren<Text>();
+            TextMeshProUGUI btnTxt = WardUIFactory.SetupButtonText(btnObj, title, 13f, isSelected ? WardColorPalette.ValheimOrange : WardColorPalette.TextNormal);
 
             if (isSelected)
             {
                 btnImg.color = WardColorPalette.ValheimOrange;
-                if (btnTxt != null) btnTxt.color = WardColorPalette.ValheimOrange;
             }
             else
             {
                 btnImg.color = WardColorPalette.CardBorder;
-                if (btnTxt != null) btnTxt.color = WardColorPalette.TextNormal;
             }
 
             btn.onClick.AddListener(() =>
@@ -212,6 +202,7 @@ public class TabManagement
             addLe.preferredHeight = 30f;
             addLe.flexibleWidth = 1f;
 
+            WardUIFactory.SetupButtonText(addBtnObj, "$wmb_mgmt_add_role".Localize(), 12f);
             Button addBtn = addBtnObj.GetComponent<Button>();
             addBtn.onClick.AddListener(() => OnAddCustomRole(roles));
 
@@ -243,6 +234,7 @@ public class TabManagement
                     tuLe.preferredHeight = 28f;
                     tuLe.flexibleWidth = 1f;
 
+                    WardUIFactory.SetupButtonText(moveUpBtnObj, "$wmb_mgmt_move_up".Localize(), 11f);
                     Button tuBtn = moveUpBtnObj.GetComponent<Button>();
                     tuBtn.onClick.AddListener(() => OnMoveRole(roles, 1));
                 }
@@ -263,6 +255,7 @@ public class TabManagement
                     tdLe.preferredHeight = 28f;
                     tdLe.flexibleWidth = 1f;
 
+                    WardUIFactory.SetupButtonText(moveDownBtnObj, "$wmb_mgmt_move_down".Localize(), 11f);
                     Button tdBtn = moveDownBtnObj.GetComponent<Button>();
                     tdBtn.onClick.AddListener(() => OnMoveRole(roles, -1));
                 }
@@ -284,6 +277,7 @@ public class TabManagement
                 renLe.preferredHeight = 28f;
                 renLe.flexibleWidth = 1f;
 
+                WardUIFactory.SetupButtonText(renameBtnObj, "$wmb_mgmt_rename_role".Localize(), 11f);
                 Button renBtn = renameBtnObj.GetComponent<Button>();
                 renBtn.onClick.AddListener(() => OnRenameCustomRole(roles));
 
@@ -301,6 +295,7 @@ public class TabManagement
                 delLe.preferredHeight = 28f;
                 delLe.flexibleWidth = 1f;
 
+                WardUIFactory.SetupButtonText(delBtnObj, "$wmb_mgmt_delete_role".Localize(), 11f, WardColorPalette.DangerRed);
                 Button delBtn = delBtnObj.GetComponent<Button>();
                 Image delImg = delBtnObj.GetComponent<Image>();
                 if (delImg != null) delImg.color = new Color(0.5f, 0.15f, 0.15f);
@@ -393,7 +388,7 @@ public class TabManagement
         hlg.childForceExpandHeight = false;
         hlg.childAlignment = TextAnchor.MiddleLeft;
 
-        GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(LayoutElement), typeof(WardTextElement));
+        GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         labelObj.transform.SetParent(rowObj.transform, false);
 
         LayoutElement labelLe = labelObj.GetComponent<LayoutElement>();
@@ -403,14 +398,14 @@ public class TabManagement
         labelLe.minHeight = 28f;
         labelLe.preferredHeight = 28f;
 
-        Text label = labelObj.GetComponent<Text>();
+        TextMeshProUGUI label = labelObj.GetComponent<TextMeshProUGUI>();
         label.text = perm.DisplayName.Localize();
-        label.font = GUIManager.Instance.AveriaSerifBold;
-        label.fontSize = 13;
+        label.font = UIFonts.GetPrimaryFont();
+        label.fontSize = 13f;
         label.color = WardColorPalette.ValheimBeige;
-        label.alignment = TextAnchor.MiddleLeft;
-        label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Overflow;
+        label.alignment = TextAlignmentOptions.MidlineLeft;
+        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.textWrappingMode = TextWrappingModes.Normal;
 
         WardTextElement wte = labelObj.GetComponent<WardTextElement>();
         wte.baseFontSize = 13;
@@ -437,12 +432,7 @@ public class TabManagement
 
         Button btn = btnObj.GetComponent<Button>();
         Image btnImg = btnObj.GetComponent<Image>();
-        Text btnTxt = btnObj.GetComponentInChildren<Text>();
-        if (btnTxt != null)
-        {
-            btnTxt.font = GUIManager.Instance.AveriaSerifBold;
-            btnTxt.fontSize = 10;
-        }
+        TextMeshProUGUI btnTxt = WardUIFactory.SetupButtonText(btnObj, "...", 10f);
 
         if (isOwner)
         {
@@ -610,22 +600,25 @@ public class TabManagement
         ContentSizeFitter csf = box.GetComponent<ContentSizeFitter>();
         csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(Text), typeof(WardTextElement));
+        GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
         titleObj.transform.SetParent(box.transform, false);
-        _tooltipTitle = titleObj.GetComponent<Text>();
-        _tooltipTitle.font = GUIManager.Instance.AveriaSerifBold;
-        _tooltipTitle.fontSize = 13;
+        _tooltipTitle = titleObj.GetComponent<TextMeshProUGUI>();
+        _tooltipTitle.font = UIFonts.GetPrimaryFont();
+        _tooltipTitle.fontSize = 13f;
         _tooltipTitle.color = WardColorPalette.ValheimOrange;
+        _tooltipTitle.alignment = TextAlignmentOptions.TopLeft;
         WardTextElement titleWte = titleObj.GetComponent<WardTextElement>();
         titleWte.baseFontSize = 13;
 
-        GameObject descObj = new GameObject("Desc", typeof(RectTransform), typeof(Text), typeof(WardTextElement));
+        GameObject descObj = new GameObject("Desc", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
         descObj.transform.SetParent(box.transform, false);
-        _tooltipDesc = descObj.GetComponent<Text>();
-        _tooltipDesc.font = GUIManager.Instance.AveriaSerif;
-        _tooltipDesc.fontSize = 13;
+        _tooltipDesc = descObj.GetComponent<TextMeshProUGUI>();
+        _tooltipDesc.font = UIFonts.GetPrimaryFont();
+        _tooltipDesc.fontSize = 13f;
         _tooltipDesc.color = WardColorPalette.ValheimBeige;
-        _tooltipDesc.horizontalOverflow = HorizontalWrapMode.Wrap;
+        _tooltipDesc.alignment = TextAlignmentOptions.TopLeft;
+        _tooltipDesc.overflowMode = TextOverflowModes.Overflow;
+        _tooltipDesc.textWrappingMode = TextWrappingModes.Normal;
         WardTextElement descWte = descObj.GetComponent<WardTextElement>();
         descWte.baseFontSize = 13;
 

@@ -1,5 +1,6 @@
 using System;
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.Models;
@@ -143,7 +144,7 @@ public static class WardUIFactory
         headerImg.color = WardColorPalette.CardHeader;
         headerObj.SetLayoutDimensions(-1f, 28f);
 
-        GameObject headerTextObj = new GameObject("HeaderText", typeof(RectTransform), typeof(Text));
+        GameObject headerTextObj = new GameObject("HeaderText", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
         headerTextObj.transform.SetParent(headerObj.transform, false);
         RectTransform htRt = headerTextObj.GetComponent<RectTransform>();
         htRt.anchorMin = Vector2.zero;
@@ -151,12 +152,16 @@ public static class WardUIFactory
         htRt.offsetMin = new Vector2(12f, 0f);
         htRt.offsetMax = new Vector2(-12f, 0f);
 
-        Text headerText = headerTextObj.GetComponent<Text>();
+        TextMeshProUGUI headerText = headerTextObj.GetComponent<TextMeshProUGUI>();
         headerText.text = title.Localize().ToUpperInvariant();
-        headerText.font = GUIManager.Instance.AveriaSerifBold;
-        headerText.fontSize = 13;
+        headerText.font = UIFonts.GetPrimaryFont();
+        headerText.fontSize = 13f;
         headerText.color = WardColorPalette.ValheimOrange;
-        headerText.alignment = TextAnchor.MiddleLeft;
+        headerText.alignment = TextAlignmentOptions.MidlineLeft;
+        headerText.overflowMode = TextOverflowModes.Ellipsis;
+
+        WardTextElement htWte = headerTextObj.GetComponent<WardTextElement>();
+        htWte.baseFontSize = 13;
 
         GameObject bodyObj = new GameObject("CardBody", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         bodyObj.transform.SetParent(cardObj.transform, false);
@@ -194,19 +199,22 @@ public static class WardUIFactory
         hlg.childForceExpandHeight = false;
         hlg.childAlignment = TextAnchor.MiddleLeft;
 
-        GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        GameObject labelObj = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         labelObj.transform.SetParent(rowObj.transform, false);
         labelObj.GetComponent<RectTransform>().sizeDelta = new Vector2(300f, rowHeight);
         labelObj.SetLayoutDimensions(300f, rowHeight, 200f, rowHeight);
 
-        Text label = labelObj.GetComponent<Text>();
+        TextMeshProUGUI label = labelObj.GetComponent<TextMeshProUGUI>();
         label.text = labelText.Localize();
-        label.font = GUIManager.Instance.AveriaSerifBold;
-        label.fontSize = 13;
+        label.font = UIFonts.GetPrimaryFont();
+        label.fontSize = 13f;
         label.color = WardColorPalette.ValheimBeige;
-        label.alignment = TextAnchor.MiddleLeft;
-        label.horizontalOverflow = HorizontalWrapMode.Wrap;
-        label.verticalOverflow = VerticalWrapMode.Overflow;
+        label.alignment = TextAlignmentOptions.MidlineLeft;
+        label.overflowMode = TextOverflowModes.Ellipsis;
+        label.textWrappingMode = TextWrappingModes.Normal;
+
+        WardTextElement labelWte = labelObj.GetComponent<WardTextElement>();
+        labelWte.baseFontSize = 13;
 
         GameObject controlsObj = new GameObject("Controls", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         controlsObj.transform.SetParent(rowObj.transform, false);
@@ -226,6 +234,69 @@ public static class WardUIFactory
         return rowObj;
     }
 
+    public static TextMeshProUGUI SetupButtonText(
+        GameObject btnObj,
+        string text,
+        float fontSize = 13f,
+        Color? color = null,
+        TextAlignmentOptions alignment = TextAlignmentOptions.Center)
+    {
+        if (btnObj == null)
+            return null;
+
+        UIFonts.GetPrimaryFont();
+
+        Text legacyText = btnObj.GetComponentInChildren<Text>(true);
+        GameObject textGo;
+        if (legacyText != null)
+        {
+            textGo = legacyText.gameObject;
+            UnityEngine.Object.DestroyImmediate(legacyText);
+        }
+        else
+        {
+            TextMeshProUGUI existingTmp = btnObj.GetComponentInChildren<TextMeshProUGUI>(true);
+            if (existingTmp != null)
+            {
+                existingTmp.text = text;
+                existingTmp.fontSize = fontSize;
+                if (color.HasValue) existingTmp.color = color.Value;
+                existingTmp.alignment = alignment;
+                return existingTmp;
+            }
+            textGo = new GameObject("Text", typeof(RectTransform));
+            textGo.transform.SetParent(btnObj.transform, false);
+            RectTransform rt = textGo.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+        }
+
+        TextMeshProUGUI tmp = textGo.GetComponent<TextMeshProUGUI>();
+        if (tmp == null)
+        {
+            tmp = textGo.AddComponent<TextMeshProUGUI>();
+        }
+
+        tmp.font = UIFonts.GetPrimaryFont();
+        tmp.text = text;
+        tmp.fontSize = fontSize;
+        tmp.color = color ?? WardColorPalette.ValheimBeige;
+        tmp.alignment = alignment;
+        tmp.overflowMode = TextOverflowModes.Overflow;
+        tmp.textWrappingMode = TextWrappingModes.NoWrap;
+
+        WardTextElement wte = textGo.GetComponent<WardTextElement>();
+        if (wte == null)
+        {
+            wte = textGo.AddComponent<WardTextElement>();
+        }
+        wte.baseFontSize = Mathf.RoundToInt(fontSize);
+
+        return tmp;
+    }
+
     public static void CreateToggleRow(Transform parent, string labelText, bool initialValue, Action<bool> onToggle, out Action<bool> setValue)
     {
         CreateSettingRow(parent, labelText, out Transform controlContainer);
@@ -241,10 +312,11 @@ public static class WardUIFactory
 
         btnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(130f, 28f);
         btnObj.SetLayoutDimensions(130f, 28f);
-        Text btnText = btnObj.GetComponentInChildren<Text>();
-        btnText.font = GUIManager.Instance.AveriaSerifBold;
-        btnText.fontSize = 13;
-        btnText.color = initialValue ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
+        TextMeshProUGUI btnText = SetupButtonText(
+            btnObj,
+            initialValue ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}",
+            13f,
+            initialValue ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted);
 
         bool currentValue = initialValue;
 
@@ -298,10 +370,11 @@ public static class WardUIFactory
         toggleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(120f, 28f);
         toggleBtnObj.SetLayoutDimensions(120f, 28f);
 
-        Text toggleTxt = toggleBtnObj.GetComponentInChildren<Text>();
-        toggleTxt.font = GUIManager.Instance.AveriaSerifBold;
-        toggleTxt.fontSize = 12;
-        toggleTxt.color = initialToggle ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted;
+        TextMeshProUGUI toggleTxt = SetupButtonText(
+            toggleBtnObj,
+            initialToggle ? $"✔  {"$wmb_enabled".Localize()}" : $"✖  {"$wmb_disabled".Localize()}",
+            12f,
+            initialToggle ? WardColorPalette.RunicGreen : WardColorPalette.TextMuted);
 
         Button toggleBtn = toggleBtnObj.GetComponent<Button>();
         bool currentToggle = initialToggle;
@@ -317,10 +390,11 @@ public static class WardUIFactory
         roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
         roleBtnObj.SetLayoutDimensions(135f, 28f);
 
-        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
-        roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-        roleTxt.fontSize = 12;
-        roleTxt.color = GetRoleColor(initialRole);
+        TextMeshProUGUI roleTxt = SetupButtonText(
+            roleBtnObj,
+            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(initialRole).Localize()} ]",
+            12f,
+            GetRoleColor(initialRole));
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         WardRole currentRole = initialRole;
@@ -442,7 +516,7 @@ public static class WardUIFactory
 
                 if (isMajor)
                 {
-                    GameObject labelObj = new GameObject($"TickLabel_{val}", typeof(RectTransform), typeof(Text));
+                    GameObject labelObj = new GameObject($"TickLabel_{val}", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
                     labelObj.transform.SetParent(ticksObj.transform, false);
                     RectTransform lblRt = labelObj.GetComponent<RectTransform>();
                     lblRt.anchorMin = new Vector2(t, 0.5f);
@@ -451,12 +525,17 @@ public static class WardUIFactory
                     lblRt.anchoredPosition = new Vector2(0f, -5f);
                     lblRt.sizeDelta = new Vector2(28f, 12f);
 
-                    Text lblText = labelObj.GetComponent<Text>();
-                    lblText.font = GUIManager.Instance.AveriaSerifBold;
-                    lblText.fontSize = 9;
+                    TextMeshProUGUI lblText = labelObj.GetComponent<TextMeshProUGUI>();
+                    lblText.font = UIFonts.GetPrimaryFont();
+                    lblText.fontSize = 9f;
                     lblText.color = WardColorPalette.ValheimBeige;
-                    lblText.alignment = TextAnchor.UpperCenter;
+                    lblText.alignment = TextAlignmentOptions.Top;
+                    lblText.overflowMode = TextOverflowModes.Overflow;
+                    lblText.textWrappingMode = TextWrappingModes.NoWrap;
                     lblText.text = $"{Mathf.RoundToInt(val)}";
+
+                    WardTextElement lblWte = labelObj.GetComponent<WardTextElement>();
+                    lblWte.baseFontSize = 9;
                 }
             }
         }
@@ -470,16 +549,21 @@ public static class WardUIFactory
         sRt.sizeDelta = new Vector2(0f, 18f);
         Slider slider = sliderObj.GetComponent<Slider>();
 
-        GameObject readoutObj = new GameObject("Readout", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        GameObject readoutObj = new GameObject("Readout", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         readoutObj.transform.SetParent(controlContainer, false);
         readoutObj.GetComponent<RectTransform>().sizeDelta = new Vector2(65f, rowHeight);
         readoutObj.SetLayoutDimensions(65f, rowHeight);
 
-        Text readoutText = readoutObj.GetComponent<Text>();
-        readoutText.font = GUIManager.Instance.AveriaSerifBold;
-        readoutText.fontSize = 14;
+        TextMeshProUGUI readoutText = readoutObj.GetComponent<TextMeshProUGUI>();
+        readoutText.font = UIFonts.GetPrimaryFont();
+        readoutText.fontSize = 14f;
         readoutText.color = WardColorPalette.GoldAmber;
-        readoutText.alignment = TextAnchor.MiddleRight;
+        readoutText.alignment = TextAlignmentOptions.MidlineRight;
+        readoutText.overflowMode = TextOverflowModes.Overflow;
+        readoutText.textWrappingMode = TextWrappingModes.NoWrap;
+
+        WardTextElement roWte = readoutObj.GetComponent<WardTextElement>();
+        roWte.baseFontSize = 14;
 
         string FormatValue(float v)
         {
@@ -538,17 +622,22 @@ public static class WardUIFactory
     {
         CreateSettingRow(parent, labelText, out Transform controlContainer);
 
-        GameObject badgeObj = new GameObject("PowerBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        GameObject badgeObj = new GameObject("PowerBadge", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         badgeObj.transform.SetParent(controlContainer, false);
         badgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(130f, 28f);
         badgeObj.SetLayoutDimensions(130f, 28f);
 
-        Text badgeText = badgeObj.GetComponent<Text>();
+        TextMeshProUGUI badgeText = badgeObj.GetComponent<TextMeshProUGUI>();
         badgeText.text = initialBadge;
-        badgeText.font = GUIManager.Instance.AveriaSerifBold;
-        badgeText.fontSize = 13;
+        badgeText.font = UIFonts.GetPrimaryFont();
+        badgeText.fontSize = 13f;
         badgeText.color = initialBadgeColor;
-        badgeText.alignment = TextAnchor.MiddleRight;
+        badgeText.alignment = TextAlignmentOptions.MidlineRight;
+        badgeText.overflowMode = TextOverflowModes.Overflow;
+        badgeText.textWrappingMode = TextWrappingModes.NoWrap;
+
+        WardTextElement badgeWte = badgeObj.GetComponent<WardTextElement>();
+        badgeWte.baseFontSize = 13;
 
         GameObject btnObj = GUIManager.Instance.CreateButton(
             initialButtonText,
@@ -561,9 +650,7 @@ public static class WardUIFactory
         btnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(125f, 28f);
         btnObj.SetLayoutDimensions(125f, 28f);
 
-        Text btnText = btnObj.GetComponentInChildren<Text>();
-        btnText.font = GUIManager.Instance.AveriaSerifBold;
-        btnText.fontSize = 13;
+        TextMeshProUGUI btnText = SetupButtonText(btnObj, initialButtonText, 13f);
 
         btnObj.GetComponent<Button>().onClick.AddListener(() =>
         {
@@ -601,14 +688,7 @@ public static class WardUIFactory
         btnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
         btnObj.SetLayoutDimensions(135f, 28f);
 
-        Text btnText = btnObj.GetComponentInChildren<Text>();
-        if (btnText != null)
-        {
-            btnText.font = GUIManager.Instance.AveriaSerifBold;
-            btnText.fontSize = 12;
-            btnText.color = initialRoleColor;
-        }
-
+        TextMeshProUGUI btnText = SetupButtonText(btnObj, initialRoleText, 12f, initialRoleColor);
         Button btn = btnObj.GetComponent<Button>();
         btn.onClick.AddListener(() =>
         {
@@ -633,17 +713,22 @@ public static class WardUIFactory
     {
         GameObject rowObj = CreateSettingRow(parent, labelText, out Transform controlContainer);
 
-        GameObject badgeObj = new GameObject("Badge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        GameObject badgeObj = new GameObject("Badge", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         badgeObj.transform.SetParent(controlContainer, false);
         badgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(380f, 28f);
         badgeObj.SetLayoutDimensions(380f, 28f);
 
-        Text badgeText = badgeObj.GetComponent<Text>();
+        TextMeshProUGUI badgeText = badgeObj.GetComponent<TextMeshProUGUI>();
         badgeText.text = initialBadge;
-        badgeText.font = GUIManager.Instance.AveriaSerifBold;
-        badgeText.fontSize = 13;
+        badgeText.font = UIFonts.GetPrimaryFont();
+        badgeText.fontSize = 13f;
         badgeText.color = badgeColor;
-        badgeText.alignment = TextAnchor.MiddleRight;
+        badgeText.alignment = TextAlignmentOptions.MidlineRight;
+        badgeText.overflowMode = TextOverflowModes.Overflow;
+        badgeText.textWrappingMode = TextWrappingModes.NoWrap;
+
+        WardTextElement badgeWte = badgeObj.GetComponent<WardTextElement>();
+        badgeWte.baseFontSize = 13;
 
         setBadge = (text, color) =>
         {
@@ -664,16 +749,22 @@ public static class WardUIFactory
     {
         CreateSettingRow(parent, labelText, out Transform controlContainer);
 
-        GameObject badgeObj = new GameObject("StaticBadge", typeof(RectTransform), typeof(Text), typeof(LayoutElement));
+        GameObject badgeObj = new GameObject("StaticBadge", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         badgeObj.transform.SetParent(controlContainer, false);
         badgeObj.GetComponent<RectTransform>().sizeDelta = new Vector2(330f, 28f);
         badgeObj.SetLayoutDimensions(330f, 28f);
-        Text badgeText = badgeObj.GetComponent<Text>();
+
+        TextMeshProUGUI badgeText = badgeObj.GetComponent<TextMeshProUGUI>();
         badgeText.text = initialValue;
-        badgeText.font = GUIManager.Instance.AveriaSerifBold;
-        badgeText.fontSize = 13;
+        badgeText.font = UIFonts.GetPrimaryFont();
+        badgeText.fontSize = 13f;
         badgeText.color = WardColorPalette.ValheimBeige;
-        badgeText.alignment = TextAnchor.MiddleRight;
+        badgeText.alignment = TextAlignmentOptions.MidlineRight;
+        badgeText.overflowMode = TextOverflowModes.Overflow;
+        badgeText.textWrappingMode = TextWrappingModes.NoWrap;
+
+        WardTextElement badgeWte = badgeObj.GetComponent<WardTextElement>();
+        badgeWte.baseFontSize = 13;
 
         GameObject inputObj = GUIManager.Instance.CreateInputField(
             controlContainer,
@@ -708,6 +799,8 @@ public static class WardUIFactory
             30f);
         btnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(75f, 30f);
         btnObj.SetLayoutDimensions(75f, 30f);
+
+        TextMeshProUGUI btnText = SetupButtonText(btnObj, buttonText, 13f);
 
         btnObj.GetComponent<Button>().onClick.AddListener(() =>
         {

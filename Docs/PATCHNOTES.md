@@ -1,4 +1,11 @@
-# 0.0.3 - Weather Protection & Shield Stability Fixes
+# 0.0.3 - Weather Protection, Territory Management & UI Refinements
+* **Remote Ward Management & UI Architecture (`RemoteWardSelectorModal`, `WardMainWindow`, `UIFonts`)**:
+  * Added `RemoteWardSelectorModal` allowing remote inspection and switching of managed wards across player-owned territory.
+  * Converted all legacy uGUI `Text` components to `TextMeshProUGUI` with dynamic font resolution via `UIFonts.GetPrimaryFont()`.
+  * Tracked physical interaction origin via `WardMainWindow._physicalWard` (`PhysicalWardId`), decoupling physical player location from the currently active inspected ward (`_activeWard`).
+  * Converted territory collection enumeration loops in `WardRegistryManager` (`GetPlayerOwnedWards`, `GetWardsForPlayer`, `GetWardCoveringPoint`, `ValidateWardPlacement`, `PruneDeadWards`) to snapshot lists to prevent collection modification exceptions.
+  * Added `Patch_PrivateArea.Setup` Postfix to immediately register newly placed ward stones with creator ID and name upon placement.
+  * Added `Patch_WearNTear.Prefix_Destroy`, `Patch_ZNetScene.Prefix_Destroy`, and `Patch_ZDOMan.Prefix_DestroyZDO` hooks to immediately unregister dismantled or destroyed wards and broadcast unregistration over network RPC (`WMB_UnregisterWard`).
 * **Shield Generator Proxy & Teardown Architecture (`Patch_ShieldGenerator_Start`, `Patch_ShieldGenerator_OnDestroy`)**:
   * Added `Patch_ShieldGenerator_Start` Prefix on `ShieldGenerator.Start` setting `m_isPlacementGhost = true` and `enabled = false` for proxy components on `WardForcefieldDome`, preventing unwanted registration to `ShieldGenerator.m_instances` and avoiding binding shield RPCs to `PrivateArea`.
   * Added `Patch_ShieldGenerator_OnDestroy` Prefix intercepting `ShieldGenerator.OnDestroy` to completely bypass teardown on proxy generators and null-guard `ShieldGenerator.m_shieldDomeEffect` on real shield generators, eliminating `NullReferenceException` crashes during world unload when the camera is destroyed first.

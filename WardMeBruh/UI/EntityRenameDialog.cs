@@ -1,4 +1,5 @@
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -15,11 +16,11 @@ public class EntityRenameDialog : MonoBehaviour
     private static EntityRenameDialog _instance;
     private GameObject _panel;
     private InputField _nameInput;
-    private Text _headerText;
+    private TextMeshProUGUI _headerText;
     private Button _roleBtn;
-    private Text _roleTxt;
+    private TextMeshProUGUI _roleTxt;
     private Button _depotBtn;
-    private Text _depotTxt;
+    private TextMeshProUGUI _depotTxt;
 
     private ZDOID _activeEntityId;
     private bool _isDoor;
@@ -73,14 +74,24 @@ public class EntityRenameDialog : MonoBehaviour
 
     private void Update()
     {
-        if (IsOpen && (Input.GetKeyDown(KeyCode.Escape) || (ZInput.instance != null && (ZInput.GetKeyDown(KeyCode.Escape) || ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")))))
+        if (IsOpen)
         {
-            Close();
+            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
+                ZInput.GetKeyDown(KeyCode.Escape) ||
+                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+
+            if (closeRequested)
+            {
+                Close();
+            }
         }
     }
 
     private void Build()
     {
+        UIFonts.GetPrimaryFont();
+
         _panel = GUIManager.Instance.CreateWoodpanel(
             transform, 
             new Vector2(0.5f, 0.5f), 
@@ -91,21 +102,24 @@ public class EntityRenameDialog : MonoBehaviour
             draggable: true);
         _panel.name = "EntityRenameDialog";
 
-        GameObject headerObj = GUIManager.Instance.CreateText(
-            "$wmb_dialog_configure".Localize(), 
-            _panel.transform, 
-            new Vector2(0.5f, 1f), 
-            new Vector2(0.5f, 1f), 
-            new Vector2(0f, -22f), 
-            GUIManager.Instance.AveriaSerifBold, 
-            18, 
-            WardColorPalette.ValheimOrange, 
-            false, 
-            Color.clear, 
-            420f, 
-            28f, 
-            false);
-        _headerText = headerObj.GetComponent<Text>();
+        GameObject headerObj = new GameObject("HeaderText", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(WardTextElement));
+        headerObj.transform.SetParent(_panel.transform, false);
+        RectTransform headerRt = headerObj.GetComponent<RectTransform>();
+        headerRt.anchorMin = new Vector2(0.5f, 1f);
+        headerRt.anchorMax = new Vector2(0.5f, 1f);
+        headerRt.pivot = new Vector2(0.5f, 1f);
+        headerRt.anchoredPosition = new Vector2(0f, -22f);
+        headerRt.sizeDelta = new Vector2(420f, 28f);
+
+        _headerText = headerObj.GetComponent<TextMeshProUGUI>();
+        _headerText.font = UIFonts.GetPrimaryFont();
+        _headerText.text = "$wmb_dialog_configure".Localize();
+        _headerText.fontSize = 18f;
+        _headerText.color = WardColorPalette.ValheimOrange;
+        _headerText.alignment = TextAlignmentOptions.Center;
+
+        WardTextElement headerWte = headerObj.GetComponent<WardTextElement>();
+        headerWte.baseFontSize = 18;
 
         GameObject inputObj = GUIManager.Instance.CreateInputField(
             _panel.transform, 
@@ -137,13 +151,7 @@ public class EntityRenameDialog : MonoBehaviour
             34f);
         _roleBtn = roleObj.GetComponent<Button>();
         _roleBtn.onClick.AddListener(OnRoleClicked);
-        _roleTxt = roleObj.GetComponentInChildren<Text>();
-        if (_roleTxt != null)
-        {
-            _roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-            _roleTxt.fontSize = 12;
-            _roleTxt.color = WardColorPalette.IceBlue;
-        }
+        _roleTxt = WardUIFactory.SetupButtonText(roleObj, $"{"$wmb_role".Localize()}: {"$wmb_role_resident".Localize()}", 12f, WardColorPalette.IceBlue);
 
         GameObject depotObj = GUIManager.Instance.CreateButton(
             "$wmb_depot_no".Localize(), 
@@ -155,13 +163,7 @@ public class EntityRenameDialog : MonoBehaviour
             34f);
         _depotBtn = depotObj.GetComponent<Button>();
         _depotBtn.onClick.AddListener(OnDepotClicked);
-        _depotTxt = depotObj.GetComponentInChildren<Text>();
-        if (_depotTxt != null)
-        {
-            _depotTxt.font = GUIManager.Instance.AveriaSerifBold;
-            _depotTxt.fontSize = 12;
-            _depotTxt.color = WardColorPalette.TextMuted;
-        }
+        _depotTxt = WardUIFactory.SetupButtonText(depotObj, "$wmb_depot_no".Localize(), 12f, WardColorPalette.TextMuted);
 
         GameObject saveBtn = GUIManager.Instance.CreateButton(
             "$wmb_save".Localize(), 
@@ -171,6 +173,7 @@ public class EntityRenameDialog : MonoBehaviour
             new Vector2(-80f, 32f), 
             130f, 
             36f);
+        WardUIFactory.SetupButtonText(saveBtn, "$wmb_save".Localize(), 13f, WardColorPalette.ValheimOrange);
         saveBtn.GetComponent<Button>().onClick.AddListener(OnSaveClicked);
 
         GameObject cancelBtn = GUIManager.Instance.CreateButton(
@@ -181,6 +184,7 @@ public class EntityRenameDialog : MonoBehaviour
             new Vector2(80f, 32f), 
             130f, 
             36f);
+        WardUIFactory.SetupButtonText(cancelBtn, "$wmb_cancel".Localize(), 13f, WardColorPalette.TextMuted);
         cancelBtn.GetComponent<Button>().onClick.AddListener(Close);
 
         _panel.SetActive(false);

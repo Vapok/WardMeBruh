@@ -1,7 +1,9 @@
 using HarmonyLib;
 using UnityEngine;
 using WardMeBruh.Configuration;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
 
@@ -75,6 +77,32 @@ internal static class Patch_WearNTear
         if (wardZdo.GetBool(WardZdoKeys.SnowShield, false))
         {
             __instance.m_snowDamageImmune = true;
+        }
+    }
+
+    [HarmonyPatch(nameof(WearNTear.Destroy))]
+    [HarmonyPrefix]
+    private static void Prefix_Destroy(WearNTear __instance)
+    {
+        if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
+            return;
+
+        PrivateArea ward = __instance.GetComponent<PrivateArea>();
+        if (ward != null)
+        {
+            ZDOID wardId = __instance.m_nview.GetZDO().m_uid;
+            string wardName = __instance.m_nview.GetZDO().GetString(WardZdoKeys.CustomName, ward.m_name);
+            WardMeBruh.Log.Debug($"[Ward Lifecycle] Unregistering Ward {wardId} ('{wardName}') on WearNTear.Destroy");
+            WardRegistryManager.Instance.Unregister(wardId);
+
+            if (ZNet.instance != null && ZNet.instance.IsServer())
+            {
+                WardNetworkRouter.BroadcastRegistry();
+            }
+            else
+            {
+                WardNetworkRouter.SendUnregisterWard(wardId);
+            }
         }
     }
 }

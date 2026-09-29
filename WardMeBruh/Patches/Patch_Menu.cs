@@ -1,4 +1,6 @@
 using HarmonyLib;
+using UnityEngine;
+using UnityEngine.InputSystem;
 using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
@@ -19,12 +21,42 @@ internal static class Patch_Menu
             return true;
         }
 
-        if (WardMainWindow.Instance != null && (WardMainWindow.Instance.IsOpen || WardMainWindow.LastClosedFrame == UnityEngine.Time.frameCount))
+        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        {
+            bool escapePressed = Input.GetKeyDown(KeyCode.Escape) ||
+                                 ZInput.GetKeyDown(KeyCode.Escape) ||
+                                 (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
+                                 (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+
+            if (escapePressed)
+            {
+                WardMainWindow.Instance.HandleEscapeKey();
+            }
+
+            return false;
+        }
+
+        if (WardMainWindow.LastClosedFrame == Time.frameCount)
         {
             return false;
         }
 
-        if (EntityRenameDialog.Instance != null && (EntityRenameDialog.Instance.IsOpen || EntityRenameDialog.LastClosedFrame == UnityEngine.Time.frameCount))
+        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        {
+            bool escapePressed = Input.GetKeyDown(KeyCode.Escape) ||
+                                 ZInput.GetKeyDown(KeyCode.Escape) ||
+                                 (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) ||
+                                 (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+
+            if (escapePressed)
+            {
+                EntityRenameDialog.Instance.Close();
+            }
+
+            return false;
+        }
+
+        if (EntityRenameDialog.LastClosedFrame == Time.frameCount)
         {
             return false;
         }

@@ -24,6 +24,7 @@ public static class WardNetworkRouter
     private const string RpcSyncAllPlayers = "WMB_SyncAllPlayers";
     private const string RpcSyncSinglePlayer = "WMB_SyncSinglePlayer";
     private const string RpcRegisterPlayer = "WMB_RegisterPlayer";
+    private const string RpcUnregisterWard = "WMB_UnregisterWard";
 
     public static void Register()
     {
@@ -45,6 +46,7 @@ public static class WardNetworkRouter
         ZRoutedRpc.instance.Register(RpcSyncAllPlayers, new Action<long, ZPackage>(RPC_SyncAllPlayers));
         ZRoutedRpc.instance.Register(RpcSyncSinglePlayer, new Action<long, ZPackage>(RPC_SyncSinglePlayer));
         ZRoutedRpc.instance.Register(RpcRegisterPlayer, new Action<long, ZPackage>(RPC_RegisterPlayer));
+        ZRoutedRpc.instance.Register(RpcUnregisterWard, new Action<long, ZPackage>(RPC_UnregisterWard));
     }
 
     public static void RequestRegistrySync()
@@ -85,6 +87,24 @@ public static class WardNetworkRouter
 
         long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
         ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcTransferOwnership, pkg);
+    }
+
+    public static void SendUnregisterWard(ZDOID wardId)
+    {
+        if (ZRoutedRpc.instance == null)
+            return;
+
+        if (ZNet.instance != null && ZNet.instance.IsServer())
+        {
+            WardRegistryManager.Instance.Unregister(wardId);
+            BroadcastRegistry();
+            return;
+        }
+
+        WardMeBruh.Log.Debug($"[Network] Transmitting unregister ward request: Ward {wardId}");
+        ZPackage pkg = new();
+        pkg.Write(wardId);
+        ZRoutedRpc.instance.InvokeRoutedRPC(ZRoutedRpc.Everybody, RpcUnregisterWard, pkg);
     }
 
     public static void SendEntityName(ZDOID entityId, int keyHash, string newName)
@@ -311,6 +331,21 @@ public static class WardNetworkRouter
         ZRoutedRpc.instance.InvokeRoutedRPC(sender, RpcSyncRegistry, pkg);
 
         SendKnownPlayers(sender);
+    }
+
+    private static void RPC_UnregisterWard(long sender, ZPackage pkg)
+    {
+        if (pkg == null)
+            return;
+
+        ZDOID wardId = pkg.ReadZDOID();
+        WardMeBruh.Log.Debug($"[Network] Received unregister ward request for Ward {wardId} from peer {sender}");
+        WardRegistryManager.Instance.Unregister(wardId);
+
+        if (ZNet.instance != null && ZNet.instance.IsServer())
+        {
+            BroadcastRegistry();
+        }
     }
 
     private static void RPC_TransferOwnership(long sender, ZPackage pkg)

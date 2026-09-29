@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.Configuration;
@@ -213,13 +214,8 @@ public class TabAccess
             28f);
         roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
         roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
-        if (roleTxt != null)
-        {
-            roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-            roleTxt.fontSize = 12;
-            roleTxt.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        }
+        Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, roleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;
@@ -245,13 +241,8 @@ public class TabAccess
             28f);
         fuelBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(140f, 28f);
         fuelBtnObj.SetLayoutDimensions(140f, 28f);
-        Text fuelTxt = fuelBtnObj.GetComponentInChildren<Text>();
-        if (fuelTxt != null)
-        {
-            fuelTxt.font = GUIManager.Instance.AveriaSerifBold;
-            fuelTxt.fontSize = 12;
-            fuelTxt.color = isFuel ? WardColorPalette.GoldAmber : WardColorPalette.TextMuted;
-        }
+        Color fuelColor = isFuel ? WardColorPalette.GoldAmber : WardColorPalette.TextMuted;
+        TextMeshProUGUI fuelTxt = WardUIFactory.SetupButtonText(fuelBtnObj, isFuel ? $"✔ {"$wmb_access_fuel_depot".Localize()}" : $"✖ {"$wmb_access_no_depot".Localize()}", 12f, fuelColor);
 
         Button fuelBtn = fuelBtnObj.GetComponent<Button>();
         fuelBtn.interactable = canManage;
@@ -297,13 +288,8 @@ public class TabAccess
             28f);
         roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
         roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
-        if (roleTxt != null)
-        {
-            roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-            roleTxt.fontSize = 12;
-            roleTxt.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        }
+        Color doorRoleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, doorRoleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;
@@ -341,13 +327,8 @@ public class TabAccess
             28f);
         roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
         roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
-        if (roleTxt != null)
-        {
-            roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-            roleTxt.fontSize = 12;
-            roleTxt.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        }
+        Color portalRoleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, portalRoleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;

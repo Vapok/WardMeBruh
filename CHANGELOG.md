@@ -1,9 +1,14 @@
-# 0.0.3 - Weather Protection & Shield Stability Fixes
+# 0.0.3 - Weather Protection, Territory Management & UI Refinements
+* Added Remote Ward Territory Management via the "Other Wards" modal to inspect and switch active management across player-owned wards.
+* Converted entire UI and all dialogs to TextMeshPro for crisp text rendering and consistent font scaling.
 * Fixed Weather Roof shield to properly guard players from rain and prevent getting wet under active wards.
 * Fixed an issue where the resting indicator could repeatedly pulse when rain occurred.
 * Separated Weather Roof rain protection from Sanctuary Max Comfort so both features operate independently.
 * Moved Biome Hazard Shields controls from Upkeep to the Defenses tab to match permission categories.
 * Fixed a game exit issue where shield generators could trigger an error during logout.
+* Fixed territory list location reporting so the player's physical ward remains accurately marked as Current Location when remotely managing other wards.
+* Fixed ward placement race condition where the territory menu could open blank immediately after placing a new stone.
+* Fixed ward dismantling synchronization so destroyed wards immediately unregister from the territory list.
 
 # 0.0.2 - API Extensibility, Role Refinements & Quality of Life
 * Added developer API supporting custom roles and external mod permission registrations.

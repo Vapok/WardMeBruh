@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using WardMeBruh.API;
@@ -131,15 +132,7 @@ public class TabRoles
                 28f);
             dropAddBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(85f, 28f);
             dropAddBtn.SetLayoutDimensions(85f, 28f);
-            Text dropAddTxt = dropAddBtn.GetComponentInChildren<Text>();
-            if (dropAddTxt != null)
-            {
-                dropAddTxt.font = GUIManager.Instance.AveriaSerifBold;
-                dropAddTxt.fontSize = 11;
-                dropAddTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                dropAddTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                dropAddTxt.alignment = TextAnchor.MiddleCenter;
-            }
+            TextMeshProUGUI dropAddTxt = WardUIFactory.SetupButtonText(dropAddBtn, "$wmb_roles_add".Localize(), 11f);
             dropAddBtn.GetComponent<Button>().onClick.AddListener(() => AddDropdownPlayerToRole((int)WardRole.Resident));
 
             if (knownPlayers.Count == 0)
@@ -212,15 +205,7 @@ public class TabRoles
                 28f);
             addManualBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(85f, 28f);
             addManualBtn.SetLayoutDimensions(85f, 28f);
-            Text addManualTxt = addManualBtn.GetComponentInChildren<Text>();
-            if (addManualTxt != null)
-            {
-                addManualTxt.font = GUIManager.Instance.AveriaSerifBold;
-                addManualTxt.fontSize = 11;
-                addManualTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                addManualTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                addManualTxt.alignment = TextAnchor.MiddleCenter;
-            }
+            TextMeshProUGUI addManualTxt = WardUIFactory.SetupButtonText(addManualBtn, "$wmb_roles_add".Localize(), 11f);
             addManualBtn.GetComponent<Button>().onClick.AddListener(() => AddManualPlayerToRole((int)WardRole.Resident));
         }
 
@@ -300,28 +285,21 @@ public class TabRoles
         roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(roleBtnWidth, 28f);
         roleBtnObj.SetLayoutDimensions(roleBtnWidth, 28f);
 
-        Text roleTxt = roleBtnObj.GetComponentInChildren<Text>();
-        if (roleTxt != null)
+        Color roleColor;
+        if (!string.IsNullOrEmpty(currentRole.ColorHex) && ColorUtility.TryParseHtmlString(currentRole.ColorHex, out Color parsedColor))
         {
-            roleTxt.font = GUIManager.Instance.AveriaSerifBold;
-            roleTxt.fontSize = 12;
-            if (!string.IsNullOrEmpty(currentRole.ColorHex) && ColorUtility.TryParseHtmlString(currentRole.ColorHex, out Color parsedColor))
-            {
-                roleTxt.color = parsedColor;
-            }
-            else if (currentRole.Level >= 2)
-            {
-                roleTxt.color = WardColorPalette.GoldAmber;
-            }
-            else
-            {
-                roleTxt.color = WardColorPalette.IceBlue;
-            }
-            roleTxt.verticalOverflow = VerticalWrapMode.Overflow;
-            roleTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-            roleTxt.alignment = TextAnchor.MiddleCenter;
+            roleColor = parsedColor;
+        }
+        else if (currentRole.Level >= 2)
+        {
+            roleColor = WardColorPalette.GoldAmber;
+        }
+        else
+        {
+            roleColor = WardColorPalette.IceBlue;
         }
 
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, roleBtnText, 12f, roleColor);
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canChangeRole;
         if (!canChangeRole && roleTxt != null && !canManage)
@@ -369,17 +347,7 @@ public class TabRoles
             removeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(75f, 28f);
             removeBtn.SetLayoutDimensions(75f, 28f);
 
-            Text rmTxt = removeBtn.GetComponentInChildren<Text>();
-            if (rmTxt != null)
-            {
-                rmTxt.font = GUIManager.Instance.AveriaSerifBold;
-                rmTxt.fontSize = 11;
-                rmTxt.color = WardColorPalette.DangerRed;
-                rmTxt.verticalOverflow = VerticalWrapMode.Overflow;
-                rmTxt.horizontalOverflow = HorizontalWrapMode.Overflow;
-                rmTxt.alignment = TextAnchor.MiddleCenter;
-            }
-
+            TextMeshProUGUI rmTxt = WardUIFactory.SetupButtonText(removeBtn, "$wmb_roles_remove".Localize(), 11f, WardColorPalette.DangerRed);
             removeBtn.GetComponent<Button>().onClick.AddListener(() => RemovePlayerFromRoster(entry.PlayerId));
         }
     }

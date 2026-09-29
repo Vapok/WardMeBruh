@@ -23,6 +23,7 @@ internal static class GameStartPatch
 
         if (!Jotunn.Managers.GUIManager.IsHeadless())
         {
+            _ = UI.UIFonts.GetPrimaryFont();
             _ = UI.WardMainWindow.Instance;
             _ = UI.EntityRenameDialog.Instance;
         }

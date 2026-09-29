@@ -11,8 +11,6 @@ public class ConfigRegistry : ConfigSyncBase
 {
     internal static ConfigEntry<bool> Enabled;
     internal static ConfigEntry<KeyboardShortcut> OpenWardHubKey;
-    internal static ConfigEntry<bool> ShowSplashOnStartup;
-    internal static ConfigEntry<bool> EnableTelemetry;
     internal static ConfigEntry<WardFontSizeMode> GuiFontSize;
 
     internal static ConfigEntry<float> MaxWardRadius;
@@ -45,13 +43,7 @@ public class ConfigRegistry : ConfigSyncBase
             new ConfigDescription("Key shortcut used to open the Ward Hub GUI when looking at a ward.",
                 null, new ConfigurationManagerAttributes { Order = 2 }), ref OpenWardHubKey);
 
-        UnsyncedConfig("Local Config", "Show Splash on Startup", true,
-            new ConfigDescription("If enabled, displays the mod overview and links splash screen on game startup.",
-                null, new ConfigurationManagerAttributes { Order = 4 }), ref ShowSplashOnStartup);
 
-        UnsyncedConfig("Local Config", "Enable Anonymous Telemetry", true,
-            new ConfigDescription("If enabled, sends anonymous mod launch and heartbeat telemetry to help improve mod stability and track active versions.",
-                null, new ConfigurationManagerAttributes { Order = 5 }), ref EnableTelemetry);
 
         UnsyncedConfig("Local Config", "UI Font Size", WardFontSizeMode.Small,
             new ConfigDescription("Font size mode for the Ward Hub GUI (Small, Medium, Large).",

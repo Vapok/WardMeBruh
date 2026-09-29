@@ -63,7 +63,6 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
         {
             Tagline = "A quality-of-life mod for ward interaction and protection in Valheim.",
             ShowOnStartup = ConfigRegistry.ShowSplashOnStartup,
-            EnableTelemetry = ConfigRegistry.EnableTelemetry,
         });
 
         if (GUIManager.IsHeadless())

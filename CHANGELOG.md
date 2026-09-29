@@ -1,3 +1,6 @@
+# 0.0.4 - In Development
+* Active development in progress.
+
 # 0.0.3 - Weather Protection, Territory Management & UI Refinements
 * Added Remote Ward Territory Management via the "Other Wards" modal to inspect and switch active management across player-owned wards.
 * Converted entire UI and all dialogs to TextMeshPro for crisp text rendering and consistent font scaling.

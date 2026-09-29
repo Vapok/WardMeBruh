@@ -1,3 +1,6 @@
+# 0.0.4 - In Development
+* Active development in progress.
+
 # 0.0.3 - Weather Protection, Territory Management & UI Refinements
 * **Remote Ward Management & UI Architecture (`RemoteWardSelectorModal`, `WardMainWindow`, `UIFonts`)**:
   * Added `RemoteWardSelectorModal` allowing remote inspection and switching of managed wards across player-owned territory.

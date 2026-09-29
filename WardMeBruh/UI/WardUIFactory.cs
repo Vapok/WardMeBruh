@@ -365,9 +365,11 @@ public static class WardUIFactory
         bool wholeNumbers, 
         string unit, 
         Action<float> onValueChanged, 
-        out Action<float> setValue)
+        out Action<float> setValue,
+        float step = 5f,
+        bool showTicks = true)
     {
-        CreateSliderRow(parent, labelText, min, max, initialValue, wholeNumbers, unit, onValueChanged, out setValue, out _);
+        CreateSliderRow(parent, labelText, min, max, initialValue, wholeNumbers, unit, onValueChanged, out setValue, out _, step, showTicks);
     }
 
     public static void CreateSliderRow(
@@ -381,8 +383,8 @@ public static class WardUIFactory
         Action<float> onValueChanged, 
         out Action<float> setValue,
         out Action<bool> setInteractable,
-        float step = 0f,
-        bool showTicks = false)
+        float step = 5f,
+        bool showTicks = true)
     {
         float rowHeight = showTicks ? 48f : 34f;
         CreateSettingRow(parent, labelText, out Transform controlContainer, rowHeight);
@@ -405,12 +407,23 @@ public static class WardUIFactory
             ticksCg = ticksObj.GetComponent<CanvasGroup>();
 
             int count = Mathf.RoundToInt((max - min) / step);
+            float majorInterval = (max - min) <= 35f ? 10f : 25f;
+
             for (int i = 0; i <= count; i++)
             {
                 float val = min + i * step;
                 float t = (float)i / count;
 
-                bool isMajor = Mathf.Approximately(val, min) || Mathf.Approximately(val, max) || Mathf.Approximately(val % 25f, 0f);
+                bool isMin = Mathf.Approximately(val, min);
+                bool isMax = Mathf.Approximately(val, max);
+                bool isInterval = Mathf.Approximately(val % majorInterval, 0f) || Mathf.Approximately(Mathf.Abs(val % majorInterval), majorInterval);
+
+                float pixelDistFromMin = t * 230f;
+                float pixelDistFromMax = (1f - t) * 230f;
+                bool collidesWithMin = !isMin && pixelDistFromMin < 26f;
+                bool collidesWithMax = !isMax && pixelDistFromMax < 26f;
+
+                bool isMajor = (isMin || isMax || isInterval) && !collidesWithMin && !collidesWithMax;
                 float tickH = isMajor ? 7f : 4f;
                 float tickW = isMajor ? 2f : 1.5f;
                 Color tickColor = isMajor ? WardColorPalette.GoldAmber : new Color(0.55f, 0.48f, 0.38f, 0.70f);

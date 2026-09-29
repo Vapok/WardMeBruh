@@ -161,9 +161,10 @@ public class RemoteWardSelectorModal
                 Text currentBadgeText = currentBadgeObj.GetComponent<Text>();
                 currentBadgeText.text = "$wmb_modal_current_badge".Localize();
                 currentBadgeText.font = GUIManager.Instance.AveriaSerifBold;
-                currentBadgeText.fontSize = 13;
+                currentBadgeText.fontSize = 16;
                 currentBadgeText.color = WardColorPalette.GoldAmber;
                 currentBadgeText.alignment = TextAnchor.MiddleCenter;
+                currentBadgeText.horizontalOverflow = HorizontalWrapMode.Overflow;
             }
             else
             {

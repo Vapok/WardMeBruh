@@ -48,6 +48,7 @@ public class WardMainWindow : MonoBehaviour
     }
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
+    public static int LastClosedFrame { get; private set; } = -1;
     public WardFontSizeMode CurrentFontSizeMode => _currentFontSizeMode;
 
     private void Awake()
@@ -88,7 +89,7 @@ public class WardMainWindow : MonoBehaviour
                 return;
             }
 
-            bool closeRequested = Input.GetKeyDown(KeyCode.Escape);
+            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) || (ZInput.instance != null && (ZInput.GetKeyDown(KeyCode.Escape) || ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
             bool isInputFieldFocused = EventSystem.current != null && 
                 EventSystem.current.currentSelectedGameObject != null && 
                 EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null;
@@ -334,6 +335,12 @@ public class WardMainWindow : MonoBehaviour
 
     public void Close()
     {
+        LastClosedFrame = Time.frameCount;
+        if (_remoteSelector != null && _remoteSelector.IsOpen)
+        {
+            _remoteSelector.Close();
+        }
+
         if (_panel != null)
         {
             _panel.SetActive(false);

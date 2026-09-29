@@ -172,7 +172,7 @@ public class TabManagement
             if (isSelected)
             {
                 btnImg.color = WardColorPalette.ValheimOrange;
-                if (btnTxt != null) btnTxt.color = Color.black;
+                if (btnTxt != null) btnTxt.color = WardColorPalette.ValheimOrange;
             }
             else
             {

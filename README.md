@@ -64,12 +64,12 @@
 * **"Ghost Base" AI Camouflage**: Hides structures from enemy pathfinding so mobs don't aggro on walls.
 * **Raid & Mob Spawn Suppression**: Cancels base raid events and suppresses mob spawns inside the dome.
 * **Dome Power Deactivation**: Toggling the ward dome off disables all shield defenses (pushback, shock, camouflage, raid/spawn suppression, hazard shields) and dome status perks (faked fire/shelter, forced max comfort, food decay pause, skill shield, regen boost). Standard vanilla rules apply for fire, shelter, and resting.
-* **Continuous Upkeep & Access Protection**: Base automations (Area Repair, Auto-Fuel, Auto-Door) and security access settings (Door clearances, Chest locks, Portal gating, Building permissions, and Harvesting/Farming restrictions) remain active and enforced even when the dome is powered down.
+* **Continuous Upkeep & Access Protection**: Base automations (Area Repair, 🔥 Auto-Fuel, Auto-Door) and security access settings (Door clearances, Chest locks, Portal gating, Building permissions, and Harvesting/Farming restrictions) remain active and enforced even when the dome is powered down.
 
 ### Base Automation & Upkeep
-* **Free Area Repair**: Automatically repairs damaged structures with a configurable weathering threshold slider (20%–100%).
-* **Auto-Fuel Supply Depots**: Refuels nearby torches, campfires, hearths, and smelters directly from designated chests.
-* **Auto-Closing Doors**: Automatically shuts open doors and gates after a configurable delay (3s–30s).
+* **Free Area Repair**: Automatically repairs damaged structures with a configurable weathering threshold slider (20%–100% in 5% notched increments).
+* **🔥 Auto-Fuel Supply Depots**: Refuels nearby torches, campfires, hearths, and smelters directly from designated chests.
+* **Auto-Closing Doors**: Automatically shuts open doors and gates after a configurable delay (5s–30s in 5s notched increments).
 
 ### Sanctuary Perks & Comfort
 * **Max Comfort Under Shield**: Calculates the highest comfort piece in the base and applies that max comfort level and full shelter everywhere under the active dome.

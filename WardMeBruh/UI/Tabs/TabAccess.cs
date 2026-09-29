@@ -241,10 +241,10 @@ public class TabAccess
             Vector2.zero, 
             Vector2.zero, 
             Vector2.zero, 
-            125f, 
+            140f, 
             28f);
-        fuelBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(125f, 28f);
-        fuelBtnObj.SetLayoutDimensions(125f, 28f);
+        fuelBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(140f, 28f);
+        fuelBtnObj.SetLayoutDimensions(140f, 28f);
         Text fuelTxt = fuelBtnObj.GetComponentInChildren<Text>();
         if (fuelTxt != null)
         {

@@ -76,7 +76,7 @@ public class TabUpkeep
         WardUIFactory.CreateSliderRow(
             card3, 
             "$wmb_upkeep_auto_close_delay", 
-            1f, 
+            5f, 
             30f, 
             5f, 
             true, 

@@ -65,6 +65,12 @@ public class AutoFuelService : MonoBehaviour
             List<Container> allContainers = Patch_Container.AllContainers;
             List<Fireplace> allFireplaces = Patch_Fireplace.AllFireplaces;
             List<Smelter> allSmelters = Patch_Smelter.AllSmelters;
+            List<CookingStation> allCookingStations = Patch_CookingStation.AllCookingStations;
+
+            allContainers.RemoveAll(c => c == null);
+            allFireplaces.RemoveAll(f => f == null);
+            allSmelters.RemoveAll(s => s == null);
+            allCookingStations.RemoveAll(cs => cs == null);
 
             for (int wardIndex = 0; wardIndex < activeFuelWards.Count; wardIndex++)
             {
@@ -157,6 +163,38 @@ public class AutoFuelService : MonoBehaviour
                             smelter.m_nview.InvokeRPC("RPC_AddFuel");
                             string containerName = fuelContainer.m_nview.GetZDO().GetString(WardZdoKeys.ContainerName, "Chest");
                             WardMeBruh.Log.Debug($"[AutoFuel] Fueled Smelter ({smelter.m_nview.GetZDO().m_uid}) with 1x '{fuelName}' from Container '{containerName}' ({fuelContainer.m_nview.GetZDO().m_uid}) in Ward {ward.m_nview.GetZDO().m_uid}");
+                            break;
+                        }
+                    }
+                }
+
+                for (int csIndex = 0; csIndex < allCookingStations.Count; csIndex++)
+                {
+                    CookingStation station = allCookingStations[csIndex];
+                    if (station == null || station.m_nview == null || !station.m_nview.IsValid())
+                        continue;
+
+                    if (Utils.DistanceXZ(wardPos, station.transform.position) > radius)
+                        continue;
+
+                    if (!station.m_useFuel || station.m_maxFuel <= 0 || station.m_fuelItem == null)
+                        continue;
+
+                    float currentFuel = station.m_nview.GetZDO().GetFloat(ZDOVars.s_fuel, 0f);
+                    if (currentFuel >= station.m_maxFuel - 1f)
+                        continue;
+
+                    string fuelName = station.m_fuelItem.m_itemData.m_shared.m_name;
+                    for (int fcIndex = 0; fcIndex < fuelContainers.Count; fcIndex++)
+                    {
+                        Container fuelContainer = fuelContainers[fcIndex];
+                        Inventory inv = fuelContainer.GetInventory();
+                        if (inv != null && inv.HaveItem(fuelName))
+                        {
+                            inv.RemoveItem(fuelName, 1);
+                            station.m_nview.InvokeRPC("RPC_AddFuel");
+                            string containerName = fuelContainer.m_nview.GetZDO().GetString(WardZdoKeys.ContainerName, "Chest");
+                            WardMeBruh.Log.Debug($"[AutoFuel] Fueled CookingStation/Oven ({station.m_nview.GetZDO().m_uid}) with 1x '{fuelName}' from Container '{containerName}' ({fuelContainer.m_nview.GetZDO().m_uid}) in Ward {ward.m_nview.GetZDO().m_uid}");
                             break;
                         }
                     }

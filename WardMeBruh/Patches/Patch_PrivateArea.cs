@@ -7,6 +7,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
 using WardMeBruh.UI;
 
@@ -38,6 +39,11 @@ internal static class Patch_PrivateArea
 
         string wardName = zdo.GetString(WardZdoKeys.CustomName, __instance.m_name);
         WardMeBruh.Log.Debug($"[Ward Lifecycle] Registered Ward {zdo.m_uid} ('{wardName}') at {__instance.transform.position}, Radius: {customRadius}m");
+
+        if (ZNet.instance != null && !ZNet.instance.IsServer())
+        {
+            WardNetworkRouter.SendRegisterWard(zdo.m_uid);
+        }
 
         if (!Jotunn.Managers.GUIManager.IsHeadless())
         {
@@ -111,6 +117,10 @@ internal static class Patch_PrivateArea
         }
 
         WardRegistryManager.Instance.RegisterOrUpdate(zdo);
+        if (ZNet.instance != null && !ZNet.instance.IsServer())
+        {
+            WardNetworkRouter.SendRegisterWard(zdo.m_uid);
+        }
     }
 
     [HarmonyPatch(nameof(PrivateArea.IsEnabled))]
@@ -157,7 +167,7 @@ internal static class Patch_PrivateArea
 
         bool isFarming = IsFarmingAction(Player.m_localPlayer);
         bool allowed = isFarming
-            ? WardPermissions.CanFarm(effectiveZdo, playerId)
+            ? (WardPermissions.CanFarm(effectiveZdo, playerId) || WardPermissions.CanHarvest(effectiveZdo, playerId))
             : WardPermissions.CanBuild(effectiveZdo, playerId);
 
         WardMeBruh.Log.Debug($"[Placement Check] HaveLocalAccess (Farming: {isFarming}) for Player {playerId} (Role: {playerRole}) in Ward {zdo.m_uid}: {allowed}");
@@ -229,6 +239,16 @@ internal static class Patch_PrivateArea
 
             Pickable pickable = hoveringPiece.GetComponent<Pickable>();
             if (pickable != null)
+                return true;
+        }
+
+        GameObject hoverObj = player.GetHoverObject();
+        if (hoverObj != null)
+        {
+            if (hoverObj.GetComponent<Pickable>() != null || hoverObj.GetComponent<Plant>() != null)
+                return true;
+
+            if (hoverObj.GetComponentInParent<Pickable>() != null || hoverObj.GetComponentInParent<Plant>() != null)
                 return true;
         }
 

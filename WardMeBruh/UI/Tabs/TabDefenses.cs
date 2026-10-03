@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
 
 namespace WardMeBruh.UI.Tabs;
@@ -279,7 +280,7 @@ public class TabDefenses
             ZDO zdo = _ward.m_nview.GetZDO();
             if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
             {
-                zdo.Set(key, val);
+                WardNetworkRouter.SendWardBool(zdo.m_uid, key, val);
                 Refresh();
             }
             else
@@ -297,7 +298,7 @@ public class TabDefenses
             ZDO zdo = _ward.m_nview.GetZDO();
             if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
             {
-                zdo.Set(key, val);
+                WardNetworkRouter.SendWardFloat(zdo.m_uid, key, val);
             }
             else
             {
@@ -317,7 +318,7 @@ public class TabDefenses
             return;
 
         float clampedValue = Mathf.Clamp(value, 10f, 100f);
-        zdo.Set(WardZdoKeys.Radius, clampedValue);
+        WardNetworkRouter.SendWardFloat(zdo.m_uid, WardZdoKeys.Radius, clampedValue);
         if (_ward.m_areaMarker != null)
         {
             _ward.m_areaMarker.m_radius = clampedValue;

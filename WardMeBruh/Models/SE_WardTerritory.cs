@@ -11,6 +11,7 @@ public class SE_WardTerritory : StatusEffect
     public static readonly int EffectHash = "SE_WardTerritory".GetStableHashCode();
 
     private WardRole _currentRole = WardRole.Guest;
+    private bool _isAdmin;
     private string _baseName = "$wmb_ward_territory".Localize();
     private string _creatorName = "Unknown";
     private float _wardRadius = 32f;
@@ -67,6 +68,7 @@ public class SE_WardTerritory : StatusEffect
         }
 
         _currentRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
+        _isAdmin = WardPermissions.IsAdmin(playerId);
         _creatorName = effectiveZdo.GetString(ZDOVars.s_creatorName, "Unknown");
         _wardRadius = WardQueryService.GetWardRadius(ward);
 
@@ -80,7 +82,12 @@ public class SE_WardTerritory : StatusEffect
 
     public override string GetIconText()
     {
-        return WardRoleManager.GetRoleName(_currentRole).Localize();
+        string roleName = WardRoleManager.GetRoleName(_currentRole).Localize();
+        if (_isAdmin)
+        {
+            return $"{roleName}\n[Server Admin]";
+        }
+        return roleName;
     }
 
     public override string GetTooltipString()
@@ -88,6 +95,10 @@ public class SE_WardTerritory : StatusEffect
         StringBuilder sb = new();
         sb.AppendLine($"<color=#fcd34d>{"$wmb_territory_label".Localize()}</color> {_baseName.Localize()}");
         sb.AppendLine($"<color=#38bdf8>{"$wmb_clearance_label".Localize()}</color> {WardRoleManager.GetRoleName(_currentRole).Localize()}");
+        if (_isAdmin)
+        {
+            sb.AppendLine("<color=#f87171>[Server Admin]</color>");
+        }
         sb.AppendLine($"<color=#9ca3af>{"$wmb_owner_label".Localize()}</color> {_creatorName}");
         sb.AppendLine($"<color=#9ca3af>{"$wmb_perimeter_label".Localize()}</color> {_wardRadius:F0}{"$wmb_meters".Localize()}");
         PrivateArea ward = (m_character != null) ? WardQueryService.GetCoveringWard(m_character.transform.position) : null;

@@ -241,10 +241,13 @@ public static class WardPermissions
         if (playerId == 0L)
             return true;
 
+        WardRole minRole = GetFeatureMinRole(wardZdo, featureKey);
+        if (minRole == WardRole.Guest)
+            return true;
+
         if (!HasBenefactorAccess(wardZdo, playerId))
             return false;
 
-        WardRole minRole = GetFeatureMinRole(wardZdo, featureKey);
         return HasRequiredRole(wardZdo, playerId, minRole);
     }
 

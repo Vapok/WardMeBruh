@@ -349,9 +349,6 @@ public static class WardRoleManager
         if (wardZdo == null)
             return (int)WardRole.Guest;
 
-        if (WardPermissions.IsAdmin(playerId))
-            return (int)WardRole.Owner;
-
         long creatorId = wardZdo.GetLong(ZDOVars.s_creator, 0L);
         if (creatorId != 0L && creatorId == playerId)
             return (int)WardRole.Owner;

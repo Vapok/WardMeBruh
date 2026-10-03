@@ -64,6 +64,9 @@
         <NoWarn>MSB3245;MSB3243;1591</NoWarn>
     </PropertyGroup>
     <ItemGroup>
+        <Reference Include="APIManager">
+            <HintPath>$(ReferencesRoot)\APIManager\APIManager.dll</HintPath>
+        </Reference>
         <Reference Include="0Harmony, Version=2.9.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(ReferencesRoot)\BepInEx\5.4.2350\BepInEx\core\0Harmony.dll</HintPath>
         </Reference>
@@ -127,8 +130,14 @@
             <HintPath>..\packages\YamlDotNet.16.3.0\lib\net47\YamlDotNet.dll</HintPath>
         </Reference>
     </ItemGroup>
-    <ItemGroup>
+    <ItemGroup Condition=" '$(Configuration)|$(Platform)' != 'API|AnyCPU' ">
         <Compile Include="**\*.cs" Exclude="bin\**;obj\**" />
+    </ItemGroup>
+    <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'API|AnyCPU' ">
+        <Compile Include="API\**\*.cs" />
+        <Compile Include="Models\WardRole.cs" />
+        <Compile Include="Models\WardCapabilityCategory.cs" />
+        <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
         <None Include="App.config" />

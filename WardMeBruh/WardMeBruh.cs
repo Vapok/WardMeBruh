@@ -2,6 +2,7 @@
 
 using System;
 using System.Reflection;
+using APIManager;
 using BepInEx;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -58,6 +59,8 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
 
         _harmony = new Harmony(Info.Metadata.GUID);
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
+
+        Patcher.Patch(new[] { "WardMeBruh.API" });
 
         ModSplashManager.Register(new ModSplashDossier(_instance)
         {

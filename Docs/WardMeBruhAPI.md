@@ -8,6 +8,8 @@
   - [GetCoveringWard(point)](#M-WardMeBruh-API-WardMeBruhAPI-GetCoveringWard-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.GetCoveringWard(UnityEngine.Vector3)')
   - [GetPlayerRole(point,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRole-UnityEngine-Vector3,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRole(UnityEngine.Vector3,System.Int64)')
   - [GetPlayerRole(ward,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRole-PrivateArea,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRole(PrivateArea,System.Int64)')
+  - [GetPlayerRoleName(point,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRoleName-UnityEngine-Vector3,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRoleName(UnityEngine.Vector3,System.Int64)')
+  - [GetPlayerRoleName(ward,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRoleName-PrivateArea,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRoleName(PrivateArea,System.Int64)')
   - [GetWardName(point)](#M-WardMeBruh-API-WardMeBruhAPI-GetWardName-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.GetWardName(UnityEngine.Vector3)')
   - [GetWardRadius(point)](#M-WardMeBruh-API-WardMeBruhAPI-GetWardRadius-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.GetWardRadius(UnityEngine.Vector3)')
   - [HasFeatureAccess(point,featureId,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-HasFeatureAccess-UnityEngine-Vector3,System-String,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.HasFeatureAccess(UnityEngine.Vector3,System.String,System.Int64)')
@@ -117,6 +119,42 @@ Retrieves the assigned WardRole enum of a player for a specific ward.
 ##### Returns
 
 Assigned WardRole enum, or WardRole.Guest if invalid.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| ward | [PrivateArea](#T-PrivateArea 'PrivateArea') | PrivateArea component instance. |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Player ID to evaluate, or 0 to query the local player. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRoleName-UnityEngine-Vector3,System-Int64-'></a>
+### GetPlayerRoleName(point,playerId) `method`
+
+##### Summary
+
+Retrieves the display name of the player's role at a specific world position.
+
+##### Returns
+
+Role name string, or "None" if outside any ward.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| point | [UnityEngine.Vector3](#T-UnityEngine-Vector3 'UnityEngine.Vector3') | World position to check. |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Player ID to evaluate, or 0 to query the local player. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRoleName-PrivateArea,System-Int64-'></a>
+### GetPlayerRoleName(ward,playerId) `method`
+
+##### Summary
+
+Retrieves the display name of the player's role for a specific ward.
+
+##### Returns
+
+Role name string, or "None" if invalid.
 
 ##### Parameters
 

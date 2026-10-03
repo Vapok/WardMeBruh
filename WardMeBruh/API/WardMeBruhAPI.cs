@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+#if ! API
+using WardMeBruh.Configuration;
 using WardMeBruh.Services;
+#endif
 
 namespace WardMeBruh.API;
 
@@ -18,7 +20,11 @@ public static class WardMeBruhAPI
     /// <returns>True if WardMeBruh is loaded; otherwise false.</returns>
     public static bool IsLoaded()
     {
+#if ! API
         return true;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -27,7 +33,11 @@ public static class WardMeBruhAPI
     /// <returns>Collection of permission ID strings.</returns>
     public static IEnumerable<string> GetAllPermissionIds()
     {
+#if ! API
         return WardRoleManager.GetAllPermissionIds();
+#else
+        return Array.Empty<string>();
+#endif
     }
 
     /// <summary>
@@ -47,12 +57,14 @@ public static class WardMeBruhAPI
         WardRole defaultRole = WardRole.Resident, 
         int sortOrder = 100)
     {
+#if ! API
         if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(displayName))
             return;
 
         FeaturePermission perm = new(id, displayName, category, description ?? string.Empty, defaultRole, sortOrder);
         WardRoleManager.RegisterPermission(perm);
         WardMeBruh.Log.Info($"[API] Registered external role feature '{displayName}' ({id}) under {category} category (Default: {defaultRole})");
+#endif
     }
 
     /// <summary>
@@ -112,6 +124,7 @@ public static class WardMeBruhAPI
         string colorHex, 
         IEnumerable<string> defaultPermissions = null)
     {
+#if ! API
         if (string.IsNullOrEmpty(name))
             return;
 
@@ -132,6 +145,7 @@ public static class WardMeBruhAPI
 
         WardRoleManager.RegisterRoleTemplate(roleDef);
         WardMeBruh.Log.Info($"[API] Registered external role template '{name}' (Level {level}, Color {safeColor})");
+#endif
     }
 
     /// <summary>
@@ -143,6 +157,7 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted or if outside any ward territory; otherwise false.</returns>
     public static bool HasFeatureAccess(Vector3 point, string featureId, long playerId = 0L)
     {
+#if ! API
         if (string.IsNullOrEmpty(featureId))
             return false;
 
@@ -156,6 +171,9 @@ public static class WardMeBruhAPI
         }
 
         return WardRoleManager.CanPerform(wardZdo, playerId, featureId);
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -167,6 +185,7 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted; otherwise false.</returns>
     public static bool HasFeatureAccess(PrivateArea ward, string featureId, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return false;
 
@@ -180,6 +199,9 @@ public static class WardMeBruhAPI
 
         ZDO zdo = ward.m_nview.GetZDO();
         return WardRoleManager.CanPerform(zdo, playerId, featureId);
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -190,10 +212,14 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted; otherwise false.</returns>
     public static bool HasFeatureAccess(Player player, string featureId)
     {
+#if ! API
         if (player == null)
             return false;
 
         return HasFeatureAccess(player.transform.position, featureId, player.GetPlayerID());
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -204,6 +230,7 @@ public static class WardMeBruhAPI
     /// <returns>Assigned WardRole enum, or WardRole.Guest if outside any ward.</returns>
     public static WardRole GetPlayerRole(Vector3 point, long playerId = 0L)
     {
+#if ! API
         ZDO wardZdo = WardQueryService.GetCoveringWardZdo(point);
         if (wardZdo == null)
             return WardRole.Guest;
@@ -214,6 +241,9 @@ public static class WardMeBruhAPI
         }
 
         return WardPermissions.GetPlayerRole(wardZdo, playerId);
+#else
+        return WardRole.Guest;
+#endif
     }
 
     /// <summary>
@@ -224,6 +254,7 @@ public static class WardMeBruhAPI
     /// <returns>Assigned WardRole enum, or WardRole.Guest if invalid.</returns>
     public static WardRole GetPlayerRole(PrivateArea ward, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return WardRole.Guest;
 
@@ -234,10 +265,20 @@ public static class WardMeBruhAPI
 
         ZDO zdo = ward.m_nview.GetZDO();
         return WardPermissions.GetPlayerRole(zdo, playerId);
+#else
+        return WardRole.Guest;
+#endif
     }
 
+    /// <summary>
+    /// Retrieves the display name of the player's role at a specific world position.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <param name="playerId">Player ID to evaluate, or 0 to query the local player.</param>
+    /// <returns>Role name string, or "None" if outside any ward.</returns>
     public static string GetPlayerRoleName(Vector3 point, long playerId = 0L)
     {
+#if ! API
         ZDO wardZdo = WardQueryService.GetCoveringWardZdo(point);
         if (wardZdo == null)
             return "None";
@@ -259,10 +300,20 @@ public static class WardMeBruhAPI
 
         WardRole role = WardPermissions.GetPlayerRole(wardZdo, playerId);
         return role.ToString();
+#else
+        return "Guest";
+#endif
     }
 
+    /// <summary>
+    /// Retrieves the display name of the player's role for a specific ward.
+    /// </summary>
+    /// <param name="ward">PrivateArea component instance.</param>
+    /// <param name="playerId">Player ID to evaluate, or 0 to query the local player.</param>
+    /// <returns>Role name string, or "None" if invalid.</returns>
     public static string GetPlayerRoleName(PrivateArea ward, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return "None";
 
@@ -284,6 +335,9 @@ public static class WardMeBruhAPI
 
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
         return role.ToString();
+#else
+        return "Guest";
+#endif
     }
 
     /// <summary>
@@ -293,7 +347,11 @@ public static class WardMeBruhAPI
     /// <returns>True if inside an active ward boundary; otherwise false.</returns>
     public static bool IsInsideWard(Vector3 point)
     {
+#if ! API
         return WardQueryService.GetCoveringWard(point) != null || WardRegistryManager.Instance.GetWardCoveringPoint(point) != null;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -303,12 +361,16 @@ public static class WardMeBruhAPI
     /// <returns>True if the ward's shield dome is active; otherwise false.</returns>
     public static bool IsWardShieldActive(Vector3 point)
     {
+#if ! API
         PrivateArea ward = WardQueryService.GetCoveringWard(point);
         if (ward != null)
             return ward.IsEnabled();
 
         KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
         return known != null && known.IsEnabled;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -318,12 +380,16 @@ public static class WardMeBruhAPI
     /// <returns>Ward radius in meters (defaults to 32.0m if not found).</returns>
     public static float GetWardRadius(Vector3 point)
     {
+#if ! API
         PrivateArea ward = WardQueryService.GetCoveringWard(point);
         if (ward != null)
             return WardQueryService.GetWardRadius(ward);
 
         KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
         return known != null ? known.Radius : 32.0f;
+#else
+        return 32.0f;
+#endif
     }
 
     /// <summary>
@@ -333,12 +399,16 @@ public static class WardMeBruhAPI
     /// <returns>Custom ward name string, or empty string if not found.</returns>
     public static string GetWardName(Vector3 point)
     {
+#if ! API
         ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
         if (zdo != null)
         {
             return zdo.GetString(WardZdoKeys.CustomName, "Ward Stone");
         }
         return string.Empty;
+#else
+        return string.Empty;
+#endif
     }
 
     /// <summary>
@@ -348,6 +418,10 @@ public static class WardMeBruhAPI
     /// <returns>PrivateArea instance if loaded within scene; otherwise null.</returns>
     public static PrivateArea GetCoveringWard(Vector3 point)
     {
+#if ! API
         return WardQueryService.GetCoveringWard(point);
+#else
+        return null;
+#endif
     }
 }

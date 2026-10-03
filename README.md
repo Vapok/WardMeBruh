@@ -96,12 +96,16 @@
 * **Minimap Overlay & Fast Travel**: Ward map pins with circular coverage rings and optional double-click fast travel.
 
 ### 🔌 Extensibility & Developer API (`WardMeBruhAPI`)
-* **Register External Role Features**: Third-party mods can register custom capabilities using `WardMeBruhAPI.RegisterRoleFeature(...)`. Registered features appear dynamically in the **MANAGEMENT** tab under *External Mod Integrations*, allowing ward administrators to toggle them on or off per role (Guest, Resident, Manager, Owner, or custom roles).
-* **Player Capability Reflection**: Granted external capabilities display automatically under *Granted Role Capabilities* in the **OVERVIEW** tab for players possessing that clearance.
-* **Permission & Territory Queries**: Fast spatial queries via `WardMeBruhAPI.HasFeatureAccess(...)`, `GetPlayerRole(...)`, `IsInsideWard(...)`, and `IsWardShieldActive(...)`.
-* **External Role Templates**: Register custom role templates with `WardMeBruhAPI.RegisterRoleTemplate(...)` to populate initial ward hierarchies.
-* **Zero Hard Dependencies**: External developers can either reference `WardMeBruh.dll` directly or drop the reflection wrapper [Docs/WardMeBruhAPI_Client.cs](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI_Client.cs) into their project.
-* **API Documentation**: Detailed method reference, parameters, and return types are documented in [Docs/WardMeBruhAPI.md](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI.md).
+
+WardMeBruh provides two integration pathways for third-party mod developers:
+
+* **Option A (Repackable API Assembly)**: Reference `WardMeBruhAPI.dll` at compile time and bundle via `ILRepack`. At runtime, `APIManager` automatically rewrites IL bytecode references to the live mod.
+* **Option B (Zero-Dependency Client Wrapper)**: Drop [Docs/WardMeBruhAPI_Client.cs](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs) directly into your project for zero-dependency reflection with cached delegates.
+
+#### Developer Guides & Resources:
+* 🛠️ **[API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Docs/API_INTEGRATION.md)** — Step-by-step walkthrough for configuring both integration options.
+* 📖 **[WardMeBruhAPI Class Reference](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI.md)** — Detailed documentation for all classes, methods, and parameters.
+* 💾 **[Download WardMeBruhAPI.dll](https://github.com/Vapok/WardMeBruh/releases)** — Standalone API assembly archives.
 
 ---
 

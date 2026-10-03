@@ -23,6 +23,9 @@ internal static class Patch_Pickable
         if (coveringWard == null || coveringWard.m_nview == null || !coveringWard.m_nview.IsValid())
             return true;
 
+        if (!coveringWard.IsEnabled())
+            return true;
+
         ZDO wardZdo = coveringWard.m_nview.GetZDO();
         long playerId = player.GetPlayerID();
         WardRole playerRole = WardPermissions.GetPlayerRole(wardZdo, playerId);

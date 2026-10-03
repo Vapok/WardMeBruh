@@ -268,6 +268,18 @@ public static class WardQueryService
         return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
     }
 
+    public static bool GetDefaultFeatureState(int featureKey)
+    {
+        if (featureKey == WardZdoKeys.FoodFreeze)
+            return true;
+        if (featureKey == WardZdoKeys.RegenBoost)
+            return true;
+        if (featureKey == WardZdoKeys.DeathSkillShield)
+            return true;
+
+        return false;
+    }
+
     public static bool HasFeatureEnabled(Vector3 point, int featureKey, long playerId = 0L)
     {
         if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
@@ -280,7 +292,8 @@ public static class WardQueryService
         if (!wardZdo.GetBool(ZDOVars.s_enabled, true))
             return false;
 
-        if (!wardZdo.GetBool(featureKey, false))
+        bool defaultValue = GetDefaultFeatureState(featureKey);
+        if (!wardZdo.GetBool(featureKey, defaultValue))
             return false;
 
         if (playerId != 0L && !WardPermissions.HasFeatureAccess(wardZdo, featureKey, playerId))

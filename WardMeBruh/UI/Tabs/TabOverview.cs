@@ -103,8 +103,14 @@ public class TabOverview
         string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "Unknown");
         _setOwnerBadge?.Invoke(creatorName, WardColorPalette.ValheimBeige);
 
+        bool isAdmin = WardPermissions.IsAdmin(playerId);
         Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : WardColorPalette.IceBlue;
-        _setRoleBadge?.Invoke($"[ {WardRoleManager.GetRoleName(role).Localize()} ]", roleColor);
+        string roleText = $"[ {WardRoleManager.GetRoleName(role).Localize()} ]";
+        if (isAdmin)
+        {
+            roleText += "\n<size=80%><color=#f87171>[Server Admin]</color></size>";
+        }
+        _setRoleBadge?.Invoke(roleText, roleColor);
 
         bool isEnabled = _ward.IsEnabled();
         string statusText = isEnabled ? $"● {"$wmb_active".Localize()}" : $"○ {"$wmb_inactive".Localize()}";

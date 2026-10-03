@@ -3,22 +3,22 @@
 This guide details how external mod developers can integrate with WardMeBruh.
 
 Two integration workflows are supported:
-1. **Option A: Repackable API Assembly (`WardMeBruhAPI.dll`)** — Compile against the standalone API assembly and merge it using `ILRepack`.
-2. **Option B: Zero-Dependency Client Wrapper (`Docs/WardMeBruhAPI_Client.cs`)** — Drop a single standalone C# file into your project with zero external DLL references.
+1. **Option A: Repackable API Assembly ([`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases))** — Compile against the standalone API assembly and merge it using `ILRepack`.
+2. **Option B: Zero-Dependency Client Wrapper ([`Docs/WardMeBruhAPI_Client.cs`](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs))** — Drop a single standalone C# file into your project with zero external DLL references.
 
-For complete class, struct, and method signatures, consult [WardMeBruhAPI.md](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI.md).
+For complete class, struct, and method signatures, consult [WardMeBruhAPI.md](WardMeBruhAPI.md).
 
 ---
 
-## Option A: Repackable API Assembly (`WardMeBruhAPI.dll`)
+## Option A: Repackable API Assembly ([`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases))
 
 This option is recommended if your mod already uses `ILRepack` to bundle dependencies and you prefer compile-time type safety directly against the API types.
 
 ### 1. Download the API Assembly
-Download `WardMeBruhAPI-Vapok-<Version>.zip` from [GitHub Releases](https://github.com/Vapok/WardMeBruh/releases). Extract `WardMeBruhAPI.dll`.
+Download `WardMeBruhAPI-Vapok-<Version>.zip` from [GitHub Releases](https://github.com/Vapok/WardMeBruh/releases). Extract [`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases).
 
 ### 2. Add Project Reference
-Reference `WardMeBruhAPI.dll` in your `.csproj`:
+Reference [`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases) in your `.csproj`:
 
 ```xml
 <ItemGroup>
@@ -30,7 +30,7 @@ Reference `WardMeBruhAPI.dll` in your `.csproj`:
 ```
 
 ### 3. Configure ILRepack
-Add `WardMeBruhAPI.dll` to your `ILRepack` inputs. WardMeBruh dynamically intercepts assembly loading and redirects all API references to the live `WardMeBruh.dll` assembly at runtime.
+Add [`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases) to your `ILRepack` inputs. WardMeBruh dynamically intercepts assembly loading and redirects all API references to the live `WardMeBruh.dll` assembly at runtime.
 
 When WardMeBruh is not installed, the repacked stub methods execute safely and return default values (`false`, `null`, `WardRole.Guest`) without causing runtime exceptions.
 
@@ -69,12 +69,12 @@ public class WardModIntegration
 
 ---
 
-## Option B: Zero-Dependency Client Wrapper (`WardMeBruhAPI_Client.cs`)
+## Option B: Zero-Dependency Client Wrapper ([`Docs/WardMeBruhAPI_Client.cs`](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs))
 
 This option is recommended for mods that integrate with WardMeBruh as an optional soft dependency and want to avoid adding extra assembly references or configuring ILRepack.
 
 ### 1. Add the Client File
-Copy [Docs/WardMeBruhAPI_Client.cs](file:///home/vapok/Modding/Valheim/WardMeBruh/Docs/WardMeBruhAPI_Client.cs) directly into your mod's project source.
+Copy [`Docs/WardMeBruhAPI_Client.cs`](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs) directly into your mod's project source.
 
 ### 2. How It Works
 The `WardMeBruhAPIClient` class inspects the current `AppDomain` for the loaded `"WardMeBruh"` assembly and binds typed reflection delegates.
@@ -117,9 +117,9 @@ public class SoftWardIntegration
 
 ## Comparison Summary
 
-| Characteristic | Option A (`WardMeBruhAPI.dll`) | Option B (`WardMeBruhAPI_Client.cs`) |
+| Characteristic | Option A ([`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases)) | Option B ([`Docs/WardMeBruhAPI_Client.cs`](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs)) |
 | :--- | :--- | :--- |
-| **Dependencies** | Requires `WardMeBruhAPI.dll` at compile time | Zero external dependencies |
+| **Dependencies** | Requires [`WardMeBruhAPI.dll`](https://github.com/Vapok/WardMeBruh/releases) at compile time | Zero external dependencies |
 | **Build Tooling** | Requires `ILRepack` | Standard compilation (drop-in `.cs`) |
 | **Runtime Mechanism** | Dynamic assembly redirection | Cached reflection delegates via `WardMeBruhAPIClient` |
 | **Missing Mod Safety** | Executes repacked dummy stubs returning defaults | Returns safe defaults via null-checked delegates |

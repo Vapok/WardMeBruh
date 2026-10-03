@@ -30,7 +30,7 @@ Reference `WardMeBruhAPI.dll` in your `.csproj`:
 ```
 
 ### 3. Configure ILRepack
-Add `WardMeBruhAPI.dll` to your `ILRepack` inputs. WardMeBruh embeds `APIManager` at runtime, which intercepts BepInEx assembly loading and dynamically redirects all IL references from `WardMeBruh.API` to the live `WardMeBruh.dll` assembly.
+Add `WardMeBruhAPI.dll` to your `ILRepack` inputs. WardMeBruh dynamically intercepts assembly loading and redirects all API references to the live `WardMeBruh.dll` assembly at runtime.
 
 When WardMeBruh is not installed, the repacked stub methods execute safely and return default values (`false`, `null`, `WardRole.Guest`) without causing runtime exceptions.
 
@@ -121,6 +121,6 @@ public class SoftWardIntegration
 | :--- | :--- | :--- |
 | **Dependencies** | Requires `WardMeBruhAPI.dll` at compile time | Zero external dependencies |
 | **Build Tooling** | Requires `ILRepack` | Standard compilation (drop-in `.cs`) |
-| **Runtime Mechanism** | Bytecode redirection via `APIManager` | Cached reflection delegates via `WardMeBruhAPIClient` |
+| **Runtime Mechanism** | Dynamic assembly redirection | Cached reflection delegates via `WardMeBruhAPIClient` |
 | **Missing Mod Safety** | Executes repacked dummy stubs returning defaults | Returns safe defaults via null-checked delegates |
 | **Recommended Use** | Hard or repacked integrations | Soft, optional integrations |

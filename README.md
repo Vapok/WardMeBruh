@@ -99,7 +99,7 @@
 
 WardMeBruh provides two integration pathways for third-party mod developers:
 
-* **Option A (Repackable API Assembly)**: Reference `WardMeBruhAPI.dll` at compile time and bundle via `ILRepack`. At runtime, `APIManager` automatically rewrites IL bytecode references to the live mod.
+* **Option A (Repackable API Assembly)**: Reference `WardMeBruhAPI.dll` at compile time and bundle via `ILRepack`.
 * **Option B (Zero-Dependency Client Wrapper)**: Drop [Docs/WardMeBruhAPI_Client.cs](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs) directly into your project for zero-dependency reflection with cached delegates.
 
 #### Developer Guides & Resources:

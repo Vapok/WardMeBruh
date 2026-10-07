@@ -32,11 +32,12 @@ public sealed class WardRegistryManager
         Vector3 position = zdo.GetPosition();
         long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
         string creatorName = zdo.GetString(ZDOVars.s_creatorName, "Unknown");
-        float radius = Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
+        float radius = Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 1.0f, 100.0f);
         bool isEnabled = zdo.GetBool(ZDOVars.s_enabled, true);
 
         ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
-        if (parentId != ZDOID.None)
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (parentId != ZDOID.None && wardType == WardType.Extension)
         {
             if (_knownWards.ContainsKey(id))
             {
@@ -54,9 +55,9 @@ public sealed class WardRegistryManager
             _extensionWards.Remove(id);
         }
 
-        KnownWard ward = new(id, name, position, creatorId, creatorName, radius, isEnabled);
+        KnownWard ward = new(id, name, position, creatorId, creatorName, radius, isEnabled, wardType, parentId);
         _knownWards[id] = ward;
-        WardMeBruh.Log.Debug($"[Registry] Registered/Updated Ward {id} ('{name}'). Total Bases: {_knownWards.Count}");
+        WardMeBruh.Log.Debug($"[Registry] Registered/Updated Ward {id} ('{name}', Type: {wardType}). Total Bases: {_knownWards.Count}");
     }
 
     public void UpdateWardEnabled(ZDOID id, bool isEnabled)
@@ -189,6 +190,7 @@ public sealed class WardRegistryManager
 
     public KnownWard GetWardCoveringPoint(Vector3 point, bool requireEnabled = false)
     {
+        KnownWard bestWard = null;
         List<KnownWard> wardSnapshot = new(_knownWards.Values);
         for (int i = 0; i < wardSnapshot.Count; i++)
         {
@@ -199,9 +201,23 @@ public sealed class WardRegistryManager
             float dist = Utils.DistanceXZ(ward.Position, point);
             if (dist <= ward.Radius)
             {
-                return ward;
+                if (bestWard == null)
+                {
+                    bestWard = ward;
+                }
+                else if (ward.Type == WardType.SubWard && bestWard.Type != WardType.SubWard)
+                {
+                    bestWard = ward;
+                }
+                else if (ward.Radius < bestWard.Radius)
+                {
+                    bestWard = ward;
+                }
             }
         }
+
+        if (bestWard != null)
+            return bestWard;
 
         List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
         for (int i = 0; i < extSnapshot.Count; i++)

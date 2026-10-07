@@ -172,7 +172,8 @@ public class RemoteWardSelectorModal
                 distStr = "$wmb_modal_current_location".Localize();
             }
 
-            string labelText = $"{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
+            string typeBadge = ward.Type == WardType.SubWard ? "<color=#93c5fd>[Sub-Ward]</color> " : string.Empty;
+            string labelText = $"{typeBadge}{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
 
             WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, rowHeight);
 

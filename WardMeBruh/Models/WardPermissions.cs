@@ -32,6 +32,23 @@ public static class WardPermissions
         int roleId = WardRoleManager.GetPlayerRoleId(wardZdo, playerId);
         if (roleId == (int)WardRole.Owner)
             return WardRole.Owner;
+
+        WardType wardType = (WardType)wardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (wardType == WardType.SubWard)
+        {
+            ZDOID parentId = wardZdo.GetZDOID(WardZdoKeys.ParentWard);
+            if (parentId != ZDOID.None)
+            {
+                ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+                if (parentZdo != null && parentZdo.IsValid())
+                {
+                    int parentRoleId = WardRoleManager.GetPlayerRoleId(parentZdo, playerId);
+                    if (parentRoleId == (int)WardRole.Owner)
+                        return WardRole.Owner;
+                }
+            }
+        }
+
         if (roleId == (int)WardRole.Manager)
             return WardRole.Manager;
         if (roleId == (int)WardRole.Resident)
@@ -65,6 +82,22 @@ public static class WardPermissions
         int playerRoleId = WardRoleManager.GetPlayerRoleId(wardZdo, playerId);
         if (playerRoleId == (int)WardRole.Owner)
             return true;
+
+        WardType wardType = (WardType)wardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (wardType == WardType.SubWard)
+        {
+            ZDOID parentId = wardZdo.GetZDOID(WardZdoKeys.ParentWard);
+            if (parentId != ZDOID.None)
+            {
+                ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+                if (parentZdo != null && parentZdo.IsValid())
+                {
+                    int parentRoleId = WardRoleManager.GetPlayerRoleId(parentZdo, playerId);
+                    if (parentRoleId == (int)WardRole.Owner)
+                        return true;
+                }
+            }
+        }
 
         List<WardRoleDefinition> roles = WardRoleManager.GetRoleDefinitions(wardZdo);
         WardRoleDefinition playerDef = null;

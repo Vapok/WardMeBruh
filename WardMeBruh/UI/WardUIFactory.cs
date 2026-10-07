@@ -239,7 +239,8 @@ public static class WardUIFactory
         string text,
         float fontSize = 13f,
         Color? color = null,
-        TextAlignmentOptions alignment = TextAlignmentOptions.Center)
+        TextAlignmentOptions alignment = TextAlignmentOptions.Center,
+        bool autoResizeWidth = true)
     {
         if (btnObj == null)
             return null;
@@ -262,6 +263,12 @@ public static class WardUIFactory
                 existingTmp.fontSize = fontSize;
                 if (color.HasValue) existingTmp.color = color.Value;
                 existingTmp.alignment = alignment;
+
+                if (autoResizeWidth)
+                {
+                    AttachOrUpdateAutoResizer(btnObj, existingTmp);
+                }
+
                 return existingTmp;
             }
             textGo = new GameObject("Text", typeof(RectTransform));
@@ -294,7 +301,34 @@ public static class WardUIFactory
         }
         wte.baseFontSize = Mathf.RoundToInt(fontSize);
 
+        if (autoResizeWidth)
+        {
+            AttachOrUpdateAutoResizer(btnObj, tmp);
+        }
+
         return tmp;
+    }
+
+    private static void AttachOrUpdateAutoResizer(GameObject btnObj, TextMeshProUGUI tmp)
+    {
+        RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+        if (btnRt == null)
+            return;
+
+        bool isSquareIcon = Mathf.Abs(btnRt.sizeDelta.x - btnRt.sizeDelta.y) < 1f && btnRt.sizeDelta.x <= 36f;
+        if (isSquareIcon)
+            return;
+
+        WardButtonAutoResizer resizer = btnObj.GetComponent<WardButtonAutoResizer>();
+        if (resizer == null)
+        {
+            resizer = btnObj.AddComponent<WardButtonAutoResizer>();
+            resizer.Initialize(btnRt, tmp, btnRt.sizeDelta.x > 0f ? btnRt.sizeDelta.x : 100f, 24f);
+        }
+        else
+        {
+            resizer.RefreshWidth();
+        }
     }
 
     public static void CreateToggleRow(Transform parent, string labelText, bool initialValue, Action<bool> onToggle, out Action<bool> setValue)
@@ -460,6 +494,24 @@ public static class WardUIFactory
         float step = 5f,
         bool showTicks = true)
     {
+        CreateSliderRow(parent, labelText, min, max, initialValue, wholeNumbers, unit, onValueChanged, out setValue, out setInteractable, out _, step, showTicks);
+    }
+
+    public static void CreateSliderRow(
+        Transform parent, 
+        string labelText, 
+        float min, 
+        float max, 
+        float initialValue, 
+        bool wholeNumbers, 
+        string unit, 
+        Action<float> onValueChanged, 
+        out Action<float> setValue,
+        out Action<bool> setInteractable,
+        out Action<float, float, float> setRange,
+        float step = 5f,
+        bool showTicks = true)
+    {
         float rowHeight = showTicks ? 48f : 34f;
         CreateSettingRow(parent, labelText, out Transform controlContainer, rowHeight);
 
@@ -468,10 +520,11 @@ public static class WardUIFactory
         sliderWrapper.GetComponent<RectTransform>().sizeDelta = new Vector2(250f, showTicks ? 38f : 18f);
         sliderWrapper.SetLayoutDimensions(250f, showTicks ? 38f : 18f);
 
+        GameObject ticksObj = null;
         CanvasGroup ticksCg = null;
-        if (showTicks && step > 0f)
+        if (showTicks)
         {
-            GameObject ticksObj = new GameObject("Ticks", typeof(RectTransform), typeof(CanvasGroup));
+            ticksObj = new GameObject("Ticks", typeof(RectTransform), typeof(CanvasGroup));
             ticksObj.transform.SetParent(sliderWrapper.transform, false);
             RectTransform ticksRt = ticksObj.GetComponent<RectTransform>();
             ticksRt.anchorMin = Vector2.zero;
@@ -479,27 +532,42 @@ public static class WardUIFactory
             ticksRt.offsetMin = new Vector2(10f, 0f);
             ticksRt.offsetMax = new Vector2(-10f, 0f);
             ticksCg = ticksObj.GetComponent<CanvasGroup>();
+        }
 
-            int count = Mathf.RoundToInt((max - min) / step);
-            float majorInterval = (max - min) <= 35f ? 10f : 25f;
+        void RebuildTicks(float tMin, float tMax, float tStep)
+        {
+            if (ticksObj == null || tStep <= 0f)
+                return;
+
+            for (int i = ticksObj.transform.childCount - 1; i >= 0; i--)
+            {
+                UnityEngine.Object.Destroy(ticksObj.transform.GetChild(i).gameObject);
+            }
+
+            int count = Mathf.RoundToInt((tMax - tMin) / tStep);
+            if (count <= 0)
+                return;
+
+            bool isSubFifty = tMax < 50f || (tMax - tMin) < 50f;
+            float majorInterval = isSubFifty ? 5f : ((tMax - tMin) <= 35f ? 10f : 25f);
 
             for (int i = 0; i <= count; i++)
             {
-                float val = min + i * step;
+                float val = tMin + i * tStep;
                 float t = (float)i / count;
 
-                bool isMin = Mathf.Approximately(val, min);
-                bool isMax = Mathf.Approximately(val, max);
+                bool isMin = Mathf.Approximately(val, tMin);
+                bool isMax = Mathf.Approximately(val, tMax);
                 bool isInterval = Mathf.Approximately(val % majorInterval, 0f) || Mathf.Approximately(Mathf.Abs(val % majorInterval), majorInterval);
 
                 float pixelDistFromMin = t * 230f;
                 float pixelDistFromMax = (1f - t) * 230f;
-                bool collidesWithMin = !isMin && pixelDistFromMin < 26f;
-                bool collidesWithMax = !isMax && pixelDistFromMax < 26f;
+                bool collidesWithMin = !isMin && pixelDistFromMin < (isSubFifty ? 16f : 26f);
+                bool collidesWithMax = !isMax && pixelDistFromMax < (isSubFifty ? 16f : 26f);
 
                 bool isMajor = (isMin || isMax || isInterval) && !collidesWithMin && !collidesWithMax;
                 float tickH = isMajor ? 7f : 4f;
-                float tickW = isMajor ? 2f : 1.5f;
+                float tickW = isMajor ? 2f : 1.2f;
                 Color tickColor = isMajor ? WardColorPalette.GoldAmber : new Color(0.55f, 0.48f, 0.38f, 0.70f);
 
                 GameObject tickMark = new GameObject($"Tick_{val}", typeof(RectTransform), typeof(Image));
@@ -527,7 +595,7 @@ public static class WardUIFactory
 
                     TextMeshProUGUI lblText = labelObj.GetComponent<TextMeshProUGUI>();
                     lblText.font = UIFonts.GetPrimaryFont();
-                    lblText.fontSize = 9f;
+                    lblText.fontSize = isSubFifty ? 8f : 9f;
                     lblText.color = WardColorPalette.ValheimBeige;
                     lblText.alignment = TextAlignmentOptions.Top;
                     lblText.overflowMode = TextOverflowModes.Overflow;
@@ -535,10 +603,12 @@ public static class WardUIFactory
                     lblText.text = $"{Mathf.RoundToInt(val)}";
 
                     WardTextElement lblWte = labelObj.GetComponent<WardTextElement>();
-                    lblWte.baseFontSize = 9;
+                    lblWte.baseFontSize = isSubFifty ? 8 : 9;
                 }
             }
         }
+
+        RebuildTicks(min, max, step);
 
         GameObject sliderObj = WardUIExtensions.CreateValheimSlider(sliderWrapper.transform, min, max, initialValue, wholeNumbers, 250f, 18f);
         RectTransform sRt = sliderObj.GetComponent<RectTransform>();
@@ -577,14 +647,19 @@ public static class WardUIFactory
                 float snapped = Mathf.Round((v - min) / step) * step + min;
                 return Mathf.Clamp(snapped, min, max);
             }
-            return v;
+            return Mathf.Clamp(v, min, max);
         }
 
         float currentVal = SnapValue(initialValue);
         readoutText.text = FormatValue(currentVal);
 
+        bool suppressCallback = false;
+
         slider.onValueChanged.AddListener(v =>
         {
+            if (suppressCallback)
+                return;
+
             float val = SnapValue(v);
             if (Mathf.Abs(slider.value - val) > 0.001f)
             {
@@ -596,9 +671,17 @@ public static class WardUIFactory
 
         setValue = v =>
         {
-            float val = SnapValue(v);
-            slider.SetValueWithoutNotify(val);
-            readoutText.text = FormatValue(val);
+            suppressCallback = true;
+            try
+            {
+                float val = SnapValue(v);
+                slider.SetValueWithoutNotify(val);
+                readoutText.text = FormatValue(val);
+            }
+            finally
+            {
+                suppressCallback = false;
+            }
         };
 
         setInteractable = interactable =>
@@ -607,6 +690,27 @@ public static class WardUIFactory
             if (ticksCg != null)
             {
                 ticksCg.alpha = interactable ? 1f : 0.4f;
+            }
+        };
+
+        setRange = (newMin, newMax, newStep) =>
+        {
+            suppressCallback = true;
+            try
+            {
+                min = newMin;
+                max = newMax;
+                step = newStep;
+                slider.minValue = newMin;
+                slider.maxValue = newMax;
+                RebuildTicks(newMin, newMax, newStep);
+                float snapped = SnapValue(slider.value);
+                slider.SetValueWithoutNotify(snapped);
+                readoutText.text = FormatValue(snapped);
+            }
+            finally
+            {
+                suppressCallback = false;
             }
         };
     }

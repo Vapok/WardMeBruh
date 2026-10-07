@@ -5,6 +5,7 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using WardMeBruh.API;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Networking;
@@ -31,7 +32,7 @@ internal static class Patch_PrivateArea
         ZDO zdo = __instance.m_nview.GetZDO();
         WardRegistryManager.Instance.RegisterOrUpdate(zdo);
 
-        float customRadius = zdo.GetFloat(WardZdoKeys.Radius, 32.0f);
+        float customRadius = WardQueryService.GetWardRadius(__instance);
         if (__instance.m_areaMarker != null)
         {
             __instance.m_areaMarker.m_radius = customRadius;
@@ -92,27 +93,79 @@ internal static class Patch_PrivateArea
         if (coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid())
         {
             ZDO coveringZdo = coveringWard.m_nview.GetZDO();
+            WardType coveringType = (WardType)coveringZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (coveringType == WardType.SubWard)
+            {
+                Piece piece = __instance.GetComponent<Piece>();
+                if (piece != null)
+                {
+                    piece.DropResources();
+                }
+
+                if (Player.m_localPlayer != null)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_msg_subward_placement_denied".Localize());
+                }
+
+                if (ZNetScene.instance != null)
+                {
+                    ZNetScene.instance.Destroy(__instance.gameObject);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(__instance.gameObject);
+                }
+                return;
+            }
+
             ZDO rootParentZdo = WardQueryService.GetEffectiveWardZdo(coveringZdo);
             if (rootParentZdo != null && rootParentZdo.m_uid != zdo.m_uid)
             {
-                zdo.Set(WardZdoKeys.ParentWard, rootParentZdo.m_uid);
+                long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+                bool canExtend = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreExtendWard) || WardPermissions.IsAdmin(playerId);
+                bool canSubWard = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreSubWard) || WardPermissions.IsAdmin(playerId);
 
-                string parentName = rootParentZdo.GetString(WardZdoKeys.CustomName, coveringWard.m_name);
-                zdo.Set(WardZdoKeys.CustomName, parentName);
-
-                float parentRadius = rootParentZdo.GetFloat(WardZdoKeys.Radius, 32.0f);
-                zdo.Set(WardZdoKeys.Radius, parentRadius);
-                if (__instance.m_areaMarker != null)
+                if (!canExtend && !canSubWard)
                 {
-                    __instance.m_areaMarker.m_radius = parentRadius;
+                    Piece piece = __instance.GetComponent<Piece>();
+                    if (piece != null)
+                    {
+                        piece.DropResources();
+                    }
+
+                    if (Player.m_localPlayer != null)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_msg_subward_placement_denied".Localize());
+                    }
+
+                    if (ZNetScene.instance != null)
+                    {
+                        ZNetScene.instance.Destroy(__instance.gameObject);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(__instance.gameObject);
+                    }
+                    return;
                 }
 
-                bool parentEnabled = coveringWard.IsEnabled();
-                zdo.Set(ZDOVars.s_enabled, parentEnabled);
+                if (canExtend && canSubWard && !Jotunn.Managers.GUIManager.IsHeadless() && Player.m_localPlayer != null)
+                {
+                    WardPlacementChoiceModal.Instance?.Open(__instance, coveringWard);
+                    return;
+                }
 
-                WardRegistryManager.Instance.RegisterOrUpdate(zdo);
-                WardMeBruh.Log.Info($"[Base Extension] New Ward {zdo.m_uid} placed inside active shield of Ward {rootParentZdo.m_uid} ('{parentName}'). Linked as extension.");
-                return;
+                if (canExtend && !canSubWard)
+                {
+                    WardPlacementChoiceModal.ConfigureAsExtension(__instance, coveringWard);
+                    return;
+                }
+
+                if (canSubWard)
+                {
+                    WardPlacementChoiceModal.ConfigureAsSubWard(__instance, coveringWard);
+                    return;
+                }
             }
         }
 
@@ -138,11 +191,21 @@ internal static class Patch_PrivateArea
         if (parentId == ZDOID.None)
             return true;
 
-        ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        ZDO parentZdo = (parentId != ZDOID.None && ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+        bool parentEnabled = parentZdo == null || !parentZdo.IsValid() || parentZdo.GetBool(ZDOVars.s_enabled, true);
+
+        if (wardType == WardType.SubWard)
+        {
+            bool subEnabled = zdo.GetBool(ZDOVars.s_enabled, true);
+            __result = parentEnabled && subEnabled;
+            return false;
+        }
+
         if (parentZdo == null || !parentZdo.IsValid())
             return true;
 
-        __result = parentZdo.GetBool(ZDOVars.s_enabled, true);
+        __result = parentEnabled;
         return false;
     }
 
@@ -286,13 +349,48 @@ internal static class Patch_PrivateArea
             flag = true;
             if (PrivateArea.m_allAreas != null)
             {
+                long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
                 for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
                 {
                     PrivateArea allArea = PrivateArea.m_allAreas[i];
-                    if (allArea != null && allArea.IsInside(point, radius) && !allArea.HaveLocalAccess())
+                    if (allArea == null || !allArea.IsEnabled())
+                        continue;
+
+                    ZDO coveringZdo = allArea.m_nview != null ? allArea.m_nview.GetZDO() : null;
+                    if (coveringZdo == null)
+                        continue;
+
+                    WardType coveringType = (WardType)coveringZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                    float areaRadius = WardQueryService.GetWardRadius(allArea);
+                    float dist = Utils.DistanceXZ(point, allArea.transform.position);
+
+                    if (coveringType == WardType.SubWard)
                     {
-                        flag = false;
-                        list.Add(allArea);
+                        if (dist < areaRadius + 1.0f)
+                        {
+                            flag = false;
+                            list.Add(allArea);
+                        }
+                    }
+                    else
+                    {
+                        if (dist <= areaRadius)
+                        {
+                            ZDO rootParentZdo = WardQueryService.GetEffectiveWardZdo(coveringZdo);
+                            bool canExtend = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreExtendWard) || WardPermissions.IsAdmin(playerId);
+                            bool canSubWard = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreSubWard) || WardPermissions.IsAdmin(playerId);
+
+                            if (!canExtend && !canSubWard)
+                            {
+                                flag = false;
+                                list.Add(allArea);
+                            }
+                        }
+                        else if (allArea.IsInside(point, radius) && !allArea.HaveLocalAccess())
+                        {
+                            flag = false;
+                            list.Add(allArea);
+                        }
                     }
                 }
             }

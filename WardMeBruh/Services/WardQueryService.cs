@@ -12,6 +12,34 @@ public static class WardQueryService
         if (zdo == null || !zdo.IsValid())
             return null;
 
+        WardType type = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (type == WardType.SubWard)
+            return zdo;
+
+        ZDO current = zdo;
+        int depth = 0;
+        while (depth < 10)
+        {
+            ZDOID parentId = current.GetZDOID(WardZdoKeys.ParentWard);
+            if (parentId == ZDOID.None || parentId == current.m_uid)
+                break;
+
+            ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+            if (parentZdo == null || !parentZdo.IsValid())
+                break;
+
+            current = parentZdo;
+            depth++;
+        }
+
+        return current;
+    }
+
+    public static ZDO GetEffectiveDefenseWardZdo(ZDO zdo)
+    {
+        if (zdo == null || !zdo.IsValid())
+            return null;
+
         ZDO current = zdo;
         int depth = 0;
         while (depth < 10)
@@ -75,7 +103,6 @@ public static class WardQueryService
 
     private static float _lastGhostBaseCheckTime = -1f;
     private static bool _hasAnyActiveGhostBase;
-
     public static bool HasAnyActiveWaterDrain()
     {
         float now = Time.time;
@@ -159,6 +186,10 @@ public static class WardQueryService
         }
 
         List<PrivateArea> allAreas = PrivateArea.m_allAreas;
+        PrivateArea bestArea = null;
+        float bestRadius = float.MaxValue;
+        bool foundSubWard = false;
+
         for (int i = 0; i < allAreas.Count; i++)
         {
             PrivateArea area = allAreas[i];
@@ -167,13 +198,33 @@ public static class WardQueryService
 
             if (IsInsideWard(area, point, radius))
             {
-                _cachedCoveringWard = GetEffectiveWard(area);
-                return _cachedCoveringWard;
+                PrivateArea effective = GetEffectiveWard(area);
+                if (effective == null || effective.m_nview == null || !effective.m_nview.IsValid())
+                    continue;
+
+                ZDO effectiveZdo = effective.m_nview.GetZDO();
+                WardType effectiveType = (WardType)effectiveZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                float effectiveRadius = GetWardRadius(effective);
+
+                if (effectiveType == WardType.SubWard)
+                {
+                    if (!foundSubWard || effectiveRadius < bestRadius)
+                    {
+                        bestArea = effective;
+                        bestRadius = effectiveRadius;
+                        foundSubWard = true;
+                    }
+                }
+                else if (!foundSubWard && (bestArea == null || effectiveRadius < bestRadius))
+                {
+                    bestArea = effective;
+                    bestRadius = effectiveRadius;
+                }
             }
         }
 
-        _cachedCoveringWard = null;
-        return null;
+        _cachedCoveringWard = bestArea;
+        return _cachedCoveringWard;
     }
 
     public static ZDO GetCoveringWardZdo(Vector3 point, float radius = 0f)
@@ -211,6 +262,13 @@ public static class WardQueryService
     {
         if (parentWardZdo == null || !parentWardZdo.IsValid())
             return false;
+
+        WardType type = (WardType)parentWardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (type == WardType.SubWard)
+        {
+            float subRadius = Mathf.Clamp(parentWardZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 1.0f, 100.0f);
+            return Utils.DistanceXZ(parentWardZdo.GetPosition(), point) <= subRadius;
+        }
 
         ZDO effectiveZdo = GetEffectiveWardZdo(parentWardZdo);
         if (effectiveZdo == null || !effectiveZdo.IsValid())
@@ -265,7 +323,7 @@ public static class WardQueryService
         if (zdo == null)
             return 32.0f;
 
-        return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
+        return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 1.0f, 100.0f);
     }
 
     public static bool GetDefaultFeatureState(int featureKey)
@@ -289,14 +347,15 @@ public static class WardQueryService
         if (wardZdo == null)
             return false;
 
-        if (!wardZdo.GetBool(ZDOVars.s_enabled, true))
+        ZDO defenseZdo = GetEffectiveDefenseWardZdo(wardZdo);
+        if (defenseZdo == null || !defenseZdo.GetBool(ZDOVars.s_enabled, true))
             return false;
 
         bool defaultValue = GetDefaultFeatureState(featureKey);
-        if (!wardZdo.GetBool(featureKey, defaultValue))
+        if (!defenseZdo.GetBool(featureKey, defaultValue))
             return false;
 
-        if (playerId != 0L && !WardPermissions.HasFeatureAccess(wardZdo, featureKey, playerId))
+        if (playerId != 0L && !WardPermissions.HasFeatureAccess(defenseZdo, featureKey, playerId))
             return false;
 
         return true;
@@ -328,4 +387,180 @@ public static class WardQueryService
 
         return false;
     }
+
+    public static float GetMaxAllowedSubWardRadius(PrivateArea subWard)
+    {
+        if (subWard == null)
+            return 100f;
+
+        ZDO zdo = subWard.m_nview != null && subWard.m_nview.IsValid() ? subWard.m_nview.GetZDO() : null;
+        return GetMaxAllowedSubWardRadius(zdo, subWard.transform.position);
+    }
+
+    public static float GetMaxAllowedSubWardRadius(ZDO subWardZdo, Vector3 subWardPos)
+    {
+        float maxRadius = 100f;
+        if (ConfigRegistry.MaxWardRadius != null && ConfigRegistry.MaxWardRadius.Value > 10f)
+        {
+            maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
+        }
+
+        if (subWardZdo == null)
+            return maxRadius;
+
+        WardType wardType = (WardType)subWardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (wardType != WardType.SubWard)
+            return maxRadius;
+
+        ZDOID parentId = subWardZdo.GetZDOID(WardZdoKeys.ParentWard);
+        float smallestAllowed = float.MaxValue;
+        ZDOID discoveredParentId = ZDOID.None;
+
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area == null || area.m_nview == null || !area.m_nview.IsValid())
+                    continue;
+
+                ZDO areaZdo = area.m_nview.GetZDO();
+                if (areaZdo.m_uid == subWardZdo.m_uid)
+                    continue;
+
+                WardType areaType = (WardType)areaZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                if (areaType == WardType.SubWard)
+                {
+                    float otherRadius = GetWardRadius(area);
+                    float distToSibling = Utils.DistanceXZ(subWardPos, area.transform.position);
+                    float allowedFromSibling = Mathf.Max(1f, distToSibling - otherRadius);
+                    if (allowedFromSibling < smallestAllowed)
+                    {
+                        smallestAllowed = allowedFromSibling;
+                    }
+                    continue;
+                }
+
+                ZDO effectiveParent = GetEffectiveWardZdo(areaZdo) ?? areaZdo;
+                bool isParentMatch = parentId != ZDOID.None && (areaZdo.m_uid == parentId || effectiveParent.m_uid == parentId);
+
+                float areaRadius = GetWardRadius(area);
+                float dist = Utils.DistanceXZ(subWardPos, area.transform.position);
+
+                if (dist < areaRadius + 2.0f)
+                {
+                    if (parentId == ZDOID.None && discoveredParentId == ZDOID.None)
+                    {
+                        discoveredParentId = effectiveParent.m_uid;
+                    }
+
+                    if (parentId == ZDOID.None || isParentMatch)
+                    {
+                        float allowed = Mathf.Max(1f, areaRadius - dist);
+                        if (allowed < smallestAllowed)
+                        {
+                            smallestAllowed = allowed;
+                        }
+                    }
+                }
+            }
+        }
+
+        if (parentId == ZDOID.None && discoveredParentId != ZDOID.None)
+        {
+            parentId = discoveredParentId;
+            subWardZdo.Set(WardZdoKeys.ParentWard, parentId);
+            WardRegistryManager.Instance.RegisterOrUpdate(subWardZdo);
+            Networking.WardNetworkRouter.SendRegisterWard(subWardZdo.m_uid);
+        }
+
+        List<KnownWard> allWards = WardRegistryManager.Instance.GetAllWards();
+        for (int i = 0; i < allWards.Count; i++)
+        {
+            KnownWard ward = allWards[i];
+            if (ward.Id == subWardZdo.m_uid)
+                continue;
+
+            if (ward.Type == WardType.SubWard)
+            {
+                float distToSibling = Utils.DistanceXZ(subWardPos, ward.Position);
+                float allowedFromSibling = Mathf.Max(1f, distToSibling - ward.Radius);
+                if (allowedFromSibling < smallestAllowed)
+                {
+                    smallestAllowed = allowedFromSibling;
+                }
+            }
+        }
+
+        if (parentId != ZDOID.None)
+        {
+            KnownWard parentKnown = WardRegistryManager.Instance.GetKnownWard(parentId);
+            if (parentKnown != null)
+            {
+                float dist = Utils.DistanceXZ(subWardPos, parentKnown.Position);
+                if (dist < parentKnown.Radius + 2.0f)
+                {
+                    float allowed = Mathf.Max(1f, parentKnown.Radius - dist);
+                    if (allowed < smallestAllowed)
+                    {
+                        smallestAllowed = allowed;
+                    }
+                }
+            }
+
+            List<KnownExtensionWard> exts = WardRegistryManager.Instance.GetExtensionsForParent(parentId);
+            for (int i = 0; i < exts.Count; i++)
+            {
+                KnownExtensionWard ext = exts[i];
+                float dist = Utils.DistanceXZ(subWardPos, ext.Position);
+                if (dist < ext.Radius + 2.0f)
+                {
+                    float allowed = Mathf.Max(1f, ext.Radius - dist);
+                    if (allowed < smallestAllowed)
+                    {
+                        smallestAllowed = allowed;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < allWards.Count; i++)
+            {
+                KnownWard ward = allWards[i];
+                if (ward.Id == subWardZdo.m_uid || ward.Type == WardType.SubWard)
+                    continue;
+
+                float dist = Utils.DistanceXZ(subWardPos, ward.Position);
+                if (dist < ward.Radius + 2.0f)
+                {
+                    float allowed = Mathf.Max(1f, ward.Radius - dist);
+                    if (allowed < smallestAllowed)
+                    {
+                        smallestAllowed = allowed;
+                    }
+
+                    if (discoveredParentId == ZDOID.None)
+                    {
+                        discoveredParentId = ward.Id;
+                    }
+                }
+            }
+
+            if (discoveredParentId != ZDOID.None)
+            {
+                subWardZdo.Set(WardZdoKeys.ParentWard, discoveredParentId);
+                WardRegistryManager.Instance.RegisterOrUpdate(subWardZdo);
+                Networking.WardNetworkRouter.SendRegisterWard(subWardZdo.m_uid);
+            }
+        }
+
+        if (smallestAllowed < float.MaxValue)
+        {
+            return Mathf.Clamp(smallestAllowed, 1f, maxRadius);
+        }
+
+        return 15f;
+    }
 }
+

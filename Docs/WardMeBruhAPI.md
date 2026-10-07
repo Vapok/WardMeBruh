@@ -29,10 +29,12 @@
   - [CoreBenefits](#F-WardMeBruh-API-WardPermissionIds-CoreBenefits 'WardMeBruh.API.WardPermissionIds.CoreBenefits')
   - [CoreBuilding](#F-WardMeBruh-API-WardPermissionIds-CoreBuilding 'WardMeBruh.API.WardPermissionIds.CoreBuilding')
   - [CoreDomeAccess](#F-WardMeBruh-API-WardPermissionIds-CoreDomeAccess 'WardMeBruh.API.WardPermissionIds.CoreDomeAccess')
+  - [CoreExtendWard](#F-WardMeBruh-API-WardPermissionIds-CoreExtendWard 'WardMeBruh.API.WardPermissionIds.CoreExtendWard')
   - [CoreFarming](#F-WardMeBruh-API-WardPermissionIds-CoreFarming 'WardMeBruh.API.WardPermissionIds.CoreFarming')
   - [CoreHarvest](#F-WardMeBruh-API-WardPermissionIds-CoreHarvest 'WardMeBruh.API.WardPermissionIds.CoreHarvest')
   - [CorePower](#F-WardMeBruh-API-WardPermissionIds-CorePower 'WardMeBruh.API.WardPermissionIds.CorePower')
   - [CoreRename](#F-WardMeBruh-API-WardPermissionIds-CoreRename 'WardMeBruh.API.WardPermissionIds.CoreRename')
+  - [CoreSubWard](#F-WardMeBruh-API-WardPermissionIds-CoreSubWard 'WardMeBruh.API.WardPermissionIds.CoreSubWard')
   - [CoreViewGui](#F-WardMeBruh-API-WardPermissionIds-CoreViewGui 'WardMeBruh.API.WardPermissionIds.CoreViewGui')
   - [DefensesBiome](#F-WardMeBruh-API-WardPermissionIds-DefensesBiome 'WardMeBruh.API.WardPermissionIds.DefensesBiome')
   - [DefensesCamouflage](#F-WardMeBruh-API-WardPermissionIds-DefensesCamouflage 'WardMeBruh.API.WardPermissionIds.DefensesCamouflage')
@@ -425,6 +427,13 @@ Clearance to place, repair, and deconstruct build pieces and furniture within th
 
 Clearance to pass through the forcefield dome without repulsion or damage. Default role: Guest.
 
+<a name='F-WardMeBruh-API-WardPermissionIds-CoreExtendWard'></a>
+### CoreExtendWard `constants`
+
+##### Summary
+
+Clearance to place an Extension Ward to expand base territory. Default role: Owner.
+
 <a name='F-WardMeBruh-API-WardPermissionIds-CoreFarming'></a>
 ### CoreFarming `constants`
 
@@ -452,6 +461,13 @@ Clearance to toggle the ward shield power state on or off. Default role: Manager
 ##### Summary
 
 Clearance to rename the ward settlement. Default role: Manager.
+
+<a name='F-WardMeBruh-API-WardPermissionIds-CoreSubWard'></a>
+### CoreSubWard `constants`
+
+##### Summary
+
+Clearance to place a Sub-Ward inside this ward territory. Default role: Manager.
 
 <a name='F-WardMeBruh-API-WardPermissionIds-CoreViewGui'></a>
 ### CoreViewGui `constants`

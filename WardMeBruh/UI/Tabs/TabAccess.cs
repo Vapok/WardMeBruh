@@ -121,7 +121,7 @@ public class TabAccess
         {
             for (int i = 0; i < wardContainers.Count; i++)
             {
-                CreateContainerRow(containerCard, wardContainers[i], canManageChests);
+                CreateContainerRow(containerCard, wardContainers[i], canManageChests, wardZdo);
             }
         }
 
@@ -136,7 +136,7 @@ public class TabAccess
         {
             for (int i = 0; i < wardDoors.Count; i++)
             {
-                CreateDoorRow(doorCard, wardDoors[i], canManageDoors);
+                CreateDoorRow(doorCard, wardDoors[i], canManageDoors, wardZdo);
             }
         }
 
@@ -168,7 +168,7 @@ public class TabAccess
             {
                 for (int i = 0; i < wardPortals.Count; i++)
                 {
-                    CreatePortalRow(portalCard, wardPortals[i], canManagePortals);
+                    CreatePortalRow(portalCard, wardPortals[i], canManagePortals, wardZdo);
                 }
             }
         }
@@ -183,7 +183,25 @@ public class TabAccess
         }
     }
 
-    private void CreateContainerRow(Transform parent, Container container, bool canManage)
+    private string FormatEntityDisplayName(Vector3 pos, string baseName)
+    {
+        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
+            return baseName;
+
+        ZDO wardZdo = _ward.m_nview.GetZDO();
+        WardType currentType = (WardType)wardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (currentType != WardType.SubWard)
+        {
+            KnownWard covering = WardRegistryManager.Instance.GetWardCoveringPoint(pos);
+            if (covering != null && covering.Type == WardType.SubWard && covering.Id != wardZdo.m_uid)
+            {
+                return $"<color=#93c5fd>[{covering.CustomName}]</color> {baseName}";
+            }
+        }
+        return baseName;
+    }
+
+    private void CreateContainerRow(Transform parent, Container container, bool canManage, ZDO wardZdo)
     {
         ZDO zdo = container.m_nview.GetZDO();
         string customName = zdo.GetString(WardZdoKeys.ContainerName, string.Empty);
@@ -198,36 +216,49 @@ public class TabAccess
             ? customName
             : defaultName;
 
-        int roleInt = zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
-        WardRole role = (WardRole)roleInt;
+        displayName = FormatEntityDisplayName(container.transform.position, displayName);
+
+        ZDO governingWardZdo = wardZdo;
+        KnownWard covering = WardRegistryManager.Instance.GetWardCoveringPoint(container.transform.position);
+        if (covering != null && ZDOMan.instance != null)
+        {
+            ZDO covZdo = ZDOMan.instance.GetZDO(covering.Id);
+            if (covZdo != null && covZdo.IsValid())
+            {
+                governingWardZdo = covZdo;
+            }
+        }
+
+        int roleId = zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
+        string roleName = WardRoleManager.GetRoleDisplayName(governingWardZdo, roleId);
+        Color roleColor = WardRoleManager.GetRoleColor(governingWardZdo, roleId);
         bool isFuel = zdo.GetBool(WardZdoKeys.ContainerIsFuel, false);
 
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
+            roleName, 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
             Vector2.zero, 
-            135f, 
+            110f, 
             28f);
-        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
-        roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, roleColor);
+        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(110f, 28f);
+        roleBtnObj.SetLayoutDimensions(110f, 28f);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, roleName, 12f, roleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;
         roleBtn.onClick.AddListener(() =>
         {
-            WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            int nextRoleId = WardRoleManager.GetNextRoleId(governingWardZdo, roleId);
             if (container != null && container.m_nview != null && container.m_nview.IsValid())
             {
                 container.m_nview.ClaimOwnership();
             }
-            zdo.Set(WardZdoKeys.ContainerMinRole, (int)nextRole);
-            WardNetworkRouter.SendContainerRole(zdo.m_uid, (int)nextRole);
+            zdo.Set(WardZdoKeys.ContainerMinRole, nextRoleId);
+            WardNetworkRouter.SendContainerRole(zdo.m_uid, nextRoleId);
             Refresh();
         });
 
@@ -237,10 +268,10 @@ public class TabAccess
             Vector2.zero, 
             Vector2.zero, 
             Vector2.zero, 
-            140f, 
+            120f, 
             28f);
-        fuelBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(140f, 28f);
-        fuelBtnObj.SetLayoutDimensions(140f, 28f);
+        fuelBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(120f, 28f);
+        fuelBtnObj.SetLayoutDimensions(120f, 28f);
         Color fuelColor = isFuel ? WardColorPalette.GoldAmber : WardColorPalette.TextMuted;
         TextMeshProUGUI fuelTxt = WardUIFactory.SetupButtonText(fuelBtnObj, isFuel ? $"✔ {"$wmb_access_fuel_depot".Localize()}" : $"✖ {"$wmb_access_no_depot".Localize()}", 12f, fuelColor);
 
@@ -258,7 +289,7 @@ public class TabAccess
         });
     }
 
-    private void CreateDoorRow(Transform parent, Door door, bool canManage)
+    private void CreateDoorRow(Transform parent, Door door, bool canManage, ZDO wardZdo)
     {
         ZDO zdo = door.m_nview.GetZDO();
         string customName = zdo.GetString(WardZdoKeys.DoorName, string.Empty);
@@ -273,78 +304,104 @@ public class TabAccess
             ? customName
             : defaultName;
 
-        int roleInt = zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest);
-        WardRole role = (WardRole)roleInt;
+        displayName = FormatEntityDisplayName(door.transform.position, displayName);
+
+        ZDO governingWardZdo = wardZdo;
+        KnownWard covering = WardRegistryManager.Instance.GetWardCoveringPoint(door.transform.position);
+        if (covering != null && ZDOMan.instance != null)
+        {
+            ZDO covZdo = ZDOMan.instance.GetZDO(covering.Id);
+            if (covZdo != null && covZdo.IsValid())
+            {
+                governingWardZdo = covZdo;
+            }
+        }
+
+        int roleId = zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest);
+        string roleName = WardRoleManager.GetRoleDisplayName(governingWardZdo, roleId);
+        Color roleColor = WardRoleManager.GetRoleColor(governingWardZdo, roleId);
 
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
+            roleName, 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
             Vector2.zero, 
-            135f, 
+            110f, 
             28f);
-        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
-        roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Color doorRoleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, doorRoleColor);
+        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(110f, 28f);
+        roleBtnObj.SetLayoutDimensions(110f, 28f);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, roleName, 12f, roleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;
         roleBtn.onClick.AddListener(() =>
         {
-            WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            int nextRoleId = WardRoleManager.GetNextRoleId(governingWardZdo, roleId);
             if (door != null && door.m_nview != null && door.m_nview.IsValid())
             {
                 door.m_nview.ClaimOwnership();
             }
-            zdo.Set(WardZdoKeys.DoorMinRole, (int)nextRole);
-            WardNetworkRouter.SendDoorRole(zdo.m_uid, (int)nextRole);
+            zdo.Set(WardZdoKeys.DoorMinRole, nextRoleId);
+            WardNetworkRouter.SendDoorRole(zdo.m_uid, nextRoleId);
             Refresh();
         });
     }
 
-    private void CreatePortalRow(Transform parent, TeleportWorld portal, bool canManage)
+    private void CreatePortalRow(Transform parent, TeleportWorld portal, bool canManage, ZDO wardZdo)
     {
         ZDO zdo = portal.m_nview.GetZDO();
         string tag = portal.GetText();
         string displayName = !string.IsNullOrEmpty(tag) ? $"{"$wmb_access_portals_unit".Localize()}: \"{tag}\"" : $"{"$wmb_access_portals_unit".Localize()} ({"$wmb_untagged".Localize()})";
 
-        int roleInt = zdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
-        WardRole role = (WardRole)roleInt;
+        displayName = FormatEntityDisplayName(portal.transform.position, displayName);
+
+        ZDO governingWardZdo = wardZdo;
+        KnownWard covering = WardRegistryManager.Instance.GetWardCoveringPoint(portal.transform.position);
+        if (covering != null && ZDOMan.instance != null)
+        {
+            ZDO covZdo = ZDOMan.instance.GetZDO(covering.Id);
+            if (covZdo != null && covZdo.IsValid())
+            {
+                governingWardZdo = covZdo;
+            }
+        }
+
+        int roleId = zdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
+        string roleName = WardRoleManager.GetRoleDisplayName(governingWardZdo, roleId);
+        Color roleColor = WardRoleManager.GetRoleColor(governingWardZdo, roleId);
 
         WardUIFactory.CreateSettingRow(parent, displayName, out Transform ctrlContainer);
 
         GameObject roleBtnObj = GUIManager.Instance.CreateButton(
-            $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 
+            roleName, 
             ctrlContainer, 
             Vector2.zero, 
             Vector2.zero, 
             Vector2.zero, 
-            135f, 
+            110f, 
             28f);
-        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(135f, 28f);
-        roleBtnObj.SetLayoutDimensions(135f, 28f);
-        Color portalRoleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
-        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, $"[ {"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()} ]", 12f, portalRoleColor);
+        roleBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(110f, 28f);
+        roleBtnObj.SetLayoutDimensions(110f, 28f);
+        TextMeshProUGUI roleTxt = WardUIFactory.SetupButtonText(roleBtnObj, roleName, 12f, roleColor);
 
         Button roleBtn = roleBtnObj.GetComponent<Button>();
         roleBtn.interactable = canManage;
         roleBtn.onClick.AddListener(() =>
         {
-            WardRole nextRole = (WardRole)(((int)role + 1) % 4);
+            int nextRoleId = WardRoleManager.GetNextRoleId(governingWardZdo, roleId);
             if (portal != null && portal.m_nview != null && portal.m_nview.IsValid())
             {
                 portal.m_nview.ClaimOwnership();
             }
-            zdo.Set(WardZdoKeys.PortalMinRole, (int)nextRole);
+            zdo.Set(WardZdoKeys.PortalMinRole, nextRoleId);
             if (ZDOMan.instance != null)
             {
                 ZDOMan.instance.SetDirtyPortals();
             }
-            WardNetworkRouter.SendPortalRole(zdo.m_uid, (int)nextRole);
+            WardNetworkRouter.SendPortalRole(zdo.m_uid, nextRoleId);
             Refresh();
         });
     }

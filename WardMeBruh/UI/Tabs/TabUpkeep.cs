@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using WardMeBruh.Configuration;
+using WardMeBruh.Models;
 using WardMeBruh.Networking;
 using WardMeBruh.Services;
 
@@ -19,6 +21,9 @@ public class TabUpkeep
     private Action<bool> _setAutoClose;
     private Action<float> _setAutoCloseSlider;
 
+    private readonly List<GameObject> _standardUpkeepCards = new();
+    private GameObject _delegatedCard;
+    private Action<string, Color> _setDelegatedBadge;
 
     public GameObject Root => _root;
 
@@ -34,7 +39,13 @@ public class TabUpkeep
 
         WardUIFactory.CreateScrollArea(_root.transform, out Transform listContainer);
 
+        Transform delegatedCard = WardUIFactory.CreateCard(listContainer, "$wmb_tab_upkeep");
+        _delegatedCard = delegatedCard.parent.parent.gameObject;
+        WardUIFactory.CreateBadgeRow(delegatedCard, "$wmb_territory_label", "...", WardColorPalette.GoldAmber, out _setDelegatedBadge);
+        _delegatedCard.SetActive(false);
+
         Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_repair");
+        _standardUpkeepCards.Add(card1.parent.parent.gameObject);
         WardUIFactory.CreateToggleRow(
             card1, 
             "$wmb_upkeep_repair", 
@@ -56,6 +67,7 @@ public class TabUpkeep
         WardUIFactory.CreateBadgeRow(card1, "$wmb_upkeep_repair_cost", "$wmb_upkeep_repair_cost_val".Localize(), WardColorPalette.ValheimBeige, out _);
 
         Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_fuel");
+        _standardUpkeepCards.Add(card2.parent.parent.gameObject);
         WardUIFactory.CreateToggleRow(
             card2, 
             "$wmb_upkeep_fuel", 
@@ -67,6 +79,7 @@ public class TabUpkeep
         WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_appliances", "$wmb_upkeep_appliances_val".Localize(), WardColorPalette.ValheimBeige, out _);
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_doors");
+        _standardUpkeepCards.Add(card3.parent.parent.gameObject);
         WardUIFactory.CreateToggleRow(
             card3, 
             "$wmb_upkeep_auto_close_doors", 
@@ -99,6 +112,39 @@ public class TabUpkeep
             return;
 
         ZDO zdo = _ward.m_nview.GetZDO();
+
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
+        string parentName = "Parent Ward";
+        if (parentId != ZDOID.None && ZDOMan.instance != null)
+        {
+            ZDO parentZdo = ZDOMan.instance.GetZDO(parentId);
+            if (parentZdo != null)
+            {
+                parentName = parentZdo.GetString(WardZdoKeys.CustomName, "Parent Ward");
+            }
+        }
+
+        bool isDelegated = wardType == WardType.SubWard || wardType == WardType.Extension;
+        if (_delegatedCard != null)
+        {
+            _delegatedCard.SetActive(isDelegated);
+            if (isDelegated)
+            {
+                string msg = wardType == WardType.SubWard
+                    ? string.Format("$wmb_subward_upkeep_delegated".Localize(), parentName)
+                    : string.Format("$wmb_extension_managed_by".Localize(), parentName);
+                _setDelegatedBadge?.Invoke(msg, WardColorPalette.GoldAmber);
+            }
+        }
+
+        for (int i = 0; i < _standardUpkeepCards.Count; i++)
+        {
+            if (_standardUpkeepCards[i] != null)
+            {
+                _standardUpkeepCards[i].SetActive(!isDelegated);
+            }
+        }
 
         _setRepair?.Invoke(zdo.GetBool(WardZdoKeys.RepairEnabled, false));
 

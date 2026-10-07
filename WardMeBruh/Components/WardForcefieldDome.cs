@@ -10,6 +10,7 @@ namespace WardMeBruh.Components;
 public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 {
     public static readonly List<WardForcefieldDome> Instances = new();
+    public static readonly HashSet<ShieldGenerator> SubWardGenerators = new();
 
     private static ShieldDomeImageEffect _shieldDomeEffect;
     private static float _lastDomeEffectSearchTime = -1f;
@@ -23,7 +24,8 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
     private float _lastRegisteredRadius = -1f;
     private Vector3 _lastRegisteredPos = Vector3.negativeInfinity;
     private float _lastRegisteredHitTime = -1f;
-    private bool _isTintApplied;
+    private int _lastTintedSegmentCount = -1;
+    private Color _lastAppliedColor = Color.clear;
 
     public bool IsActive => _area != null && _area.IsEnabled() && (ConfigRegistry.Enabled == null || ConfigRegistry.Enabled.Value);
     public float CurrentRadius => _lastRadius > 0f ? _lastRadius : (_area != null ? WardQueryService.GetWardRadius(_area) : 0f);
@@ -60,11 +62,17 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
     private void OnDestroy()
     {
         Instances.Remove(this);
+        if (_proxyGenerator != null)
+        {
+            SubWardGenerators.Remove(_proxyGenerator);
+        }
         UnregisterDome();
         if (_areaMarker != null && _areaMarker.gameObject != null)
         {
             _areaMarker.gameObject.SetActive(false);
         }
+        _lastTintedSegmentCount = -1;
+        _lastAppliedColor = Color.clear;
     }
 
     private void UpdateVisuals()
@@ -121,6 +129,17 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
         if (active)
         {
+            ZDO zdo = (_area.m_nview != null && _area.m_nview.IsValid()) ? _area.m_nview.GetZDO() : null;
+            WardType wardType = (zdo != null) ? (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main) : WardType.Main;
+            if (wardType == WardType.SubWard)
+            {
+                SubWardGenerators.Add(_proxyGenerator);
+            }
+            else
+            {
+                SubWardGenerators.Remove(_proxyGenerator);
+            }
+
             Vector3 currentPos = transform.position;
             if (!_isDomeRegistered ||
                 !Mathf.Approximately(_lastRegisteredRadius, radius) ||
@@ -142,6 +161,11 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
     private void UnregisterDome()
     {
+        if (_proxyGenerator != null)
+        {
+            SubWardGenerators.Remove(_proxyGenerator);
+        }
+
         if (_shieldDomeEffect != null && _proxyGenerator != null)
         {
             _shieldDomeEffect.RemoveShield(_proxyGenerator);
@@ -165,10 +189,7 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
                 _areaMarker.gameObject.SetActive(true);
             }
 
-            if (!_isTintApplied)
-            {
-                ApplyAetherIceTint();
-            }
+            UpdatePerimeterTint();
         }
         else
         {
@@ -179,12 +200,24 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
         }
     }
 
-    private void ApplyAetherIceTint()
+    private void UpdatePerimeterTint()
     {
         if (_areaMarker == null)
             return;
 
         Renderer[] renderers = _areaMarker.GetComponentsInChildren<Renderer>(true);
+        if (renderers.Length == 0)
+            return;
+
+        ZDO zdo = (_area.m_nview != null && _area.m_nview.IsValid()) ? _area.m_nview.GetZDO() : null;
+        WardType wardType = (zdo != null) ? (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main) : WardType.Main;
+
+        Color ringColor = (wardType == WardType.SubWard) ? WardColorPalette.AetherIce : WardColorPalette.GoldAmber;
+        Color ringGlow = (wardType == WardType.SubWard) ? WardColorPalette.AetherIceGlow : new Color(1.2f, 0.85f, 0.2f, 1.0f);
+
+        if (_lastTintedSegmentCount == renderers.Length && _lastAppliedColor == ringColor)
+            return;
+
         for (int i = 0; i < renderers.Length; i++)
         {
             Renderer r = renderers[i];
@@ -194,10 +227,10 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
             Material mat = r.material;
             if (mat != null)
             {
-                mat.color = WardColorPalette.AetherIce;
+                mat.color = ringColor;
                 if (mat.HasProperty("_EmissionColor"))
                 {
-                    mat.SetColor("_EmissionColor", WardColorPalette.AetherIceGlow);
+                    mat.SetColor("_EmissionColor", ringGlow);
                 }
             }
         }
@@ -207,11 +240,12 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
         {
             if (lights[i] != null)
             {
-                lights[i].color = WardColorPalette.AetherIce;
+                lights[i].color = ringColor;
             }
         }
 
-        _isTintApplied = true;
+        _lastTintedSegmentCount = renderers.Length;
+        _lastAppliedColor = ringColor;
     }
 
     public void TriggerHit()

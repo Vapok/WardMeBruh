@@ -441,6 +441,22 @@ public static class WardRoleManager
         if (roleId == (int)WardRole.Owner)
             return true;
 
+        WardType wardType = (WardType)wardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        if (wardType == WardType.SubWard)
+        {
+            ZDOID parentId = wardZdo.GetZDOID(WardZdoKeys.ParentWard);
+            if (parentId != ZDOID.None)
+            {
+                ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+                if (parentZdo != null && parentZdo.IsValid())
+                {
+                    int parentRoleId = GetPlayerRoleId(parentZdo, playerId);
+                    if (parentRoleId == (int)WardRole.Owner)
+                        return true;
+                }
+            }
+        }
+
         List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
         return HasPermission(roles, roleId, permissionId);
     }
@@ -454,12 +470,30 @@ public static class WardRoleManager
 
         bool isAdmin = WardPermissions.IsAdmin(playerId);
         int roleId = GetPlayerRoleId(wardZdo, playerId);
+        bool isOwner = roleId == (int)WardRole.Owner;
+        if (!isOwner)
+        {
+            WardType wardType = (WardType)wardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (wardType == WardType.SubWard)
+            {
+                ZDOID parentId = wardZdo.GetZDOID(WardZdoKeys.ParentWard);
+                if (parentId != ZDOID.None)
+                {
+                    ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+                    if (parentZdo != null && parentZdo.IsValid())
+                    {
+                        isOwner = GetPlayerRoleId(parentZdo, playerId) == (int)WardRole.Owner;
+                    }
+                }
+            }
+        }
+
         List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
 
         foreach (KeyValuePair<string, FeaturePermission> kvp in _registeredPermissions)
         {
             FeaturePermission perm = kvp.Value;
-            if (isAdmin || roleId == (int)WardRole.Owner || HasPermission(roles, roleId, perm.Id))
+            if (isAdmin || isOwner || HasPermission(roles, roleId, perm.Id))
             {
                 granted.Add(perm);
             }
@@ -575,6 +609,67 @@ public static class WardRoleManager
         };
     }
 
+    public static string GetRoleDisplayName(ZDO wardZdo, int roleId)
+    {
+        if (wardZdo != null)
+        {
+            List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
+            for (int i = 0; i < roles.Count; i++)
+            {
+                if (roles[i].Id == roleId)
+                {
+                    return roles[i].Name.Localize();
+                }
+            }
+        }
+        return GetRoleName((WardRole)roleId).Localize();
+    }
+
+    public static Color GetRoleColor(ZDO wardZdo, int roleId)
+    {
+        if (wardZdo != null)
+        {
+            List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
+            for (int i = 0; i < roles.Count; i++)
+            {
+                if (roles[i].Id == roleId)
+                {
+                    if (!string.IsNullOrEmpty(roles[i].ColorHex) && ColorUtility.TryParseHtmlString(roles[i].ColorHex, out Color c))
+                    {
+                        return c;
+                    }
+                    break;
+                }
+            }
+        }
+        return roleId >= (int)WardRole.Manager ? WardColorPalette.GoldAmber : (roleId == (int)WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+    }
+
+    public static int GetNextRoleId(ZDO wardZdo, int currentRoleId)
+    {
+        List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
+        if (roles == null || roles.Count == 0)
+            return (currentRoleId + 1) % 4;
+
+        int currentIndex = -1;
+        for (int i = 0; i < roles.Count; i++)
+        {
+            if (roles[i].Id == currentRoleId)
+            {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        if (currentIndex == -1)
+        {
+            return roles[0].Id;
+        }
+
+        int nextIndex = (currentIndex + 1) % roles.Count;
+        return roles[nextIndex].Id;
+    }
+
     public static string GetCategoryDisplayName(WardCapabilityCategory category)
     {
         return category switch
@@ -599,6 +694,8 @@ public static class WardRoleManager
         RegisterPermission(new FeaturePermission(WardPermissionIds.CoreViewGui, "$wmb_perm_core_view_gui_name", WardCapabilityCategory.Core, "$wmb_perm_core_view_gui_desc", WardRole.Resident, 5));
         RegisterPermission(new FeaturePermission(WardPermissionIds.CorePower, "$wmb_perm_core_power_name", WardCapabilityCategory.Core, "$wmb_perm_core_power_desc", WardRole.Manager, 6));
         RegisterPermission(new FeaturePermission(WardPermissionIds.CoreRename, "$wmb_perm_core_rename_name", WardCapabilityCategory.Core, "$wmb_perm_core_rename_desc", WardRole.Manager, 7));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreExtendWard, "$wmb_perm_core_extend_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_extend_ward_desc", WardRole.Owner, 8));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreSubWard, "$wmb_perm_core_sub_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_sub_ward_desc", WardRole.Manager, 9));
 
         RegisterPermission(new FeaturePermission(WardPermissionIds.AccessDoors, "$wmb_perm_access_doors_name", WardCapabilityCategory.Access, "$wmb_perm_access_doors_desc", WardRole.Manager, 10));
         RegisterPermission(new FeaturePermission(WardPermissionIds.AccessChests, "$wmb_perm_access_chests_name", WardCapabilityCategory.Access, "$wmb_perm_access_chests_desc", WardRole.Manager, 11));

@@ -101,7 +101,17 @@ public class TabOverview
 
         long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
         string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "Unknown");
-        _setOwnerBadge?.Invoke(creatorName, WardColorPalette.ValheimBeige);
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        string ownerBadgeText = creatorName;
+        if (wardType == WardType.SubWard)
+        {
+            ownerBadgeText += $" <color=#93c5fd>({"$wmb_ward_type_subward".Localize()})</color>";
+        }
+        else if (wardType == WardType.Extension)
+        {
+            ownerBadgeText += $" <color=#fcd34d>({"$wmb_ward_type_extension".Localize()})</color>";
+        }
+        _setOwnerBadge?.Invoke(ownerBadgeText, WardColorPalette.ValheimBeige);
 
         bool isAdmin = WardPermissions.IsAdmin(playerId);
         Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : WardColorPalette.IceBlue;

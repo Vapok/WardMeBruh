@@ -62,5 +62,6 @@ public static class WardZdoKeys
     public static readonly int RoleAssignments = "wmb_role_assignments".GetStableHashCode();
     public static readonly System.Collections.Generic.KeyValuePair<int, int> ParentWard = ZDO.GetHashZDOID("wmb_parent_ward");
     public static readonly int WardType = "wmb_ward_type".GetStableHashCode();
+    public static readonly int DomeColor = "wmb_dome_color".GetStableHashCode();
 }
 

@@ -147,6 +147,8 @@
   "wmb_defenses_card_visuals": "Visual Effects",
   "wmb_defenses_show_dome": "Show Shield Dome",
   "wmb_defenses_show_ring": "Show Perimeter Ring",
+  "wmb_defenses_dome_color": "Dome Color",
+  "wmb_defenses_color_reset": "Reset Default",
 
   "wmb_upkeep_card_repair": "Maintenance & Repairs",
   "wmb_upkeep_repair": "Auto-Repair Pieces",

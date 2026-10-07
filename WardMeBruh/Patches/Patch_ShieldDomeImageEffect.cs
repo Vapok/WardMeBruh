@@ -66,7 +66,7 @@ internal static class Patch_ShieldDomeImageEffect
             }
         }
 
-        if (mainCount == 0 || subCount == 0)
+        if (subCount == 0)
             return true;
 
         Material mat = _effectMaterialField?.GetValue(__instance) as Material;
@@ -82,19 +82,24 @@ internal static class Patch_ShieldDomeImageEffect
         if (cam == null)
             return true;
 
-        ShieldDomeImageEffect.ShieldDome[] mainDomes = new ShieldDomeImageEffect.ShieldDome[mainCount];
-        ShieldDomeImageEffect.ShieldDome[] subDomes = new ShieldDomeImageEffect.ShieldDome[subCount];
-        int mIdx = 0;
-        int sIdx = 0;
+        List<ShieldDomeImageEffect.ShieldDome> mainDomes = new(mainCount);
+        Dictionary<Color, List<ShieldDomeImageEffect.ShieldDome>> subDomesByColor = new();
+
         foreach (KeyValuePair<ShieldGenerator, ShieldDomeImageEffect.ShieldDome> kvp in domeData)
         {
             if (WardForcefieldDome.SubWardGenerators.Contains(kvp.Key))
             {
-                subDomes[sIdx++] = kvp.Value;
+                Color domeColor = WardForcefieldDome.GetDomeColor(kvp.Key);
+                if (!subDomesByColor.TryGetValue(domeColor, out List<ShieldDomeImageEffect.ShieldDome> list))
+                {
+                    list = new List<ShieldDomeImageEffect.ShieldDome>();
+                    subDomesByColor[domeColor] = list;
+                }
+                list.Add(kvp.Value);
             }
             else
             {
-                mainDomes[mIdx++] = kvp.Value;
+                mainDomes.Add(kvp.Value);
             }
         }
 
@@ -110,11 +115,6 @@ internal static class Patch_ShieldDomeImageEffect
         mat.SetFloat(_DepthFade, __instance.m_depthFadeDistance);
         mat.SetFloat(_EdgeGlow, __instance.m_edgeGlowDistance);
         mat.SetFloat(_DrawDistance, __instance.m_drawDistance);
-        Texture2D gradTex = _gradientTexField?.GetValue(__instance) as Texture2D;
-        if (gradTex != null)
-        {
-            mat.SetTexture(_ShieldColorGradient, gradTex);
-        }
         mat.SetFloat(_ShieldTime, Time.time);
         mat.SetTexture(_NoiseTexture, __instance.m_noiseTexture);
         mat.SetTexture(_CurlNoiseTexture, __instance.m_curlNoiseTexture);
@@ -129,31 +129,122 @@ internal static class Patch_ShieldDomeImageEffect
         mat.SetFloat(_NormalBias, __instance.m_normalBias);
         mat.SetFloat(_RefractStrength, __instance.m_refractStrength);
 
-        if (_mainDomeBuffer == null || _mainDomeBuffer.count != mainDomes.Length)
+        Texture2D defaultGradTex = _gradientTexField?.GetValue(__instance) as Texture2D;
+
+        int totalPasses = (mainDomes.Count > 0 ? 1 : 0) + subDomesByColor.Count;
+        if (totalPasses == 1)
         {
-            _mainDomeBuffer?.Release();
-            _mainDomeBuffer = new ComputeBuffer(mainDomes.Length, 24, ComputeBufferType.Structured);
+            if (mainDomes.Count > 0)
+            {
+                if (defaultGradTex != null)
+                {
+                    mat.SetTexture(_ShieldColorGradient, defaultGradTex);
+                }
+                SetBufferData(ref _mainDomeBuffer, mainDomes.ToArray(), mat);
+            }
+            else
+            {
+                foreach (KeyValuePair<Color, List<ShieldDomeImageEffect.ShieldDome>> kvp in subDomesByColor)
+                {
+                    mat.SetTexture(_ShieldColorGradient, GetOrCreateGradientTexture(kvp.Key));
+                    SetBufferData(ref _subDomeBuffer, kvp.Value.ToArray(), mat);
+                    break;
+                }
+            }
+            Graphics.Blit(src, dest, mat, 0);
+            return false;
         }
-        _mainDomeBuffer.SetData(mainDomes);
-        mat.SetBuffer(_DomeBuffer, _mainDomeBuffer);
-        mat.SetInt(_DomeCount, mainDomes.Length);
 
-        RenderTexture temp = RenderTexture.GetTemporary(src.width, src.height, 0, src.format);
-        Graphics.Blit(src, temp, mat, 0);
+        RenderTexture currentSource = RenderTexture.GetTemporary(src.width, src.height, 0, src.format);
+        Graphics.Blit(src, currentSource);
 
-        if (_subDomeBuffer == null || _subDomeBuffer.count != subDomes.Length)
+        if (mainDomes.Count > 0)
         {
-            _subDomeBuffer?.Release();
-            _subDomeBuffer = new ComputeBuffer(subDomes.Length, 24, ComputeBufferType.Structured);
+            if (defaultGradTex != null)
+            {
+                mat.SetTexture(_ShieldColorGradient, defaultGradTex);
+            }
+            SetBufferData(ref _mainDomeBuffer, mainDomes.ToArray(), mat);
+
+            RenderTexture temp = RenderTexture.GetTemporary(src.width, src.height, 0, src.format);
+            Graphics.Blit(currentSource, temp, mat, 0);
+            RenderTexture.ReleaseTemporary(currentSource);
+            currentSource = temp;
         }
-        _subDomeBuffer.SetData(subDomes);
-        mat.SetBuffer(_DomeBuffer, _subDomeBuffer);
-        mat.SetInt(_DomeCount, subDomes.Length);
 
-        Graphics.Blit(temp, dest, mat, 0);
-        RenderTexture.ReleaseTemporary(temp);
+        int subIndex = 0;
+        foreach (KeyValuePair<Color, List<ShieldDomeImageEffect.ShieldDome>> kvp in subDomesByColor)
+        {
+            subIndex++;
+            bool isLast = subIndex == subDomesByColor.Count;
 
+            mat.SetTexture(_ShieldColorGradient, GetOrCreateGradientTexture(kvp.Key));
+            SetBufferData(ref _subDomeBuffer, kvp.Value.ToArray(), mat);
+
+            if (isLast)
+            {
+                Graphics.Blit(currentSource, dest, mat, 0);
+            }
+            else
+            {
+                RenderTexture temp = RenderTexture.GetTemporary(src.width, src.height, 0, src.format);
+                Graphics.Blit(currentSource, temp, mat, 0);
+                RenderTexture.ReleaseTemporary(currentSource);
+                currentSource = temp;
+            }
+        }
+
+        RenderTexture.ReleaseTemporary(currentSource);
         return false;
+    }
+
+    private static void SetBufferData(ref ComputeBuffer buffer, ShieldDomeImageEffect.ShieldDome[] data, Material mat)
+    {
+        if (buffer == null || buffer.count != data.Length)
+        {
+            buffer?.Release();
+            buffer = new ComputeBuffer(data.Length, 24, ComputeBufferType.Structured);
+        }
+        buffer.SetData(data);
+        mat.SetBuffer(_DomeBuffer, buffer);
+        mat.SetInt(_DomeCount, data.Length);
+    }
+
+    private static readonly Dictionary<Color, Texture2D> _gradientTextureCache = new();
+
+    public static Texture2D GetOrCreateGradientTexture(Color baseColor)
+    {
+        if (_gradientTextureCache.TryGetValue(baseColor, out Texture2D cached) && cached != null)
+        {
+            return cached;
+        }
+
+        Texture2D tex = new(256, 1, TextureFormat.RGB24, false);
+        tex.name = $"ShieldGradient_{ColorUtility.ToHtmlStringRGB(baseColor)}";
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color highlight = Color.Lerp(baseColor, Color.white, 0.45f);
+        Color mid = baseColor;
+        Color rim = Color.Lerp(baseColor, Color.black, 0.25f);
+
+        for (int i = 0; i < 256; i++)
+        {
+            float t = (float)i / 255f;
+            Color c;
+            if (t < 0.4f)
+            {
+                c = Color.Lerp(highlight, mid, t / 0.4f);
+            }
+            else
+            {
+                c = Color.Lerp(mid, rim, (t - 0.4f) / 0.6f);
+            }
+            tex.SetPixel(i, 0, c);
+        }
+        tex.Apply(false, true);
+        _gradientTextureCache[baseColor] = tex;
+        return tex;
     }
 
     [HarmonyPatch("OnDestroy")]
@@ -164,5 +255,14 @@ internal static class Patch_ShieldDomeImageEffect
         _mainDomeBuffer = null;
         _subDomeBuffer?.Release();
         _subDomeBuffer = null;
+
+        foreach (KeyValuePair<Color, Texture2D> kvp in _gradientTextureCache)
+        {
+            if (kvp.Value != null)
+            {
+                Object.Destroy(kvp.Value);
+            }
+        }
+        _gradientTextureCache.Clear();
     }
 }

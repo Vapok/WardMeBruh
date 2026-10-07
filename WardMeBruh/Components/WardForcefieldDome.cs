@@ -31,6 +31,41 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
     public float CurrentRadius => _lastRadius > 0f ? _lastRadius : (_area != null ? WardQueryService.GetWardRadius(_area) : 0f);
     public PrivateArea Area => _area;
 
+    public Color CurrentDomeColor
+    {
+        get
+        {
+            if (_area == null || _area.m_nview == null || !_area.m_nview.IsValid())
+                return WardColorPalette.AetherIce;
+
+            ZDO zdo = _area.m_nview.GetZDO();
+            if (zdo == null)
+                return WardColorPalette.AetherIce;
+
+            WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (wardType != WardType.SubWard)
+                return WardColorPalette.GoldAmber;
+
+            string hex = zdo.GetString(WardZdoKeys.DomeColor, null);
+            if (!string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out Color customCol))
+                return customCol;
+
+            return WardColorPalette.AetherIce;
+        }
+    }
+
+    public static Color GetDomeColor(ShieldGenerator generator)
+    {
+        if (generator == null)
+            return WardColorPalette.AetherIce;
+
+        WardForcefieldDome dome = generator.GetComponent<WardForcefieldDome>();
+        if (dome != null)
+            return dome.CurrentDomeColor;
+
+        return WardColorPalette.AetherIce;
+    }
+
     private void Awake()
     {
         Instances.Add(this);
@@ -212,8 +247,8 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
         ZDO zdo = (_area.m_nview != null && _area.m_nview.IsValid()) ? _area.m_nview.GetZDO() : null;
         WardType wardType = (zdo != null) ? (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main) : WardType.Main;
 
-        Color ringColor = (wardType == WardType.SubWard) ? WardColorPalette.AetherIce : WardColorPalette.GoldAmber;
-        Color ringGlow = (wardType == WardType.SubWard) ? WardColorPalette.AetherIceGlow : new Color(1.2f, 0.85f, 0.2f, 1.0f);
+        Color ringColor = (wardType == WardType.SubWard) ? CurrentDomeColor : WardColorPalette.GoldAmber;
+        Color ringGlow = (wardType == WardType.SubWard) ? (ringColor * 1.5f) : new Color(1.2f, 0.85f, 0.2f, 1.0f);
 
         if (_lastTintedSegmentCount == renderers.Length && _lastAppliedColor == ringColor)
             return;
@@ -246,6 +281,13 @@ public class WardForcefieldDome : MonoBehaviour, IHitProjectile
 
         _lastTintedSegmentCount = renderers.Length;
         _lastAppliedColor = ringColor;
+    }
+
+    public void ForceUpdateVisuals()
+    {
+        _lastAppliedColor = Color.clear;
+        _lastTintedSegmentCount = -1;
+        UpdateVisuals();
     }
 
     public void TriggerHit()

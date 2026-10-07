@@ -1,10 +1,15 @@
 using System;
 using System.Collections.Generic;
+using Jotunn.Managers;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
+using WardMeBruh.Components;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Networking;
 using WardMeBruh.Services;
+using WardMeBruh.UI.Elements;
 
 namespace WardMeBruh.UI.Tabs;
 
@@ -44,6 +49,18 @@ public class TabDefenses
     private GameObject _delegatedCard;
     private GameObject _visualsCard;
     private Action<string, Color> _setDelegatedBadge;
+
+    private GameObject _domeColorRowObj;
+    private GameObject _colorWheelPanelObj;
+    private Image _colorSwatchImg;
+    private TextMeshProUGUI _colorHexTmp;
+    private WardColorWheelPicker _colorPicker;
+    private Slider _brightnessSlider;
+    private TextMeshProUGUI _brightnessValTmp;
+    private TextMeshProUGUI _expandBtnText;
+    private bool _isColorWheelExpanded;
+    private Color _currentColor = WardColorPalette.AetherIce;
+
     private bool _isRefreshing;
 
     public GameObject Root => _root;
@@ -228,6 +245,197 @@ public class TabDefenses
             true,
             v => SetZdoBool(WardZdoKeys.ShowPerimeterRing, v, "defenses.combat"),
             out _setShowRingToggle);
+
+        _domeColorRowObj = WardUIFactory.CreateSettingRow(card4, "$wmb_defenses_dome_color".Localize(), out Transform colorCtrlContainer, 34f);
+
+        GameObject swatchBorder = new("SwatchBorder", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+        swatchBorder.transform.SetParent(colorCtrlContainer, false);
+        swatchBorder.GetComponent<RectTransform>().sizeDelta = new Vector2(32f, 24f);
+        swatchBorder.SetLayoutDimensions(32f, 24f);
+        swatchBorder.GetComponent<Image>().color = WardColorPalette.CardBorder;
+
+        GameObject swatchObj = new("Swatch", typeof(RectTransform), typeof(Image));
+        swatchObj.transform.SetParent(swatchBorder.transform, false);
+        RectTransform swatchRt = swatchObj.GetComponent<RectTransform>();
+        swatchRt.anchorMin = Vector2.zero;
+        swatchRt.anchorMax = Vector2.one;
+        swatchRt.offsetMin = new Vector2(2f, 2f);
+        swatchRt.offsetMax = new Vector2(-2f, -2f);
+        _colorSwatchImg = swatchObj.GetComponent<Image>();
+        _colorSwatchImg.color = WardColorPalette.AetherIce;
+
+        GameObject hexTextObj = new("HexText", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
+        hexTextObj.transform.SetParent(colorCtrlContainer, false);
+        hexTextObj.GetComponent<RectTransform>().sizeDelta = new Vector2(80f, 24f);
+        hexTextObj.SetLayoutDimensions(80f, 24f);
+        _colorHexTmp = hexTextObj.GetComponent<TextMeshProUGUI>();
+        _colorHexTmp.text = "#38BDF8";
+        _colorHexTmp.font = UIFonts.GetPrimaryFont();
+        _colorHexTmp.fontSize = 12f;
+        _colorHexTmp.color = WardColorPalette.ValheimBeige;
+        _colorHexTmp.alignment = TextAlignmentOptions.Center;
+
+        WardTextElement hexWte = hexTextObj.GetComponent<WardTextElement>();
+        hexWte.baseFontSize = 12;
+
+        GameObject expandBtn = GUIManager.Instance.CreateButton(
+            "▼",
+            colorCtrlContainer,
+            Vector2.zero,
+            Vector2.zero,
+            Vector2.zero,
+            36f,
+            24f);
+        expandBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(36f, 24f);
+        expandBtn.SetLayoutDimensions(36f, 24f);
+        _expandBtnText = WardUIFactory.SetupButtonText(expandBtn, "▼", 12f, WardColorPalette.ValheimBeige);
+
+        expandBtn.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            _isColorWheelExpanded = !_isColorWheelExpanded;
+            _colorWheelPanelObj?.SetActive(_isColorWheelExpanded);
+            _expandBtnText.text = _isColorWheelExpanded ? "▲" : "▼";
+        });
+
+        _colorWheelPanelObj = new GameObject("ColorWheelPanel", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter), typeof(LayoutElement));
+        _colorWheelPanelObj.transform.SetParent(card4, false);
+        _colorWheelPanelObj.SetLayoutDimensions(-1f, -1f);
+
+        Image panelBg = _colorWheelPanelObj.GetComponent<Image>();
+        panelBg.color = new Color(0.04f, 0.03f, 0.02f, 0.92f);
+
+        VerticalLayoutGroup panelVlg = _colorWheelPanelObj.GetComponent<VerticalLayoutGroup>();
+        panelVlg.padding = new RectOffset(16, 16, 12, 12);
+        panelVlg.spacing = 10f;
+        panelVlg.childControlWidth = true;
+        panelVlg.childControlHeight = true;
+        panelVlg.childForceExpandWidth = true;
+        panelVlg.childForceExpandHeight = false;
+
+        ContentSizeFitter panelCsf = _colorWheelPanelObj.GetComponent<ContentSizeFitter>();
+        panelCsf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        GameObject contentRow = new("ContentRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        contentRow.transform.SetParent(_colorWheelPanelObj.transform, false);
+        contentRow.SetLayoutDimensions(-1f, 160f);
+
+        HorizontalLayoutGroup contentHlg = contentRow.GetComponent<HorizontalLayoutGroup>();
+        contentHlg.spacing = 16f;
+        contentHlg.childAlignment = TextAnchor.MiddleCenter;
+        contentHlg.childControlWidth = false;
+        contentHlg.childControlHeight = false;
+        contentHlg.childForceExpandWidth = false;
+        contentHlg.childForceExpandHeight = false;
+
+        WardColorWheelPicker.Create(contentRow.transform, 150f, OnWheelColorChanged, out _colorPicker);
+
+        GameObject controlsCol = new("ControlsCol", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+        controlsCol.transform.SetParent(contentRow.transform, false);
+        controlsCol.SetLayoutDimensions(270f, 150f);
+
+        VerticalLayoutGroup colVlg = controlsCol.GetComponent<VerticalLayoutGroup>();
+        colVlg.spacing = 8f;
+        colVlg.childAlignment = TextAnchor.UpperLeft;
+        colVlg.childControlWidth = true;
+        colVlg.childControlHeight = false;
+        colVlg.childForceExpandWidth = true;
+        colVlg.childForceExpandHeight = false;
+
+        GameObject brightRow = new("BrightnessRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        brightRow.transform.SetParent(controlsCol.transform, false);
+        brightRow.SetLayoutDimensions(270f, 24f);
+        HorizontalLayoutGroup brightHlg = brightRow.GetComponent<HorizontalLayoutGroup>();
+        brightHlg.spacing = 8f;
+        brightHlg.childAlignment = TextAnchor.MiddleLeft;
+        brightHlg.childControlWidth = false;
+        brightHlg.childControlHeight = true;
+
+        GameObject brightLbl = new("BrightLbl", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        brightLbl.transform.SetParent(brightRow.transform, false);
+        brightLbl.SetLayoutDimensions(80f, 24f);
+        TextMeshProUGUI bLblTmp = brightLbl.GetComponent<TextMeshProUGUI>();
+        bLblTmp.text = "Brightness:";
+        bLblTmp.font = UIFonts.GetPrimaryFont();
+        bLblTmp.fontSize = 11f;
+        bLblTmp.color = WardColorPalette.ValheimBeige;
+        bLblTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+        GameObject sliderObj = WardUIExtensions.CreateValheimSlider(brightRow.transform, 0.2f, 1.0f, 1.0f, false, 120f, 18f);
+        sliderObj.SetLayoutDimensions(120f, 18f);
+        _brightnessSlider = sliderObj.GetComponent<Slider>();
+        _brightnessSlider.onValueChanged.AddListener(OnBrightnessChanged);
+
+        GameObject brightValObj = new("BrightVal", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        brightValObj.transform.SetParent(brightRow.transform, false);
+        brightValObj.SetLayoutDimensions(40f, 24f);
+        _brightnessValTmp = brightValObj.GetComponent<TextMeshProUGUI>();
+        _brightnessValTmp.text = "100%";
+        _brightnessValTmp.font = UIFonts.GetPrimaryFont();
+        _brightnessValTmp.fontSize = 11f;
+        _brightnessValTmp.color = WardColorPalette.ValheimBeige;
+        _brightnessValTmp.alignment = TextAlignmentOptions.MidlineRight;
+
+        GameObject presetsRow = new("PresetsRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        presetsRow.transform.SetParent(controlsCol.transform, false);
+        presetsRow.SetLayoutDimensions(270f, 26f);
+        HorizontalLayoutGroup pHLG = presetsRow.GetComponent<HorizontalLayoutGroup>();
+        pHLG.spacing = 6f;
+        pHLG.childAlignment = TextAnchor.MiddleLeft;
+        pHLG.childControlWidth = false;
+        pHLG.childControlHeight = false;
+
+        Color[] presets = new Color[]
+        {
+            new(0.22f, 0.74f, 0.97f),
+            new(0.06f, 0.72f, 0.51f),
+            new(0.95f, 0.25f, 0.25f),
+            new(0.65f, 0.35f, 0.95f),
+            new(0.98f, 0.75f, 0.14f),
+            new(0.95f, 0.25f, 0.55f),
+            new(0.10f, 0.80f, 0.75f),
+            new(0.95f, 0.95f, 0.95f)
+        };
+
+        for (int p = 0; p < presets.Length; p++)
+        {
+            Color presetCol = presets[p];
+            GameObject pBtnObj = new($"Preset_{p}", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
+            pBtnObj.transform.SetParent(presetsRow.transform, false);
+            pBtnObj.SetLayoutDimensions(26f, 24f);
+            pBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(26f, 24f);
+            pBtnObj.GetComponent<Image>().color = presetCol;
+            pBtnObj.GetComponent<Button>().onClick.AddListener(() =>
+            {
+                ApplyNewColor(presetCol);
+            });
+        }
+
+        GameObject actionRow = new("ActionRow", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
+        actionRow.transform.SetParent(controlsCol.transform, false);
+        actionRow.SetLayoutDimensions(270f, 28f);
+        HorizontalLayoutGroup actHlg = actionRow.GetComponent<HorizontalLayoutGroup>();
+        actHlg.spacing = 10f;
+        actHlg.childAlignment = TextAnchor.MiddleLeft;
+        actHlg.childControlWidth = false;
+        actHlg.childControlHeight = true;
+
+        GameObject resetBtn = GUIManager.Instance.CreateButton(
+            "$wmb_defenses_color_reset".Localize(),
+            actionRow.transform,
+            Vector2.zero,
+            Vector2.zero,
+            Vector2.zero,
+            130f,
+            26f);
+        resetBtn.SetLayoutDimensions(130f, 26f);
+        WardUIFactory.SetupButtonText(resetBtn, "$wmb_defenses_color_reset".Localize(), 11f, WardColorPalette.ValheimBeige);
+        resetBtn.GetComponent<Button>().onClick.AddListener(() =>
+        {
+            ApplyNewColor(WardColorPalette.AetherIce);
+        });
+
+        _colorWheelPanelObj.SetActive(false);
+        _domeColorRowObj.SetActive(false);
     }
 
     public void Bind(PrivateArea ward)
@@ -392,12 +600,121 @@ public class TabDefenses
 
         _setShowDomeToggle?.Invoke(zdo.GetBool(WardZdoKeys.ShowShieldDome, true));
         _setShowRingToggle?.Invoke(zdo.GetBool(WardZdoKeys.ShowPerimeterRing, true));
+
+        bool isSubWard = wardType == WardType.SubWard;
+        if (_domeColorRowObj != null)
+        {
+            _domeColorRowObj.SetActive(isSubWard);
+        }
+        if (_colorWheelPanelObj != null)
+        {
+            _colorWheelPanelObj.SetActive(isSubWard && _isColorWheelExpanded);
+        }
+
+        if (isSubWard)
+        {
+            string hex = zdo.GetString(WardZdoKeys.DomeColor, null);
+            Color initialColor = WardColorPalette.AetherIce;
+            if (!string.IsNullOrEmpty(hex) && ColorUtility.TryParseHtmlString(hex, out Color parsed))
+            {
+                initialColor = parsed;
+            }
+
+            _currentColor = initialColor;
+            UpdateColorDisplay(initialColor);
+            if (_colorPicker != null)
+            {
+                _colorPicker.SetColor(initialColor);
+                if (_brightnessSlider != null)
+                {
+                    _brightnessSlider.value = _colorPicker.CurrentBrightness;
+                    if (_brightnessValTmp != null)
+                    {
+                        _brightnessValTmp.text = $"{Mathf.RoundToInt(_colorPicker.CurrentBrightness * 100f)}%";
+                    }
+                }
+            }
+        }
     }
     finally
     {
         _isRefreshing = false;
     }
 }
+
+    private void OnWheelColorChanged(Color newColor)
+    {
+        _currentColor = newColor;
+        UpdateColorDisplay(newColor);
+        SaveColorToZdo(newColor);
+    }
+
+    private void OnBrightnessChanged(float val)
+    {
+        if (_colorPicker != null)
+        {
+            _colorPicker.SetBrightness(val);
+        }
+        if (_brightnessValTmp != null)
+        {
+            _brightnessValTmp.text = $"{Mathf.RoundToInt(val * 100f)}%";
+        }
+    }
+
+    private void ApplyNewColor(Color newColor)
+    {
+        _currentColor = newColor;
+        if (_colorPicker != null)
+        {
+            _colorPicker.SetColor(newColor);
+            if (_brightnessSlider != null)
+            {
+                _brightnessSlider.value = _colorPicker.CurrentBrightness;
+                if (_brightnessValTmp != null)
+                {
+                    _brightnessValTmp.text = $"{Mathf.RoundToInt(_colorPicker.CurrentBrightness * 100f)}%";
+                }
+            }
+        }
+        UpdateColorDisplay(newColor);
+        SaveColorToZdo(newColor);
+    }
+
+    private void UpdateColorDisplay(Color color)
+    {
+        if (_colorSwatchImg != null)
+        {
+            _colorSwatchImg.color = color;
+        }
+        if (_colorHexTmp != null)
+        {
+            _colorHexTmp.text = $"#{ColorUtility.ToHtmlStringRGB(color)}";
+        }
+    }
+
+    private void SaveColorToZdo(Color color)
+    {
+        if (_isRefreshing)
+            return;
+
+        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
+            return;
+
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        ZDO zdo = _ward.m_nview.GetZDO();
+        if (!WardRoleManager.CanPerform(zdo, playerId, "defenses.combat"))
+            return;
+
+        string hex = $"#{ColorUtility.ToHtmlStringRGB(color)}";
+        zdo.Set(WardZdoKeys.DomeColor, hex);
+        WardNetworkRouter.SendEntityName(zdo.m_uid, WardZdoKeys.DomeColor, hex);
+
+        WardForcefieldDome dome = _ward.GetComponent<WardForcefieldDome>();
+        if (dome != null)
+        {
+            dome.ForceUpdateVisuals();
+        }
+    }
 
     private void SetZdoBool(int key, bool val, string permissionId)
     {

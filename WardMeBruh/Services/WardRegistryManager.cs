@@ -248,6 +248,22 @@ public sealed class WardRegistryManager
         if (playerId == 0L)
             return result;
 
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area != null && area.m_nview != null && area.m_nview.IsValid())
+                {
+                    ZDO z = area.m_nview.GetZDO();
+                    if (z != null && !_knownWards.ContainsKey(z.m_uid) && !_extensionWards.ContainsKey(z.m_uid))
+                    {
+                        RegisterOrUpdate(z);
+                    }
+                }
+            }
+        }
+
         List<KnownWard> snapshot = new(_knownWards.Values);
         for (int i = 0; i < snapshot.Count; i++)
         {
@@ -269,6 +285,53 @@ public sealed class WardRegistryManager
             if (creatorId == playerId)
             {
                 result.Add(ward);
+            }
+        }
+
+        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
+        for (int i = 0; i < extSnapshot.Count; i++)
+        {
+            KnownExtensionWard ext = extSnapshot[i];
+            KnownWard parent = null;
+            if (ext.ParentId != ZDOID.None)
+            {
+                _knownWards.TryGetValue(ext.ParentId, out parent);
+            }
+
+            long parentCreatorId = parent != null ? parent.CreatorId : 0L;
+            string parentName = parent != null ? parent.Name : "Ward";
+            string parentCreatorName = parent != null ? parent.CreatorName : "Unknown";
+
+            ZDO extZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(ext.Id) : null;
+            long extCreatorId = extZdo != null ? extZdo.GetLong(ZDOVars.s_creator, 0L) : 0L;
+            string extName = extZdo != null ? extZdo.GetString(WardZdoKeys.CustomName, null) : null;
+            string extCreatorName = extZdo != null ? extZdo.GetString(ZDOVars.s_creatorName, null) : null;
+
+            if (parentCreatorId == 0L && ext.ParentId != ZDOID.None && ZDOMan.instance != null)
+            {
+                ZDO parentZdo = ZDOMan.instance.GetZDO(ext.ParentId);
+                if (parentZdo != null)
+                {
+                    parentCreatorId = parentZdo.GetLong(ZDOVars.s_creator, 0L);
+                    parentName = parentZdo.GetString(WardZdoKeys.CustomName, parentName);
+                    parentCreatorName = parentZdo.GetString(ZDOVars.s_creatorName, parentCreatorName);
+                }
+            }
+
+            bool isOwned = (extCreatorId != 0L && extCreatorId == playerId) ||
+                           (parentCreatorId != 0L && parentCreatorId == playerId);
+
+            if (isOwned)
+            {
+                string displayName = !string.IsNullOrEmpty(extName)
+                    ? extName
+                    : $"{parentName} {"$wmb_ward_type_extension".Localize()}";
+                string creatorName = !string.IsNullOrEmpty(extCreatorName)
+                    ? extCreatorName
+                    : parentCreatorName;
+                long creatorId = extCreatorId != 0L ? extCreatorId : parentCreatorId;
+
+                result.Add(new KnownWard(ext.Id, displayName, ext.Position, creatorId, creatorName, ext.Radius, ext.IsEnabled, WardType.Extension, ext.ParentId));
             }
         }
 
@@ -299,6 +362,62 @@ public sealed class WardRegistryManager
                 {
                     result.Add(ward);
                 }
+            }
+        }
+
+        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
+        for (int i = 0; i < extSnapshot.Count; i++)
+        {
+            KnownExtensionWard ext = extSnapshot[i];
+            KnownWard parent = null;
+            if (ext.ParentId != ZDOID.None)
+            {
+                _knownWards.TryGetValue(ext.ParentId, out parent);
+            }
+
+            long parentCreatorId = parent != null ? parent.CreatorId : 0L;
+            string parentName = parent != null ? parent.Name : "Ward";
+            string parentCreatorName = parent != null ? parent.CreatorName : "Unknown";
+
+            ZDO extZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(ext.Id) : null;
+            long extCreatorId = extZdo != null ? extZdo.GetLong(ZDOVars.s_creator, 0L) : 0L;
+            string extName = extZdo != null ? extZdo.GetString(WardZdoKeys.CustomName, null) : null;
+            string extCreatorName = extZdo != null ? extZdo.GetString(ZDOVars.s_creatorName, null) : null;
+
+            if (parentCreatorId == 0L && ext.ParentId != ZDOID.None && ZDOMan.instance != null)
+            {
+                ZDO parentZdo = ZDOMan.instance.GetZDO(ext.ParentId);
+                if (parentZdo != null)
+                {
+                    parentCreatorId = parentZdo.GetLong(ZDOVars.s_creator, 0L);
+                    parentName = parentZdo.GetString(WardZdoKeys.CustomName, parentName);
+                    parentCreatorName = parentZdo.GetString(ZDOVars.s_creatorName, parentCreatorName);
+                }
+            }
+
+            bool isAccessible = (extCreatorId != 0L && extCreatorId == playerId) ||
+                                (parentCreatorId != 0L && parentCreatorId == playerId);
+
+            if (!isAccessible && ZDOMan.instance != null && ext.ParentId != ZDOID.None)
+            {
+                ZDO parentZdo = ZDOMan.instance.GetZDO(ext.ParentId);
+                if (parentZdo != null && WardPermissions.HasRequiredRole(parentZdo, playerId, WardRole.Resident))
+                {
+                    isAccessible = true;
+                }
+            }
+
+            if (isAccessible)
+            {
+                string displayName = !string.IsNullOrEmpty(extName)
+                    ? extName
+                    : $"{parentName} {"$wmb_ward_type_extension".Localize()}";
+                string creatorName = !string.IsNullOrEmpty(extCreatorName)
+                    ? extCreatorName
+                    : parentCreatorName;
+                long creatorId = extCreatorId != 0L ? extCreatorId : parentCreatorId;
+
+                result.Add(new KnownWard(ext.Id, displayName, ext.Position, creatorId, creatorName, ext.Radius, ext.IsEnabled, WardType.Extension, ext.ParentId));
             }
         }
 

@@ -57,9 +57,13 @@ public class WardRepulsionService : MonoBehaviour
                 if (zdo == null)
                     continue;
 
-                float push = zdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
-                float shockC = zdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
-                float shockP = zdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
+                ZDO defenseZdo = WardQueryService.GetEffectiveDefenseWardZdo(zdo) ?? zdo;
+                if (!defenseZdo.GetBool(ZDOVars.s_enabled, true))
+                    continue;
+
+                float push = defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
+                float shockC = defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
+                float shockP = defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
                 if (push > 0f || shockC > 0f || shockP > 0f)
                 {
                     activeDefenseWards ??= new List<PrivateArea>();
@@ -84,9 +88,13 @@ public class WardRepulsionService : MonoBehaviour
                 if (wardZdo == null)
                     continue;
 
-                float pushbackForce = wardZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
-                float shockCreatureDmg = wardZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
-                float shockPlayerDmg = wardZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
+                ZDO defenseZdo = WardQueryService.GetEffectiveDefenseWardZdo(wardZdo) ?? wardZdo;
+                if (!defenseZdo.GetBool(ZDOVars.s_enabled, true))
+                    continue;
+
+                float pushbackForce = defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
+                float shockCreatureDmg = defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
+                float shockPlayerDmg = defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
 
                 if (pushbackForce <= 0f && shockCreatureDmg <= 0f && shockPlayerDmg <= 0f)
                     continue;

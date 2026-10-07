@@ -122,7 +122,8 @@ public static class WardQueryService
                 continue;
 
             ZDO zdo = area.m_nview.GetZDO();
-            if (zdo != null && zdo.GetBool(WardZdoKeys.WaterDrain, false))
+            ZDO defenseZdo = GetEffectiveDefenseWardZdo(zdo) ?? zdo;
+            if (defenseZdo != null && defenseZdo.GetBool(WardZdoKeys.WaterDrain, false))
             {
                 _hasAnyActiveWaterDrain = true;
                 break;
@@ -151,7 +152,8 @@ public static class WardQueryService
                 continue;
 
             ZDO zdo = area.m_nview.GetZDO();
-            if (zdo != null && zdo.GetBool(WardZdoKeys.GhostBase, false))
+            ZDO defenseZdo = GetEffectiveDefenseWardZdo(zdo) ?? zdo;
+            if (defenseZdo != null && defenseZdo.GetBool(WardZdoKeys.GhostBase, false))
             {
                 _hasAnyActiveGhostBase = true;
                 break;
@@ -282,6 +284,9 @@ public static class WardQueryService
         for (int i = 0; i < extensions.Count; i++)
         {
             KnownExtensionWard ext = extensions[i];
+            if (!ext.IsEnabled)
+                continue;
+
             if (Utils.DistanceXZ(ext.Position, point) <= ext.Radius)
                 return true;
         }

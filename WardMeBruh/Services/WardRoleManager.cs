@@ -437,6 +437,10 @@ public static class WardRoleManager
         if (WardPermissions.IsAdmin(playerId))
             return true;
 
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
+            return false;
+
         int roleId = GetPlayerRoleId(wardZdo, playerId);
         if (roleId == (int)WardRole.Owner)
             return true;

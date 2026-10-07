@@ -334,7 +334,7 @@ public class TabDefenses
 
         if (_visualsCard != null)
         {
-            _visualsCard.SetActive(wardType != WardType.Extension);
+            _visualsCard.SetActive(true);
         }
 
         float currentRadius = zdo.GetFloat(WardZdoKeys.Radius, 30.0f);

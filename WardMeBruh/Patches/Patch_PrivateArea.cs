@@ -195,17 +195,8 @@ internal static class Patch_PrivateArea
         ZDO parentZdo = (parentId != ZDOID.None && ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
         bool parentEnabled = parentZdo == null || !parentZdo.IsValid() || parentZdo.GetBool(ZDOVars.s_enabled, true);
 
-        if (wardType == WardType.SubWard)
-        {
-            bool subEnabled = zdo.GetBool(ZDOVars.s_enabled, true);
-            __result = parentEnabled && subEnabled;
-            return false;
-        }
-
-        if (parentZdo == null || !parentZdo.IsValid())
-            return true;
-
-        __result = parentEnabled;
+        bool localEnabled = zdo.GetBool(ZDOVars.s_enabled, true);
+        __result = parentEnabled && localEnabled;
         return false;
     }
 
@@ -473,16 +464,6 @@ internal static class Patch_PrivateArea
         if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
             return true;
 
-        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(__instance);
-        if (effectiveWard != __instance)
-        {
-            if (effectiveWard.m_nview != null && effectiveWard.m_nview.IsValid())
-            {
-                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerID);
-                return false;
-            }
-        }
-
         if (!__instance.m_nview.IsOwner())
             return false;
 
@@ -559,13 +540,13 @@ internal static class Patch_PrivateArea
         {
             if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {effectiveZdo.m_uid}");
-                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerId);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {zdo.m_uid}");
+                __instance.m_nview.InvokeRPC("ToggleEnabled", playerId);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {effectiveZdo.m_uid} (core.power permission required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {zdo.m_uid} (core.power permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }
@@ -575,13 +556,13 @@ internal static class Patch_PrivateArea
         {
             if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {effectiveZdo.m_uid}");
-                OnOpenWardGuiRequested?.Invoke(effectiveWard);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {zdo.m_uid}");
+                OnOpenWardGuiRequested?.Invoke(__instance);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {effectiveZdo.m_uid} (core.view_gui permission required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {zdo.m_uid} (core.view_gui permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }

@@ -244,7 +244,8 @@ public class WardPlacementChoiceModal : MonoBehaviour
         zdo.Set(WardZdoKeys.WardType, (int)WardType.Extension);
 
         string parentName = rootParentZdo.GetString(WardZdoKeys.CustomName, coveringWard.m_name);
-        zdo.Set(WardZdoKeys.CustomName, parentName);
+        string extName = $"{parentName} {"$wmb_ward_type_extension".Localize()}";
+        zdo.Set(WardZdoKeys.CustomName, extName);
 
         float parentRadius = rootParentZdo.GetFloat(WardZdoKeys.Radius, 32.0f);
         zdo.Set(WardZdoKeys.Radius, parentRadius);

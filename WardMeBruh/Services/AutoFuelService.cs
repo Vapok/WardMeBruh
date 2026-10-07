@@ -52,7 +52,11 @@ public class AutoFuelService : MonoBehaviour
                     continue;
 
                 ZDO zdo = ward.m_nview.GetZDO();
-                if (zdo != null && zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false))
+                if (zdo == null)
+                    continue;
+
+                ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+                if (effectiveZdo != null && effectiveZdo.GetBool(ZDOVars.s_enabled, true) && effectiveZdo.GetBool(WardZdoKeys.AutoFuelEnabled, false))
                 {
                     activeFuelWards ??= new List<PrivateArea>();
                     activeFuelWards.Add(ward);
@@ -80,6 +84,10 @@ public class AutoFuelService : MonoBehaviour
 
                 ZDO wardZdo = ward.m_nview.GetZDO();
                 if (wardZdo == null)
+                    continue;
+
+                ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+                if (effectiveZdo == null || !effectiveZdo.GetBool(ZDOVars.s_enabled, true) || !effectiveZdo.GetBool(WardZdoKeys.AutoFuelEnabled, false))
                     continue;
 
                 float radius = WardQueryService.GetWardRadius(ward);

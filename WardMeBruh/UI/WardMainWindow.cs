@@ -277,29 +277,35 @@ public class WardMainWindow : MonoBehaviour
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return;
 
-        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(ward);
-        if (effectiveWard == null || effectiveWard.m_nview == null || !effectiveWard.m_nview.IsValid())
-            effectiveWard = ward;
-
-        ZDO zdo = effectiveWard.m_nview.GetZDO();
+        ZDO zdo = ward.m_nview.GetZDO();
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
         if (!WardRoleManager.CanPerform(zdo, playerId, "core.view_gui"))
             return;
 
         if (!IsOpen || _physicalWard == null)
         {
-            _physicalWard = effectiveWard;
+            _physicalWard = ward;
         }
 
         _openedFrame = Time.frameCount;
-        _activeWard = effectiveWard;
+        _activeWard = ward;
         _panel.SetActive(true);
         SetInputBlocked(true);
 
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
 
         string customName = zdo.GetString(Configuration.WardZdoKeys.CustomName, "$wmb_default_ward_name".Localize());
-        _titleText.text = customName.Localize().ToUpperInvariant();
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        string typeSuffix = string.Empty;
+        if (wardType == WardType.Extension && !customName.Contains("$wmb_ward_type_extension") && !customName.Contains("Extension"))
+        {
+            typeSuffix = $" ({"$wmb_ward_type_extension".Localize()})";
+        }
+        else if (wardType == WardType.SubWard && !customName.Contains("$wmb_ward_type_subward") && !customName.Contains("Sub-Ward"))
+        {
+            typeSuffix = $" ({"$wmb_ward_type_subward".Localize()})";
+        }
+        _titleText.text = $"{customName.Localize()}{typeSuffix}".ToUpperInvariant();
 
         bool canDefend = WardRoleManager.CanPerform(zdo, playerId, "defenses.dome_size") ||
                          WardRoleManager.CanPerform(zdo, playerId, "defenses.combat") ||

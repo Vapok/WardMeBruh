@@ -56,14 +56,13 @@ internal static class Patch_PlayerInput
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return;
 
-        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(ward);
         ZDO zdo = ward.m_nview.GetZDO();
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
         long playerId = __instance.GetPlayerID();
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
-            Patch_PrivateArea.RequestOpenWardGui(effectiveWard);
+            Patch_PrivateArea.RequestOpenWardGui(ward);
         }
     }
 

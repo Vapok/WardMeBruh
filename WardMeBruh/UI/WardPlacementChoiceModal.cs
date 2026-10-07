@@ -180,7 +180,8 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
         if (_subwardBtn != null && pendingWard != null && pendingWard.m_nview != null && pendingWard.m_nview.IsValid())
         {
-            float maxSubRadius = WardQueryService.GetMaxAllowedSubWardRadius(pendingWard.m_nview.GetZDO(), pendingWard.transform.position);
+            ZDO coveringZdo = coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid() ? coveringWard.m_nview.GetZDO() : null;
+            float maxSubRadius = WardQueryService.GetMaxAllowedSubWardRadius(pendingWard.m_nview.GetZDO(), pendingWard.transform.position, coveringZdo);
             _subwardBtn.interactable = maxSubRadius >= 1.0f;
         }
 
@@ -286,7 +287,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
         zdo.Set(WardZdoKeys.ParentWard, rootParentZdo.m_uid);
         zdo.Set(WardZdoKeys.WardType, (int)WardType.SubWard);
 
-        float maxAllowedSubRadius = WardQueryService.GetMaxAllowedSubWardRadius(zdo, pendingWard.transform.position);
+        float maxAllowedSubRadius = WardQueryService.GetMaxAllowedSubWardRadius(zdo, pendingWard.transform.position, rootParentZdo);
         float maxSubRadius = Mathf.Max(1f, Mathf.Floor(maxAllowedSubRadius));
         float minSubRadius = maxSubRadius > 10f ? 5f : 1f;
         float defaultRadius = maxSubRadius < 50f ? Mathf.Min(15f, maxSubRadius) : Mathf.Min(20f, maxSubRadius);

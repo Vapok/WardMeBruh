@@ -408,7 +408,7 @@ public static class WardQueryService
         return GetMaxAllowedSubWardRadius(zdo, subWard.transform.position);
     }
 
-    public static float GetMaxAllowedSubWardRadius(ZDO subWardZdo, Vector3 subWardPos)
+    public static float GetMaxAllowedSubWardRadius(ZDO subWardZdo, Vector3 subWardPos, ZDO hintParentZdo = null)
     {
         float maxRadius = 100f;
         if (ConfigRegistry.MaxWardRadius != null && ConfigRegistry.MaxWardRadius.Value > 10f)
@@ -416,106 +416,102 @@ public static class WardQueryService
             maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
         }
 
-        if (subWardZdo == null)
-            return maxRadius;
+        ZDOID parentId = ZDOID.None;
+        if (subWardZdo != null)
+        {
+            parentId = subWardZdo.GetZDOID(WardZdoKeys.ParentWard);
+        }
 
-        WardType wardType = (WardType)subWardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
-        if (wardType != WardType.SubWard)
-            return maxRadius;
+        if (parentId == ZDOID.None && hintParentZdo != null && hintParentZdo.IsValid())
+        {
+            ZDO effectiveHint = GetEffectiveWardZdo(hintParentZdo) ?? hintParentZdo;
+            parentId = effectiveHint.m_uid;
+        }
 
-        ZDOID parentId = subWardZdo.GetZDOID(WardZdoKeys.ParentWard);
-        float smallestAllowed = float.MaxValue;
-        ZDOID discoveredParentId = ZDOID.None;
+        if (parentId == ZDOID.None && PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
+                    continue;
+
+                if (subWardZdo != null && area.m_nview.GetZDO().m_uid == subWardZdo.m_uid)
+                    continue;
+
+                float radius = GetWardRadius(area);
+                if (Utils.DistanceXZ(subWardPos, area.transform.position) <= radius)
+                {
+                    ZDO effective = GetEffectiveWardZdo(area.m_nview.GetZDO()) ?? area.m_nview.GetZDO();
+                    parentId = effective.m_uid;
+                    break;
+                }
+            }
+        }
+
+        if (parentId == ZDOID.None)
+        {
+            List<KnownWard> allKnown = WardRegistryManager.Instance.GetAllWards();
+            for (int i = 0; i < allKnown.Count; i++)
+            {
+                KnownWard kw = allKnown[i];
+                if (kw.IsEnabled && Utils.DistanceXZ(subWardPos, kw.Position) <= kw.Radius)
+                {
+                    parentId = kw.Id;
+                    break;
+                }
+            }
+        }
+
+        if (parentId != ZDOID.None && subWardZdo != null && subWardZdo.IsValid())
+        {
+            WardType currentType = (WardType)subWardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (currentType == WardType.SubWard && subWardZdo.GetZDOID(WardZdoKeys.ParentWard) == ZDOID.None)
+            {
+                subWardZdo.Set(WardZdoKeys.ParentWard, parentId);
+                WardRegistryManager.Instance.RegisterOrUpdate(subWardZdo);
+                Networking.WardNetworkRouter.SendRegisterWard(subWardZdo.m_uid);
+            }
+        }
+
+        List<WardCoverageCircle> baseCircles = new();
+        HashSet<ZDOID> seenWards = new();
 
         if (PrivateArea.m_allAreas != null)
         {
             for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
             {
                 PrivateArea area = PrivateArea.m_allAreas[i];
-                if (area == null || area.m_nview == null || !area.m_nview.IsValid())
+                if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
                     continue;
 
                 ZDO areaZdo = area.m_nview.GetZDO();
-                if (areaZdo.m_uid == subWardZdo.m_uid)
+                if (subWardZdo != null && areaZdo.m_uid == subWardZdo.m_uid)
                     continue;
 
                 WardType areaType = (WardType)areaZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
                 if (areaType == WardType.SubWard)
-                {
-                    float otherRadius = GetWardRadius(area);
-                    float distToSibling = Utils.DistanceXZ(subWardPos, area.transform.position);
-                    float allowedFromSibling = Mathf.Max(1f, distToSibling - otherRadius);
-                    if (allowedFromSibling < smallestAllowed)
-                    {
-                        smallestAllowed = allowedFromSibling;
-                    }
                     continue;
-                }
 
                 ZDO effectiveParent = GetEffectiveWardZdo(areaZdo) ?? areaZdo;
-                bool isParentMatch = parentId != ZDOID.None && (areaZdo.m_uid == parentId || effectiveParent.m_uid == parentId);
-
-                float areaRadius = GetWardRadius(area);
-                float dist = Utils.DistanceXZ(subWardPos, area.transform.position);
-
-                if (dist < areaRadius + 2.0f)
+                bool isThisBase = (parentId != ZDOID.None && (areaZdo.m_uid == parentId || effectiveParent.m_uid == parentId));
+                if (isThisBase)
                 {
-                    if (parentId == ZDOID.None && discoveredParentId == ZDOID.None)
-                    {
-                        discoveredParentId = effectiveParent.m_uid;
-                    }
-
-                    if (parentId == ZDOID.None || isParentMatch)
-                    {
-                        float allowed = Mathf.Max(1f, areaRadius - dist);
-                        if (allowed < smallestAllowed)
-                        {
-                            smallestAllowed = allowed;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (parentId == ZDOID.None && discoveredParentId != ZDOID.None)
-        {
-            parentId = discoveredParentId;
-            subWardZdo.Set(WardZdoKeys.ParentWard, parentId);
-            WardRegistryManager.Instance.RegisterOrUpdate(subWardZdo);
-            Networking.WardNetworkRouter.SendRegisterWard(subWardZdo.m_uid);
-        }
-
-        List<KnownWard> allWards = WardRegistryManager.Instance.GetAllWards();
-        for (int i = 0; i < allWards.Count; i++)
-        {
-            KnownWard ward = allWards[i];
-            if (ward.Id == subWardZdo.m_uid)
-                continue;
-
-            if (ward.Type == WardType.SubWard)
-            {
-                float distToSibling = Utils.DistanceXZ(subWardPos, ward.Position);
-                float allowedFromSibling = Mathf.Max(1f, distToSibling - ward.Radius);
-                if (allowedFromSibling < smallestAllowed)
-                {
-                    smallestAllowed = allowedFromSibling;
+                    seenWards.Add(areaZdo.m_uid);
+                    baseCircles.Add(new WardCoverageCircle(area.transform.position, GetWardRadius(area)));
                 }
             }
         }
 
         if (parentId != ZDOID.None)
         {
-            KnownWard parentKnown = WardRegistryManager.Instance.GetKnownWard(parentId);
-            if (parentKnown != null)
+            if (!seenWards.Contains(parentId))
             {
-                float dist = Utils.DistanceXZ(subWardPos, parentKnown.Position);
-                if (dist < parentKnown.Radius + 2.0f)
+                KnownWard parentKnown = WardRegistryManager.Instance.GetKnownWard(parentId);
+                if (parentKnown != null && parentKnown.IsEnabled)
                 {
-                    float allowed = Mathf.Max(1f, parentKnown.Radius - dist);
-                    if (allowed < smallestAllowed)
-                    {
-                        smallestAllowed = allowed;
-                    }
+                    seenWards.Add(parentId);
+                    baseCircles.Add(new WardCoverageCircle(parentKnown.Position, parentKnown.Radius));
                 }
             }
 
@@ -523,55 +519,137 @@ public static class WardQueryService
             for (int i = 0; i < exts.Count; i++)
             {
                 KnownExtensionWard ext = exts[i];
-                float dist = Utils.DistanceXZ(subWardPos, ext.Position);
-                if (dist < ext.Radius + 2.0f)
+                if (ext.IsEnabled && !seenWards.Contains(ext.Id))
                 {
-                    float allowed = Mathf.Max(1f, ext.Radius - dist);
-                    if (allowed < smallestAllowed)
-                    {
-                        smallestAllowed = allowed;
-                    }
+                    seenWards.Add(ext.Id);
+                    baseCircles.Add(new WardCoverageCircle(ext.Position, ext.Radius));
                 }
             }
         }
-        else
+
+        if (baseCircles.Count == 0)
         {
-            for (int i = 0; i < allWards.Count; i++)
+            return 15f;
+        }
+
+        Vector2 subPos2D = new(subWardPos.x, subWardPos.z);
+        bool isInsideBase = false;
+        for (int i = 0; i < baseCircles.Count; i++)
+        {
+            if (Vector2.Distance(subPos2D, baseCircles[i].Center) <= baseCircles[i].Radius + 0.1f)
             {
-                KnownWard ward = allWards[i];
-                if (ward.Id == subWardZdo.m_uid || ward.Type == WardType.SubWard)
+                isInsideBase = true;
+                break;
+            }
+        }
+
+        if (!isInsideBase)
+        {
+            return 1f;
+        }
+
+        const int SampleCount = 72;
+        const float AngleStep = 360f / SampleCount;
+        float smallestBoundaryDist = float.MaxValue;
+        List<CoverageInterval> intervals = new(baseCircles.Count);
+
+        for (int s = 0; s < SampleCount; s++)
+        {
+            float rad = (s * AngleStep) * Mathf.Deg2Rad;
+            Vector2 dir = new(Mathf.Cos(rad), Mathf.Sin(rad));
+
+            intervals.Clear();
+            for (int c = 0; c < baseCircles.Count; c++)
+            {
+                WardCoverageCircle circle = baseCircles[c];
+                Vector2 v = subPos2D - circle.Center;
+                float b = Vector2.Dot(v, dir);
+                float cVal = Vector2.Dot(v, v) - (circle.Radius * circle.Radius);
+                float disc = (b * b) - cVal;
+                if (disc >= 0f)
+                {
+                    float sqrtDisc = Mathf.Sqrt(disc);
+                    float tEnter = -b - sqrtDisc;
+                    float tExit = -b + sqrtDisc;
+                    if (tExit > 0f)
+                    {
+                        intervals.Add(new CoverageInterval(Mathf.Max(0f, tEnter), tExit));
+                    }
+                }
+            }
+
+            float maxT = 0f;
+            bool expanded = true;
+            while (expanded)
+            {
+                expanded = false;
+                for (int i = 0; i < intervals.Count; i++)
+                {
+                    CoverageInterval interval = intervals[i];
+                    if (interval.Start <= maxT + 0.05f && interval.End > maxT)
+                    {
+                        maxT = interval.End;
+                        expanded = true;
+                    }
+                }
+            }
+
+            if (maxT < smallestBoundaryDist)
+            {
+                smallestBoundaryDist = maxT;
+            }
+        }
+
+        ZDOID currentSubWardId = subWardZdo != null ? subWardZdo.m_uid : ZDOID.None;
+        HashSet<ZDOID> seenSiblings = new();
+
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
                     continue;
 
-                float dist = Utils.DistanceXZ(subWardPos, ward.Position);
-                if (dist < ward.Radius + 2.0f)
-                {
-                    float allowed = Mathf.Max(1f, ward.Radius - dist);
-                    if (allowed < smallestAllowed)
-                    {
-                        smallestAllowed = allowed;
-                    }
+                ZDO areaZdo = area.m_nview.GetZDO();
+                if (currentSubWardId != ZDOID.None && areaZdo.m_uid == currentSubWardId)
+                    continue;
 
-                    if (discoveredParentId == ZDOID.None)
+                WardType areaType = (WardType)areaZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                if (areaType == WardType.SubWard)
+                {
+                    seenSiblings.Add(areaZdo.m_uid);
+                    float siblingRadius = GetWardRadius(area);
+                    float distToSibling = Utils.DistanceXZ(subWardPos, area.transform.position);
+                    float allowedFromSibling = Mathf.Max(1f, distToSibling - siblingRadius);
+                    if (allowedFromSibling < smallestBoundaryDist)
                     {
-                        discoveredParentId = ward.Id;
+                        smallestBoundaryDist = allowedFromSibling;
                     }
                 }
             }
+        }
 
-            if (discoveredParentId != ZDOID.None)
+        List<KnownWard> allWards = WardRegistryManager.Instance.GetAllWards();
+        for (int i = 0; i < allWards.Count; i++)
+        {
+            KnownWard ward = allWards[i];
+            if (currentSubWardId != ZDOID.None && ward.Id == currentSubWardId)
+                continue;
+
+            if (ward.Type == WardType.SubWard && !seenSiblings.Contains(ward.Id))
             {
-                subWardZdo.Set(WardZdoKeys.ParentWard, discoveredParentId);
-                WardRegistryManager.Instance.RegisterOrUpdate(subWardZdo);
-                Networking.WardNetworkRouter.SendRegisterWard(subWardZdo.m_uid);
+                seenSiblings.Add(ward.Id);
+                float distToSibling = Utils.DistanceXZ(subWardPos, ward.Position);
+                float allowedFromSibling = Mathf.Max(1f, distToSibling - ward.Radius);
+                if (allowedFromSibling < smallestBoundaryDist)
+                {
+                    smallestBoundaryDist = allowedFromSibling;
+                }
             }
         }
 
-        if (smallestAllowed < float.MaxValue)
-        {
-            return Mathf.Clamp(smallestAllowed, 1f, maxRadius);
-        }
-
-        return 15f;
+        return Mathf.Clamp(smallestBoundaryDist, 1f, maxRadius);
     }
 }
 

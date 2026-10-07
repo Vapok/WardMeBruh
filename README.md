@@ -2,7 +2,7 @@
 
 # 🛡️ Ward Me *Bruh!*
 
-### *Territorial fortress governance, base automation, and sanctuary perks for Valheim.*
+### *Base management, role-based access, and defense controls for Valheim.*
 
 [![GitHub Release](https://img.shields.io/github/v/release/Vapok/WardMeBruh?include_prereleases&logo=github&style=for-the-badge)](https://github.com/Vapok/WardMeBruh/releases)
 [![Thunderstore Version](https://img.shields.io/thunderstore/v/Vapok/WardMeBruh?logo=thunderstore&style=for-the-badge)](https://thunderstore.io/c/valheim/p/Vapok/WardMeBruh/)
@@ -14,7 +14,7 @@
 
 </div>
 
-**Ward Me Bruh!** overhauls the vanilla Valheim Ward (`guard_stone`) into an administrative and territorial fortress system while maintaining complete compatibility with vanilla game mechanics and engine invariants.
+**Ward Me Bruh!** expands the vanilla Valheim ward (`guard_stone`) with role-based permissions, multi-ward compound linking, nested sub-wards, automated base upkeep, and configurable defense shields.
 
 ---
 
@@ -28,146 +28,106 @@
 
 ## 🛡️ Features
 
-### Centralized Management GUI & Remote Overview
-* **Ward Hub GUI**: Dedicated 6-tab interface opened directly at the ward stone (`[G]` or `<E>`) featuring **Overview**, **Access**, **Defenses**, **Upkeep**, **Roles**, and **Management**.
-* **Player Capability Summary**: Overview tab displays current character clearance tier alongside a comprehensive, real-time list of all functional capabilities granted to that role.
-* **Dynamic Font Size Scaling**: Instant toggle button in the window header to cycle between **Small** (default), **Medium**, and **Large** font sizes across all tabs and modal inspectors.
-* **Hierarchical "Other Wards" Territory Manager**: Inspect and remotely configure any ward owned by your character across the world. Displays settlements in an organized tree hierarchy, grouping connected extension wards and nested sub-wards underneath their respective main base stones.
+### Ward Management & Remote Menu
+* **Ward Interface**: Accessed directly at any ward stone (<kbd>E</kbd> or <kbd>G</kbd>). Tabs: Overview, Access, Defenses, Upkeep, Roles, and Management.
+* **Remote Ward Menu**: View and configure all wards you own across the world from one menu. Shows bases in a hierarchy with child extensions and sub-wards grouped underneath.
+* **Font Scaling**: Toggle between Small, Medium, and Large text sizes directly in the window header.
 
-### Seamless Base Extensions & Nested Sub-Wards
-* **Interactive Placement Choice**: Placing an additional ward stone inside an active shield opens a selection dialog, letting you choose between expanding the compound as an **Extension Ward** or establishing an independent **Sub-Ward**.
-* **Base Extension Wards**:
-  * **Unified Base Territory**: Extension wards project their own forcefield dome, boundary, and in-range effects, expanding the total protected perimeter of the base.
-  * **Inherited Defenses & Shared Governance**: Extension stones share the parent base's settings, custom roles, permissions, and name, and inherit parent base defenses (knockback, electrical shock, mob spawn blocking, and raid cancellation).
-  * **Independent Power Toggle**: Each extension ward features an independent power switch to toggle individual perimeter sectors on or off without affecting the rest of the compound.
-  * **Consolidated Access Scanner**: The Access tab scans and manages chests, doors, and portals across the parent base and all of its connected extensions.
+### Base Extensions & Sub-Wards
+* **Placement Prompt**: Placing a new ward stone inside an active ward prompts you to choose between an **Extension Ward** or a **Sub-Ward**.
+* **Extension Wards**:
+  * Expands the main base's coverage area by projecting an additional shield dome.
+  * Inherits roles, permissions, settings, and defenses from the main base.
+  * Has its own power toggle to disable individual sectors without taking down the entire base.
+  * Shared access scanner finds chests, doors, and portals across the full base complex.
 * **Nested Sub-Wards**:
-  * **Independent Internal Governance**: Sub-wards create private chambers, personal houses, or specialized vaults inside a larger base. They maintain their own independent roles, member rosters, permissions, and door/chest security locks.
-  * **Intelligent Boundary Bounds**: Sub-ward radius calculations dynamically calculate against the entire combined territory of the parent base and all attached extensions, while enforcing clearance so sibling sub-wards cannot overlap.
-  * **Customizable Dome Colors**: Sub-wards feature an interactive HSV color wheel picker in the Defenses tab to personalize their forcefield dome, ground perimeter ring, and base lights.
+  * Smaller wards placed inside a larger base for private rooms, personal houses, or vaults.
+  * Independent roles, member rosters, permissions, and door/chest locks.
+  * Boundary radius automatically conforms to the parent base and attached extensions, preventing overlap with sibling sub-wards.
+  * Custom dome colors via an interactive color wheel in the Defenses tab (changes dome, perimeter ring, and base lights).
 
+### Roles & Access Control
+* **Role Hierarchy**: Default roles are **Guest**, **Resident**, **Manager**, and **Owner**. Custom roles can be created with custom names and colors.
+* **Granular Permissions**: Controls building, farming, harvesting crops, entering the dome, adjusting ward radius, and managing base settings.
+* **Object Access**: Lock individual doors and chests to specific roles or character names. Rename doors and containers in-world (<kbd>Shift</kbd> + <kbd>E</kbd>).
+* **Portal Gating**: Restrict portal usage by role with checks at both departure and destination wards.
+* **Persistent Roster**: Tracks players who have visited the server so offline players can be assigned roles.
 
-### Extensible Role-Based Governance & Capability Management
-* **Dedicated MANAGEMENT Tab**: Separate administrative governance from gameplay settings. Control who has the authority to configure which systems, add custom roles, or edit settlement parameters.
-* **Custom & Per-Ward Roles**: Define custom roles per ward stone with customized display names, hierarchy levels, and color badges on top of the default slate (**Guest**, **Resident**, **Manager**, **Owner**).
-* **Hierarchical Permission Inheritance**: Higher-tier roles automatically inherit all capabilities granted to subordinate roles. The Management matrix displays active grants (`[ ✔ ]`) alongside greyed-out inherited grants (`[ ✔ ] (Inherited from [LowerRole])`).
-* **Operational vs. Administrative Separation**: Door, container, and portal clearance requirements remain strictly per-object, while the Management tab governs which roles are authorized to configure those objects or activate fortress defenses.
-* **Granular Core & Defense Clearances**:
-  * **Dome Access Clearance** (`core.dome_access`, default: Guest): Controls who can cross the forcefield perimeter and enter the base without being repelled or shocked.
-  * **Shield Sanctuary Benefits** (`core.benefits`, default: Resident): Controls who receives base territory perks (HUD status display, max comfort, food decay pause, death skill shield, and health/stamina/eitr regen boost).
-  * **Building & Construction** (`core.building`, default: Resident): Controls who is authorized to construct, place, repair, and deconstruct pieces, structures, and furniture within the protected perimeter.
-  * **Farming & Cultivation** (`core.farming`, default: Resident): Controls who is authorized to cultivate soil, replant grass, and plant seeds, crops, and saplings using the Cultivator.
-  * **Harvest Crops & Pickables** (`core.harvest`, default: Resident): Controls who is authorized to harvest mature crops, berry bushes, mushrooms, and pickable resources within the protected perimeter.
-  * **Perimeter Dome Size** (`defenses.dome_size`, default: Owner): Controls who is authorized to adjust the ward shield perimeter and coverage radius.
-* **Persistent World Player Registry**: Keeps an active, world-level tally of all characters that have joined the world so that offline players remain available in the Roster enrollment dropdown across sessions.
-* **Character Independence**: Admin auto-elevation is strictly scoped to dedicated servers; singleplayer and player-hosted characters on the same account are treated as separate individuals.
+### Defenses & Shield Domes
+* **Adjustable Radius**: Stepped slider from 10m to 100m with live area readout and visual boundary ring.
+* **Intruder Defense**: Configurable knockback impulse and electrical shock damage against hostile creatures.
+* **Mob & Raid Suppression**: Blocks mob spawns within the dome and cancels incoming base raids.
+* **AI Camouflage**: Prevents enemies from targeting structures inside the ward area.
+* **Hazard Shields**: Protects against rain weathering (virtual roof), Ashlands cinders and lava, Deep North snow buildup, and water displacement for dry building.
+* **Power Deactivation**: Toggling a ward off disables shield defenses and perks while keeping access locks, auto-door, auto-fuel, and repair active.
 
-### Territorial Defense & 3D Airspace
-* **Territorial Domain & Coverage**: Stepped dome radius slider (10m–100m in 5m notched increments with visual hashmarks) with real-time square meter land coverage readout and in-world boundary marker.
-* **3D Hemispherical Dome**: Deflects both ground attackers and flying siege mobs (Drakes, Gjall, Valkyries).
-* **Pushback & Shock**: Configurable physical knockback impulse and retaliatory electrical shock damage to hostile intruders.
-* **"Ghost Base" AI Camouflage**: Hides structures from enemy pathfinding so mobs don't aggro on walls.
-* **Raid & Mob Spawn Suppression**: Cancels base raid events and suppresses mob spawns inside the dome.
-* **Dome Power Deactivation**: Toggling the ward dome off disables all shield defenses (pushback, shock, camouflage, raid/spawn suppression, hazard shields) and dome status perks (faked fire/shelter, forced max comfort, food decay pause, skill shield, regen boost). Standard vanilla rules apply for fire, shelter, and resting.
-* **Continuous Upkeep & Access Protection**: Base automations (Area Repair, 🔥 Auto-Fuel, Auto-Door) and security access settings (Door clearances, Chest locks, Portal gating, Building permissions, and Harvesting/Farming restrictions) remain active and enforced even when the dome is powered down.
-
-### Base Automation & Upkeep
-* **Free Area Repair**: Automatically repairs damaged structures with a configurable weathering threshold slider (20%–100% in 5% notched increments).
-* **🔥 Auto-Fuel Supply Depots**: Refuels nearby torches, campfires, hearths, and smelters directly from designated chests.
-* **Auto-Closing Doors**: Automatically shuts open doors and gates after a configurable delay (5s–30s in 5s notched increments).
-
-### Sanctuary Perks & Comfort
-* **Max Comfort Under Shield**: Calculates the highest comfort piece in the base and applies that max comfort level and full shelter everywhere under the active dome.
-* **Base Territory Status Effect**: Displays the ward icon, base name, current role, coverage radius, and active comfort on your HUD.
-* **Food Decay Freeze**: Pauses food timer decay while resting inside base boundaries.
-* **Death Penalty Shield**: Prevents skill point loss on death within ward borders.
-* **Regeneration Boost**: Boosts health, stamina, and eitr recovery inside the base.
-
-### Access Control (Doors, Containers & Portals)
-* **Custom Naming**: Name doors and chests directly in-world (`Shift + E`) with dynamic hover text and colored chest headers.
-* **Role-Locked Doors & Chests**: Set individual clearance levels per door and container.
-* **Portal Network Gating**: Restrict portal use by role, with bi-directional verification checking access at both departure and destination wards.
-
-### Biome & Environmental Shields
-* **Virtual Roof**: Eliminates rain weathering on unroofed wood and structures, shields players from rain exposure, and prevents unroofed fires from extinguishing.
-* **Ashlands Shield**: Grants immunity against falling ash, despawns cinders, and blocks lava damage on structures.
-* **Deep North Shield**: Prevents structural collapse from heavy snow accumulation.
-
-### Agricultural & World Security
-* **Tamed Animal Immunity**: Tamed livestock take zero damage inside the active perimeter.
-* **Harvesting & Farming Clearances**: Restricts crop harvesting and cultivating/planting seeds to authorized roles via granular role capabilities.
-* **Vehicle Locking**: Secures ship rudders and carts against unauthorized guests.
-* **Underwater Construction**: Displaces water inside the dome for dry seabed building.
-* **Minimap Overlay & Fast Travel**: Ward map pins with circular coverage rings and optional double-click fast travel.
-
-### 🔌 Extensibility & Developer API (`WardMeBruhAPI`)
-
-WardMeBruh provides two integration pathways for third-party mod developers:
-
-* **Option A (Repackable API Assembly)**: Reference `WardMeBruhAPI.dll` at compile time and bundle via `ILRepack`.
-* **Option B (Zero-Dependency Client Wrapper)**: Drop [Docs/WardMeBruhAPI_Client.cs](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs) directly into your project for zero-dependency reflection with cached delegates.
-
-#### Developer Guides & Resources:
-* 🛠️ **[API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Docs/API_INTEGRATION.md)** — Step-by-step walkthrough for configuring both integration options.
-* 📖 **[WardMeBruhAPI Class Reference](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI.md)** — Detailed documentation for all classes, methods, and parameters.
-* 💾 **[Download WardMeBruhAPI.dll](https://github.com/Vapok/WardMeBruh/releases)** — Standalone API assembly archives.
+### Base Upkeep & Perks
+* **Area Repair**: Automatically repairs damaged structures within the ward area (free or resource-based).
+* **Auto-Fuel**: Automatically pulls wood, coal, and fuel from designated chests to refill nearby fires, torches, and smelters.
+* **Auto-Closing Doors**: Closes open doors and gates after a configurable delay (5s–30s).
+* **Sanctuary Perks**: Max comfort under active shields, food timer freeze while resting, skill loss protection on death, and increased health/stamina/eitr regeneration.
+* **Livestock Protection**: Prevents damage to tamed animals within the ward area.
 
 ---
 
-## 🕹️ Controls Summary
+## 🕹️ Controls
 
-| Action | Input / Control | Description |
+| Action | Control | Description |
 | :--- | :--- | :--- |
-| **Open Ward Hub** | <kbd>G</kbd> or <kbd>E</kbd> | Opens the WardMeBruh Central Hub GUI when targeting a ward stone. |
-| **Quick-Name Entity** | <kbd>Shift</kbd> + <kbd>E</kbd> | Opens in-world renaming dialog for targeted door or chest. |
-| **Interact / Open** | <kbd>E</kbd> | Standard door or container interaction (evaluated against role clearance). |
+| **Open Ward Menu** | <kbd>E</kbd> or <kbd>G</kbd> | Opens the ward interface at a ward stone. |
+| **Quick-Name Entity** | <kbd>Shift</kbd> + <kbd>E</kbd> | Renames targeted door or chest in-world. |
+| **Interact** | <kbd>E</kbd> | Standard door/chest/portal interaction (checked against role clearance). |
 
 ---
 
 ## ⚙️ Configuration
 
-Configuration settings are stored in `BepInEx/config/vapok.mods.wardmebruh.cfg`.
+Settings are saved to `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 
 ### Server Settings (Synced)
-* **Enable Ward Me Bruh**: Master mod toggle (Default: `true`).
-* **Max Ward Radius**: Maximum radius in meters a ward can be expanded to (Default: `100.0m`).
-* **Ward Separation Distance**: Minimum buffer distance enforced between unowned ward perimeters (Default: `50.0m`).
-* **Default Repair Threshold**: Damage fraction required before area repair triggers (Default: `0.20`).
-* **Default Auto-Close Delay**: Seconds before an open door automatically closes (Default: `5.0s`).
-* **Free Area Repair**: If enabled, area repair consumes zero resources (Default: `true`).
-* **Allow Ore Fast-Travel**: Permits transporting raw ores/metals through ward fast travel (Default: `false`).
-* **Fast-Travel Combat Lockout**: Seconds out of combat required before fast travel is permitted (Default: `10.0s`).
+* `Enable Ward Me Bruh`: Master mod toggle (default: `true`).
+* `Max Ward Radius`: Maximum allowed radius in meters (default: `100.0`).
+* `Ward Separation Distance`: Minimum buffer distance between unowned wards (default: `50.0`).
+* `Default Repair Threshold`: Damage percentage before area repair runs (default: `0.20`).
+* `Default Auto-Close Delay`: Seconds before open doors close (default: `5.0`).
+* `Free Area Repair`: When true, repairs cost no resources (default: `true`).
+* `Allow Ore Fast-Travel`: Allow raw ores through ward fast travel (default: `false`).
+* `Fast-Travel Combat Lockout`: Seconds out of combat required before fast travel (default: `10.0`).
 
-### Local Config
-* **Open Ward Hub Keybind**: Key shortcut used to open the GUI (Default: `<kbd>E</kbd>`).
-* **Show Splash on Startup**: Toggles display of the mod overview window upon game launch (Default: `true`).
-* **Enable Anonymous Telemetry**: Toggles anonymous telemetry reporting to track active mod versions and crashes (Default: `true`).
+### Client Settings
+* `Open Ward Hub Keybind`: Shortcut key to open the interface (default: `<kbd>E</kbd>`).
+* `Show Splash on Startup`: Shows mod summary window on game launch (default: `true`).
+* `Enable Anonymous Telemetry`: Sends crash and version reports (default: `true`).
 
 ---
 
-## 🤝 Compatibility & Requirements
+## 🔌 Developer API (`WardMeBruhAPI`)
 
-* **BepInEx**: 5.4.2350 or later.
-* **Jotunn**: 2.30.2 or later.
-* Compatible with solo, player-hosted, and headless dedicated servers.
-* Non-destructive Harmony patches designed for seamless coexistence with ValheimPlus, Azu mods, and inventory utilities.
+Third-party mods can integrate directly using either:
+* **Assembly Reference**: Reference `WardMeBruhAPI.dll` at compile time and bundle via `ILRepack`.
+* **Reflection Client**: Drop [Docs/WardMeBruhAPI_Client.cs](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI_Client.cs) into your project for zero-dependency reflection with cached delegates.
+
+See the [API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Docs/API_INTEGRATION.md) and [Class Reference](https://github.com/Vapok/WardMeBruh/blob/main/Docs/WardMeBruhAPI.md) for details.
+
+---
+
+## 🤝 Requirements & Compatibility
+
+* **BepInEx**: 5.4.2350 or later
+* **Jotunn**: 2.30.2 or later
+* Compatible with singleplayer, local co-op, and dedicated servers.
+* Non-destructive Harmony patches designed to coexist with ValheimPlus, Azu mods, and inventory management mods.
 
 ---
 
 ## 📦 Installation
 
-### Mod Manager (Recommended)
-1. Install via **Gale**, **r2modman**, or **Thunderstore Mod Manager**.
-2. Dependencies (`BepInExPack_Valheim`, `Jotunn`, `YamlDotNet`) download automatically.
-
-### Manual Installation
-1. Extract the downloaded `.zip` archive.
-2. Place the `WardMeBruh` folder into your `Valheim/BepInEx/plugins/` directory.
-3. Launch the game.
+* **Mod Manager (Recommended)**: Install via Gale, r2modman, or Thunderstore Mod Manager.
+* **Manual**: Extract the `.zip` archive and move the `WardMeBruh` folder into `Valheim/BepInEx/plugins/`.
 
 ---
 
-## 💬 Feedback & Community
+## 💬 Community
 
-* Report issues or request features on [GitHub](https://github.com/Vapok/WardMeBruh/issues).
-* Join the community on [Discord](https://discord.gg/5YAJkRFBXt) for discussions and support.
+* Bug reports and feature requests: [GitHub Issues](https://github.com/Vapok/WardMeBruh/issues)
+* Community discussion: [Discord](https://discord.gg/5YAJkRFBXt)

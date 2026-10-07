@@ -1,3 +1,6 @@
+# 0.0.5 - In Development
+* Active development in progress.
+
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * **Nested Sub-Ward Architecture (`WardType.SubWard`, `WardPlacementChoiceModal`)**:
   * Added `WardType.SubWard` supporting smaller self-contained sub-wards placed inside parent base territory.

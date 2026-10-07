@@ -1,3 +1,6 @@
+# 0.0.5 - In Development
+* Active development in progress.
+
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * Added Nested Sub-Wards: Place smaller personal or specialized wards inside a larger base territory with independent roles, permissions, and security access.
 * Added Placement Selection: When placing a ward stone inside an existing base, choose between expanding the settlement as an Extension Ward or creating an independent Sub-Ward.

@@ -1,5 +1,24 @@
-# 0.0.4 - In Development
-* Active development in progress.
+# 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
+* **Nested Sub-Ward Architecture (`WardType.SubWard`, `WardPlacementChoiceModal`)**:
+  * Added `WardType.SubWard` supporting smaller self-contained sub-wards placed inside parent base territory.
+  * Implemented `WardPlacementChoiceModal` displaying an interactive choice dialog upon placing an overlapping ward stone, allowing players to choose between expanding the settlement (`ConfigureAsExtension`) or establishing an independent sub-ward (`ConfigureAsSubWard`).
+  * Sub-wards maintain independent roles, custom names, permissions, and container/door security access while linking to `WardZdoKeys.ParentWard` for base territory relationship.
+* **Geometric Union Sub-Ward Boundary Ray-Marching (`WardQueryService`, `WardCoverageCircle`, `CoverageInterval`)**:
+  * Replaced single-ward boundary clamping with 72-angle (5° step) radial ray-marching across the geometric union of the parent base ward and all linked extension wards.
+  * Dynamically merges overlapping 1D coverage intervals along each angle ray to locate continuous coverage exit points, enabling sub-wards to expand across and inside extension wards without artificial boundary choking.
+  * Enforces clearance against sibling sub-wards to prevent overlapping inner sub-ward boundaries.
+* **Custom Sub-Ward Shield Dome Shaders & Color Wheel (`WardColorWheelPicker`, `Patch_ShieldDomeImageEffect`, `WardForcefieldDome`)**:
+  * Implemented `WardColorWheelPicker` featuring procedural 160x160 circular antialiased HSV color wheel texture, pointer down/drag event handling, brightness slider, and preset swatches.
+  * Added `wmb_dome_color` ZDO key synchronizing custom hex colors over network RPC.
+  * Patched `ShieldDomeImageEffect.OnRenderImage` to generate and cache 256x1 gradient textures for the `Hidden/ShieldDomePass` shader per custom color, blitting sub-ward compute buffers with individual gradients while preserving vanilla gradients for main bases.
+  * Synchronized perimeter boundary line renderer and base lighting colors in `WardForcefieldDome.UpdatePerimeterTint`.
+* **Hierarchical Ward Selector & Management Checks (`RemoteWardSelectorModal`, `WardRegistryManager`)**:
+  * Refactored `RemoteWardSelectorModal.PopulateWards` to render a 2-level hierarchy: Main base wards display at the root, with child Extension Wards and Sub-Wards indented with visual tree indicators (`└─`) and type badges.
+  * Added permission validation gating: If a player owns a sub-ward in an unmanaged base, the main base is displayed for spatial hierarchy context while suppressing the "Manage" button.
+  * Added auto-parent repair in `RemoteWardSelectorModal` and `WardRegistryManager` restoring orphaned sub-wards and extensions to their spatial parent bases.
+* **Extension Ward Defenses & Power Decoupling (`WardQueryService`, `TabDefenses`)**:
+  * Implemented `GetEffectiveDefenseWardZdo` routing defense inquiries (pushback, mob shock damage, mob spawn block, raid cancellation) to the parent base while respecting local extension power state.
+  * Added independent power toggle on extension wards allowing individual perimeter sections to be powered on or off.
 
 # 0.0.3 - Weather Protection, Territory Management & UI Refinements
 * **Remote Ward Management & UI Architecture (`RemoteWardSelectorModal`, `WardMainWindow`, `UIFonts`)**:

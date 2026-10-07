@@ -32,14 +32,19 @@
 * **Ward Hub GUI**: Dedicated 6-tab interface opened directly at the ward stone (`[G]` or `<E>`) featuring **Overview**, **Access**, **Defenses**, **Upkeep**, **Roles**, and **Management**.
 * **Player Capability Summary**: Overview tab displays current character clearance tier alongside a comprehensive, real-time list of all functional capabilities granted to that role.
 * **Dynamic Font Size Scaling**: Instant toggle button in the window header to cycle between **Small** (default), **Medium**, and **Large** font sizes across all tabs and modal inspectors.
-* **"Your Ward's Bruh" Overview**: Inspect and remotely configure any ward owned by your character across the world, even in unloaded sectors.
+* **Hierarchical "Other Wards" Territory Manager**: Inspect and remotely configure any ward owned by your character across the world. Displays settlements in an organized tree hierarchy, grouping connected extension wards and nested sub-wards underneath their respective main base stones.
 
-### Seamless Base Extensions (Multi-Ward Linking)
-* **Satellite & Extension Wards**: Building an additional ward stone inside an active shield automatically links it as a **Base Extension** rather than creating a separate ward.
-* **Unified Base Territory**: Extension wards project their own forcefield dome, boundary, and in-range effects, expanding the total protected perimeter of the base.
-* **Shared Governance & Power**: Extension stones share the parent base's settings, custom roles, permissions, name, and power state. Toggling power or interacting with any ward stone in the complex opens and operates the single unified base matrix.
-* **Consolidated Access Scanner**: The Access tab scans and manages chests, doors, and portals across the parent base and all of its connected extensions.
-* **Clean Remote Registry**: Extension wards do not clutter the "Your Ward's Bruh" remote selector, keeping base navigation clean and organized.
+### Seamless Base Extensions & Nested Sub-Wards
+* **Interactive Placement Choice**: Placing an additional ward stone inside an active shield opens a selection dialog, letting you choose between expanding the compound as an **Extension Ward** or establishing an independent **Sub-Ward**.
+* **Base Extension Wards**:
+  * **Unified Base Territory**: Extension wards project their own forcefield dome, boundary, and in-range effects, expanding the total protected perimeter of the base.
+  * **Inherited Defenses & Shared Governance**: Extension stones share the parent base's settings, custom roles, permissions, and name, and inherit parent base defenses (knockback, electrical shock, mob spawn blocking, and raid cancellation).
+  * **Independent Power Toggle**: Each extension ward features an independent power switch to toggle individual perimeter sectors on or off without affecting the rest of the compound.
+  * **Consolidated Access Scanner**: The Access tab scans and manages chests, doors, and portals across the parent base and all of its connected extensions.
+* **Nested Sub-Wards**:
+  * **Independent Internal Governance**: Sub-wards create private chambers, personal houses, or specialized vaults inside a larger base. They maintain their own independent roles, member rosters, permissions, and door/chest security locks.
+  * **Intelligent Boundary Bounds**: Sub-ward radius calculations dynamically calculate against the entire combined territory of the parent base and all attached extensions, while enforcing clearance so sibling sub-wards cannot overlap.
+  * **Customizable Dome Colors**: Sub-wards feature an interactive HSV color wheel picker in the Defenses tab to personalize their forcefield dome, ground perimeter ring, and base lights.
 
 
 ### Extensible Role-Based Governance & Capability Management

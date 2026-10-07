@@ -239,11 +239,114 @@ public sealed class WardRegistryManager
         return null;
     }
 
+    public bool IsBaseWardRegistered(ZDOID id)
+    {
+        if (_knownWards.Count == 0)
+            return true;
+        return _knownWards.TryGetValue(id, out KnownWard ward) && ward.Type == WardType.Main;
+    }
+
+    private void ValidateAndRepairChildWardParents()
+    {
+        List<KnownWard> allBases = null;
+
+        List<KnownWard> knownSnapshot = new(_knownWards.Values);
+        for (int i = 0; i < knownSnapshot.Count; i++)
+        {
+            KnownWard ward = knownSnapshot[i];
+            if (ward.Type != WardType.SubWard)
+                continue;
+
+            bool parentValid = ward.ParentId != ZDOID.None && _knownWards.ContainsKey(ward.ParentId);
+            if (!parentValid)
+            {
+                allBases ??= GetLivingMainBases();
+                KnownWard covering = FindCoveringMainBase(ward.Position, allBases);
+                if (covering != null)
+                {
+                    ward.ParentId = covering.Id;
+                    UpdateZdoParent(ward.Id, covering.Id);
+                }
+                else if (ward.ParentId != ZDOID.None)
+                {
+                    ward.ParentId = ZDOID.None;
+                    UpdateZdoParent(ward.Id, ZDOID.None);
+                }
+            }
+        }
+
+        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
+        for (int i = 0; i < extSnapshot.Count; i++)
+        {
+            KnownExtensionWard ext = extSnapshot[i];
+            bool parentValid = ext.ParentId != ZDOID.None && _knownWards.ContainsKey(ext.ParentId);
+            if (!parentValid)
+            {
+                allBases ??= GetLivingMainBases();
+                KnownWard covering = FindCoveringMainBase(ext.Position, allBases);
+                if (covering != null)
+                {
+                    ext.ParentId = covering.Id;
+                    UpdateZdoParent(ext.Id, covering.Id);
+                }
+                else if (ext.ParentId != ZDOID.None)
+                {
+                    ext.ParentId = ZDOID.None;
+                    UpdateZdoParent(ext.Id, ZDOID.None);
+                }
+            }
+        }
+    }
+
+    private List<KnownWard> GetLivingMainBases()
+    {
+        List<KnownWard> list = new();
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            if (snapshot[i].Type == WardType.Main)
+            {
+                list.Add(snapshot[i]);
+            }
+        }
+        return list;
+    }
+
+    private static KnownWard FindCoveringMainBase(Vector3 pos, List<KnownWard> bases)
+    {
+        KnownWard closest = null;
+        float closestDist = float.MaxValue;
+        for (int i = 0; i < bases.Count; i++)
+        {
+            KnownWard b = bases[i];
+            float dist = Utils.DistanceXZ(b.Position, pos);
+            if (dist <= b.Radius && dist < closestDist)
+            {
+                closest = b;
+                closestDist = dist;
+            }
+        }
+        return closest;
+    }
+
+    private static void UpdateZdoParent(ZDOID wardId, ZDOID parentId)
+    {
+        if (ZDOMan.instance != null)
+        {
+            ZDO zdo = ZDOMan.instance.GetZDO(wardId);
+            if (zdo != null && zdo.IsValid())
+            {
+                zdo.Set(WardZdoKeys.ParentWard, parentId);
+            }
+        }
+    }
+
     public List<KnownWard> GetPlayerWards(long playerId) => GetWardsForPlayer(playerId);
 
     public List<KnownWard> GetPlayerOwnedWards(long playerId)
     {
         PruneDeadWards();
+        ValidateAndRepairChildWardParents();
         List<KnownWard> result = new();
         if (playerId == 0L)
             return result;
@@ -335,12 +438,46 @@ public sealed class WardRegistryManager
             }
         }
 
+        HashSet<ZDOID> existingIds = new();
+        for (int i = 0; i < result.Count; i++)
+        {
+            existingIds.Add(result[i].Id);
+        }
+
+        List<ZDOID> missingParentIds = null;
+        for (int i = 0; i < result.Count; i++)
+        {
+            KnownWard w = result[i];
+            if (w.ParentId != ZDOID.None && !existingIds.Contains(w.ParentId))
+            {
+                missingParentIds ??= new List<ZDOID>();
+                if (!missingParentIds.Contains(w.ParentId))
+                {
+                    missingParentIds.Add(w.ParentId);
+                }
+            }
+        }
+
+        if (missingParentIds != null)
+        {
+            for (int i = 0; i < missingParentIds.Count; i++)
+            {
+                ZDOID parentId = missingParentIds[i];
+                if (_knownWards.TryGetValue(parentId, out KnownWard parent))
+                {
+                    result.Add(parent);
+                    existingIds.Add(parentId);
+                }
+            }
+        }
+
         return result;
     }
 
     public List<KnownWard> GetWardsForPlayer(long playerId)
     {
         PruneDeadWards();
+        ValidateAndRepairChildWardParents();
         List<KnownWard> result = new();
         if (playerId == 0L)
             return result;
@@ -418,6 +555,39 @@ public sealed class WardRegistryManager
                 long creatorId = extCreatorId != 0L ? extCreatorId : parentCreatorId;
 
                 result.Add(new KnownWard(ext.Id, displayName, ext.Position, creatorId, creatorName, ext.Radius, ext.IsEnabled, WardType.Extension, ext.ParentId));
+            }
+        }
+
+        HashSet<ZDOID> existingIds = new();
+        for (int i = 0; i < result.Count; i++)
+        {
+            existingIds.Add(result[i].Id);
+        }
+
+        List<ZDOID> missingParentIds = null;
+        for (int i = 0; i < result.Count; i++)
+        {
+            KnownWard w = result[i];
+            if (w.ParentId != ZDOID.None && !existingIds.Contains(w.ParentId))
+            {
+                missingParentIds ??= new List<ZDOID>();
+                if (!missingParentIds.Contains(w.ParentId))
+                {
+                    missingParentIds.Add(w.ParentId);
+                }
+            }
+        }
+
+        if (missingParentIds != null)
+        {
+            for (int i = 0; i < missingParentIds.Count; i++)
+            {
+                ZDOID parentId = missingParentIds[i];
+                if (_knownWards.TryGetValue(parentId, out KnownWard parent))
+                {
+                    result.Add(parent);
+                    existingIds.Add(parentId);
+                }
             }
         }
 

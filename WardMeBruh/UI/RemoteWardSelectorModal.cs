@@ -4,6 +4,7 @@ using Jotunn.Managers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WardMeBruh.API;
 using WardMeBruh.Models;
 using WardMeBruh.Services;
 
@@ -159,11 +160,94 @@ public class RemoteWardSelectorModal
             }
         }
 
+        List<KnownWard> rootWards = new();
+        Dictionary<ZDOID, List<KnownWard>> childrenByParent = new();
+        HashSet<ZDOID> rootIds = new();
+
         for (int i = 0; i < wards.Count; i++)
         {
             KnownWard ward = wards[i];
+            if (ward.Type == WardType.Main || ward.ParentId == ZDOID.None || ward.ParentId == ward.Id)
+            {
+                rootWards.Add(ward);
+                rootIds.Add(ward.Id);
+            }
+            else
+            {
+                if (!childrenByParent.TryGetValue(ward.ParentId, out List<KnownWard> children))
+                {
+                    children = new List<KnownWard>();
+                    childrenByParent[ward.ParentId] = children;
+                }
+                children.Add(ward);
+            }
+        }
+
+        List<KnownWard> orphanedChildren = null;
+        foreach (KeyValuePair<ZDOID, List<KnownWard>> kvp in childrenByParent)
+        {
+            if (!rootIds.Contains(kvp.Key))
+            {
+                orphanedChildren ??= new List<KnownWard>();
+                orphanedChildren.AddRange(kvp.Value);
+            }
+        }
+
+        if (orphanedChildren != null)
+        {
+            for (int i = 0; i < orphanedChildren.Count; i++)
+            {
+                KnownWard orphan = orphanedChildren[i];
+                rootWards.Add(orphan);
+                rootIds.Add(orphan.Id);
+                if (childrenByParent.TryGetValue(orphan.ParentId, out List<KnownWard> list))
+                {
+                    list.Remove(orphan);
+                }
+            }
+        }
+
+        rootWards.Sort((a, b) =>
+        {
+            bool aIsCurrent = a.Id == physicalWardId || a.Id == activeWardId;
+            bool bIsCurrent = b.Id == physicalWardId || b.Id == activeWardId;
+            if (aIsCurrent && !bIsCurrent) return -1;
+            if (!aIsCurrent && bIsCurrent) return 1;
+
+            float distA = Utils.DistanceXZ(playerPos, a.Position);
+            float distB = Utils.DistanceXZ(playerPos, b.Position);
+            return distA.CompareTo(distB);
+        });
+
+        List<(KnownWard Ward, bool IsChild, bool IsLastChild)> displayItems = new();
+        for (int r = 0; r < rootWards.Count; r++)
+        {
+            KnownWard root = rootWards[r];
+            displayItems.Add((root, false, false));
+
+            if (childrenByParent.TryGetValue(root.Id, out List<KnownWard> children) && children.Count > 0)
+            {
+                children.Sort((a, b) =>
+                {
+                    int typeComp = a.Type.CompareTo(b.Type);
+                    if (typeComp != 0) return typeComp;
+                    return string.Compare(a.CustomName, b.CustomName, StringComparison.OrdinalIgnoreCase);
+                });
+
+                for (int c = 0; c < children.Count; c++)
+                {
+                    bool isLast = (c == children.Count - 1);
+                    displayItems.Add((children[c], true, isLast));
+                }
+            }
+        }
+
+        for (int i = 0; i < displayItems.Count; i++)
+        {
+            (KnownWard ward, bool isChild, bool isLastChild) = displayItems[i];
             bool isManaging = ward.Id == activeWardId;
             bool isPhysicalLocation = ward.Id == physicalWardId;
+            bool canManage = CanPlayerManageWard(ward, playerId);
 
             float dist = Utils.DistanceXZ(playerPos, ward.Position);
             string distStr = dist < 1000f ? $"{Mathf.RoundToInt(dist)}{"$wmb_meters_away".Localize()}" : $"{dist / 1000f:F1}{"$wmb_km_away".Localize()}";
@@ -173,11 +257,48 @@ public class RemoteWardSelectorModal
             }
 
             string typeBadge = ward.Type == WardType.SubWard 
-                ? "<color=#93c5fd>[Sub-Ward]</color> " 
-                : (ward.Type == WardType.Extension ? "<color=#fcd34d>[Extension]</color> " : string.Empty);
-            string labelText = $"{typeBadge}{ward.CustomName}  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
+                ? "<color=#93c5fd><b>[Sub-Ward]</b></color> " 
+                : (ward.Type == WardType.Extension ? "<color=#fcd34d><b>[Extension]</b></color> " : string.Empty);
 
-            WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, rowHeight);
+            string labelText = $"{typeBadge}<b>{ward.CustomName}</b>  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
+
+            GameObject rowObj = WardUIFactory.CreateSettingRow(card, labelText, out Transform ctrlContainer, rowHeight);
+
+            if (isChild)
+            {
+                HorizontalLayoutGroup hlg = rowObj.GetComponent<HorizontalLayoutGroup>();
+                if (hlg != null)
+                {
+                    hlg.padding = new RectOffset(36, 10, 2, 2);
+                }
+            }
+
+            Transform labelTrans = rowObj.transform.Find("Label");
+            if (labelTrans != null)
+            {
+                LayoutElement labelLe = labelTrans.GetComponent<LayoutElement>();
+                if (labelLe != null)
+                {
+                    labelLe.minWidth = 340f;
+                    labelLe.preferredWidth = 390f;
+                    labelLe.flexibleWidth = 1f;
+                }
+
+                TextMeshProUGUI label = labelTrans.GetComponent<TextMeshProUGUI>();
+                if (label != null)
+                {
+                    label.textWrappingMode = TextWrappingModes.NoWrap;
+                    label.overflowMode = TextOverflowModes.Ellipsis;
+                }
+            }
+
+            LayoutElement ctrlLe = ctrlContainer.GetComponent<LayoutElement>();
+            if (ctrlLe != null)
+            {
+                ctrlLe.minWidth = 210f;
+                ctrlLe.preferredWidth = 210f;
+                ctrlLe.flexibleWidth = 0f;
+            }
 
             GameObject statusBadgeObj = new GameObject("StatusBadge", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
             statusBadgeObj.transform.SetParent(ctrlContainer, false);
@@ -196,7 +317,7 @@ public class RemoteWardSelectorModal
             WardTextElement statusWte = statusBadgeObj.GetComponent<WardTextElement>();
             statusWte.baseFontSize = 12;
 
-            if (isManaging)
+            if (isManaging || !canManage)
             {
                 GameObject spacerObj = new GameObject("Spacer", typeof(RectTransform), typeof(LayoutElement));
                 spacerObj.transform.SetParent(ctrlContainer, false);
@@ -230,5 +351,47 @@ public class RemoteWardSelectorModal
         {
             WardMainWindow.ApplyFontSizeToHierarchy(_panel, WardMainWindow.Instance.CurrentFontSizeMode);
         }
+    }
+
+    private static bool CanPlayerManageWard(KnownWard ward, long playerId)
+    {
+        if (ward == null || playerId == 0L)
+            return false;
+
+        if (WardPermissions.IsAdmin(playerId))
+            return true;
+
+        if (ward.CreatorId == playerId)
+            return true;
+
+        if (ZDOMan.instance != null)
+        {
+            ZDO zdo = ZDOMan.instance.GetZDO(ward.Id);
+            if (zdo != null)
+            {
+                long creatorId = zdo.GetLong(ZDOVars.s_creator, ward.CreatorId);
+                if (creatorId == playerId)
+                    return true;
+
+                if (WardRoleManager.CanPerform(zdo, playerId, WardPermissionIds.CoreViewGui))
+                    return true;
+            }
+
+            if (ward.ParentId != ZDOID.None)
+            {
+                ZDO parentZdo = ZDOMan.instance.GetZDO(ward.ParentId);
+                if (parentZdo != null)
+                {
+                    long parentCreatorId = parentZdo.GetLong(ZDOVars.s_creator, 0L);
+                    if (parentCreatorId == playerId)
+                        return true;
+
+                    if (WardRoleManager.CanPerform(parentZdo, playerId, WardPermissionIds.CoreViewGui))
+                        return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

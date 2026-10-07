@@ -28,6 +28,9 @@ public static class WardQueryService
             if (parentZdo == null || !parentZdo.IsValid())
                 break;
 
+            if (WardRegistryManager.Instance != null && !WardRegistryManager.Instance.IsBaseWardRegistered(parentId))
+                break;
+
             current = parentZdo;
             depth++;
         }
@@ -50,6 +53,9 @@ public static class WardQueryService
 
             ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
             if (parentZdo == null || !parentZdo.IsValid())
+                break;
+
+            if (WardRegistryManager.Instance != null && !WardRegistryManager.Instance.IsBaseWardRegistered(parentId))
                 break;
 
             current = parentZdo;

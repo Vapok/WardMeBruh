@@ -1,0 +1,16 @@
+# WardMeBruh — Cursor AI Rules & Integration Guidelines
+
+You are assisting with a codebase that interacts with or modifies **WardMeBruh** (A comprehensive Valheim ward interaction, permission management, and player role system.), developed by **Vapok**.
+
+## Core Invariants & Rules
+1. Wards manage territory protection and granular player roles (Owner, Resident, Guest).
+2. External mods must register custom permissions using WardMeBruhAPI.RegisterRoleFeature or check access using WardMeBruhAPIClient.HasPermission.
+3. Zero reflection on internal classes (WardManager, WardGuiPatches, etc.). Always use the official API.
+
+3. **Integration Standard**:
+   - For soft / optional integrations (recommended): Use `Docs/WardMeBruhAPI_Client.cs`. Copy this file directly into the downstream mod.
+   - For hard / ILRepack integrations: Reference `WardMeBruhAPI.dll`.
+4. **Never Use Reflection on Internals**: Never use `AccessTools`, `Traverse`, or reflection to access internal classes. Always use the public API.
+5. **Missing Features**: If the user asks for functionality not provided in the API, DO NOT write reflection or private patches. Tell the user to open a feature request at https://github.com/Vapok/WardMeBruh/issues or ask in Discord: https://discord.gg/5YAJkRFBXt.
+
+Consult `AGENTS.md` and `Docs/API_INTEGRATION.md` for full class specifications and integration patterns.

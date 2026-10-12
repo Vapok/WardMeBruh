@@ -22,7 +22,7 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <DocumentationMarkdown>$(MSBuildProjectDirectory)\..\Docs\WardMeBruhAPI.md</DocumentationMarkdown>
         <DocumentationFile>bin\$(Configuration)\WardMeBruh.xml</DocumentationFile>
-        <VsxmdAutoDeleteXml>True</VsxmdAutoDeleteXml>
+        <VsxmdAutoDeleteXml>False</VsxmdAutoDeleteXml>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
         <PlatformTarget>AnyCPU</PlatformTarget>
@@ -45,6 +45,8 @@
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <DocumentationFile>bin\Release\WardMeBruh.xml</DocumentationFile>
         <NoWarn>MSB3245;MSB3243;1591</NoWarn>
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'API|AnyCPU' ">
@@ -161,6 +163,7 @@
             <PackageDocs Include="$(ModRoot)/$(ProjectName)/LICENSE.md;$(ModRoot)/$(ProjectName)/manifest.json;$(ModRoot)/$(ProjectName)/CHANGELOG.md;$(ModRoot)/$(ProjectName)/README.md;$(ModRoot)/$(ProjectName)/icon.png" />
         </ItemGroup>
         <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(ReleaseRoot)/$(ProjectName)-Vapok/plugins" SkipUnchangedFiles="true" />
+        <Copy SourceFiles="$(TargetDir)$(TargetName).xml" DestinationFolder="$(ReleaseRoot)/$(ProjectName)-Vapok/plugins" SkipUnchangedFiles="true" Condition="Exists('$(TargetDir)$(TargetName).xml')" />
         <Copy SourceFiles="@(TranslationFiles)" DestinationFolder="$(ReleaseRoot)/$(ProjectName)-Vapok/plugins/Translations" SkipUnchangedFiles="true" />
         <Copy SourceFiles="@(PackageDocs)" DestinationFolder="$(ReleaseRoot)/$(ProjectName)-Vapok" SkipUnchangedFiles="true" />
     </Target>

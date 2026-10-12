@@ -131,3 +131,16 @@ See the [API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Do
 
 * Bug reports and feature requests: [GitHub Issues](https://github.com/Vapok/WardMeBruh/issues)
 * Community discussion: [Discord](https://discord.gg/5YAJkRFBXt)
+
+---
+
+## 🔌 For Mod Developers & AI Coding Agents
+
+Looking to integrate your mod with WardMeBruh or build compatibility?
+
+* 📖 **[Integration Guide & API Reference](Docs/WardMeBruhAPI.md)**: Full walkthrough for connecting your mod.
+* 🤖 **[AI Agent Rules & Invariants](AGENTS.md)**: Mandatory guidelines for AI assistants (Cursor, Claude, Copilot, ChatGPT, Gemini).
+* 📦 **[Zero-Dependency Client Wrapper](Docs/WardMeBruhAPI_Client.cs)**: Drop-in C# file to safely integrate with zero external DLL dependencies.
+* ⚠️ **Strict Policy**: Do not use reflection or Harmony patches on internal classes; always use the public API.
+* 💡 **Need New API Features?**: Open a [Feature Request](https://github.com/Vapok/WardMeBruh/issues) or discuss it in our [Discord](https://discord.gg/5YAJkRFBXt).
+

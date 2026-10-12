@@ -75,6 +75,9 @@ public sealed class WardRegistryManager
 
     public void Unregister(ZDOID id)
     {
+        WardRoleManager.InvalidateWard(id);
+        WardComfortService.InvalidateCache(id);
+
         if (_knownWards.Remove(id))
         {
             WardMeBruh.Log.Debug($"[Registry] Unregistered Ward {id}. Remaining Wards: {_knownWards.Count}");
@@ -191,10 +194,12 @@ public sealed class WardRegistryManager
     public KnownWard GetWardCoveringPoint(Vector3 point, bool requireEnabled = false)
     {
         KnownWard bestWard = null;
-        List<KnownWard> wardSnapshot = new(_knownWards.Values);
-        for (int i = 0; i < wardSnapshot.Count; i++)
+        foreach (KeyValuePair<ZDOID, KnownWard> kvp in _knownWards)
         {
-            KnownWard ward = wardSnapshot[i];
+            KnownWard ward = kvp.Value;
+            if (ward == null)
+                continue;
+
             if (requireEnabled && !ward.IsEnabled)
                 continue;
 
@@ -219,10 +224,12 @@ public sealed class WardRegistryManager
         if (bestWard != null)
             return bestWard;
 
-        List<KnownExtensionWard> extSnapshot = new(_extensionWards.Values);
-        for (int i = 0; i < extSnapshot.Count; i++)
+        foreach (KeyValuePair<ZDOID, KnownExtensionWard> kvp in _extensionWards)
         {
-            KnownExtensionWard ext = extSnapshot[i];
+            KnownExtensionWard ext = kvp.Value;
+            if (ext == null)
+                continue;
+
             if (requireEnabled && !ext.IsEnabled)
                 continue;
 

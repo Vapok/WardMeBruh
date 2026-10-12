@@ -201,6 +201,9 @@ internal static class Patch_PrivateArea
     }
 
 
+    private static int _lastFarmingCheckFrame = -1;
+    private static bool _lastFarmingResult;
+
     [HarmonyPatch(nameof(PrivateArea.HaveLocalAccess))]
     [HarmonyPrefix]
     private static bool HaveLocalAccessPrefix(PrivateArea __instance, ref bool __result)
@@ -217,17 +220,28 @@ internal static class Patch_PrivateArea
         long playerId = Player.m_localPlayer.GetPlayerID();
         ZDO zdo = __instance.m_nview.GetZDO();
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
-        WardRole playerRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
 
-        bool isFarming = IsFarmingAction(Player.m_localPlayer);
+        bool isFarming = GetCachedIsFarmingAction(Player.m_localPlayer);
         bool allowed = isFarming
             ? (WardPermissions.CanFarm(effectiveZdo, playerId) || WardPermissions.CanHarvest(effectiveZdo, playerId))
             : WardPermissions.CanBuild(effectiveZdo, playerId);
 
-        WardMeBruh.Log.Debug($"[Placement Check] HaveLocalAccess (Farming: {isFarming}) for Player {playerId} (Role: {playerRole}) in Ward {zdo.m_uid}: {allowed}");
-
         __result = allowed;
         return false;
+    }
+
+    private static bool GetCachedIsFarmingAction(Player player)
+    {
+        if (player == null)
+            return false;
+
+        int currentFrame = Time.frameCount;
+        if (currentFrame == _lastFarmingCheckFrame)
+            return _lastFarmingResult;
+
+        _lastFarmingCheckFrame = currentFrame;
+        _lastFarmingResult = IsFarmingAction(player);
+        return _lastFarmingResult;
     }
 
     private static bool IsFarmingAction(Player player)
@@ -614,9 +628,10 @@ internal static class Patch_PrivateArea
             sb.Append($"\n$piece_guardstone_owner: {creatorName}");
         }
 
-        WardRole role = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
-        string roleColor = role >= WardRole.Manager ? "#fcd34d" : "#38bdf8";
-        sb.Append($"\n{"$wmb_clearance_label".Localize()} <color={roleColor}><b>[{WardRoleManager.GetRoleName(role).Localize()}]</b></color>");
+        int roleId = WardRoleManager.GetPlayerRoleId(effectiveZdo, playerId);
+        Color roleColor = WardRoleManager.GetRoleColor(effectiveZdo, roleId);
+        string roleName = WardRoleManager.GetRoleDisplayName(effectiveZdo, roleId);
+        sb.Append($"\n{"$wmb_clearance_label".Localize()} <color=#{ColorUtility.ToHtmlStringRGB(roleColor)}><b>[{roleName}]</b></color>");
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {

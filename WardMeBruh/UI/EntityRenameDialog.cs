@@ -231,6 +231,8 @@ public class EntityRenameDialog : MonoBehaviour
         int role = zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Resident);
         UpdateRoleButton(role);
 
+        ApplyCurrentFontSize();
+
         _panel.SetActive(true);
         _nameInput.ActivateInputField();
         _nameInput.Select();
@@ -285,10 +287,28 @@ public class EntityRenameDialog : MonoBehaviour
         bool isFuel = zdo.GetBool(WardZdoKeys.ContainerIsFuel, false);
         UpdateDepotButton(isFuel);
 
+        ApplyCurrentFontSize();
+
         _panel.SetActive(true);
         _nameInput.ActivateInputField();
         _nameInput.Select();
         SetInputBlocked(true);
+    }
+
+    public void ApplyFontSize(WardFontSizeMode mode)
+    {
+        if (_panel == null)
+            return;
+
+        WardMainWindow.ApplyFontSizeToHierarchy(_panel, mode);
+    }
+
+    private void ApplyCurrentFontSize()
+    {
+        WardFontSizeMode fontMode = ConfigRegistry.GuiFontSize != null 
+            ? ConfigRegistry.GuiFontSize.Value 
+            : WardFontSizeMode.Small;
+        ApplyFontSize(fontMode);
     }
 
     private void UpdateRoleButton(int roleId)

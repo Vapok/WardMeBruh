@@ -34,3 +34,14 @@ internal static class GameStartPatch
         }
     }
 }
+
+[HarmonyPatch(typeof(Game), "OnDestroy")]
+internal static class GameOnDestroyPatch
+{
+    private static void Postfix()
+    {
+        WardRoleManager.ClearCaches();
+        WardComfortService.ClearCache();
+        WardQueryService.InvalidateFeatureCaches();
+    }
+}

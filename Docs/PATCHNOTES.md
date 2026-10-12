@@ -1,5 +1,26 @@
-# 0.0.5 - In Development
-* Active development in progress.
+# 0.0.5 - Performance Optimizations, Custom Role HUD & UI Font Scaling
+* **Custom Role HUD & Hover Text Resolution (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`, `SE_WardTerritory`)**:
+  * Fixed custom role IDs (e.g. 100+) displaying raw integer values (`[100 Required]`) instead of their assigned display names on container and door hover text.
+  * Updated clearance lookups to call `WardRoleManager.GetRoleDisplayName` and `WardRoleManager.GetRoleColor` across container hover, door hover, ward stone hover HUD, and the territory status effect (`SE_WardTerritory`).
+  * Updated clearance threshold condition to validate all non-Resident role clearances (`minRoleInt != (int)WardRole.Resident`).
+* **Hot-Path Hover Text & Placement Caching (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`)**:
+  * Implemented zero-allocation single-slot hover text caches for hovered containers (`_cachedContainerId`, `_cachedBaseText`, `_cachedFinalText`) and doors (`_cachedDoorId`, `_cachedDoorBaseText`, `_cachedDoorFinalText`), eliminating per-frame string concatenation, localization lookups, and permission queries during consecutive hover frames.
+  * Removed per-frame debug logging from `Patch_PrivateArea.HaveLocalAccessPrefix`.
+  * Removed redundant `WardPermissions.GetPlayerRole` evaluation and implemented single-frame caching (`GetCachedIsFarmingAction`) to avoid redundant `GetComponent` lookups across multiple overlapping wards in the same frame.
+* **Role Serialization & Assignment Caching (`WardRoleManager`)**:
+  * Implemented `_cachedDefinitions` and `_cachedAssignments` caching by `ZDOID`, matching against ZDO string reference and ordinal equality to bypass repeated role and roster deserialization on static wards.
+  * Added `InvalidateWard` and `ClearCaches` to ensure cache invalidation on ward modification, unregistration, and game session teardown.
+* **Spatial Query & Memory Allocation Optimizations (`WardRegistryManager`, `WardComfortService`)**:
+  * Refactored `WardRegistryManager.GetWardCoveringPoint` to iterate `_knownWards` and `_extensionWards` directly without allocating temporary `List` snapshots on Mono's GC heap.
+  * Increased `WardComfortService` cache TTL to 5.0 seconds and removed per-scan debug log output.
+* **Entity Configuration UI Font Scaling (`EntityRenameDialog`, `WardMainWindow`)**:
+  * Added dynamic font scaling to `EntityRenameDialog` for chest and door renaming dialogs, respecting `ConfigRegistry.GuiFontSize` (`WardFontSizeMode.Small`, `Medium`, `Large`).
+  * Decoupled dialog font application to read directly from configuration upon opening, preventing cyclic component initialization during `Game.Start`.
+  * Linked font mode updates from `WardMainWindow.ApplyFontSize` to dynamically refresh `EntityRenameDialog` when open.
+* **Thread-Safe Deduplicating Logger (`DeduplicatingLog`)**:
+  * Replaced `UnityEngine.Time.frameCount` with a 50ms window driven by `Environment.TickCount` to provide thread-safe duplicate log suppression across background threads, dedicated server sockets, and the main Unity engine thread.
+* **Session Teardown (`GamePatches`)**:
+  * Added `Game.OnDestroy` patch hook to flush static role, comfort, and spatial query caches on logout.
 
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * **Nested Sub-Ward Architecture (`WardType.SubWard`, `WardPlacementChoiceModal`)**:

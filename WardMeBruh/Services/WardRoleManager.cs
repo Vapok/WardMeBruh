@@ -15,7 +15,21 @@ public static class WardRoleManager
     private const char FieldDelimiter = ':';
     private const char PermDelimiter = ',';
 
+    private class CachedRoleDefinitions
+    {
+        public string RawString;
+        public List<WardRoleDefinition> Roles;
+    }
+
+    private class CachedRoleAssignments
+    {
+        public string RawString;
+        public WardRoleAssignments Assignments;
+    }
+
     private static readonly Dictionary<string, FeaturePermission> _registeredPermissions = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly Dictionary<ZDOID, CachedRoleDefinitions> _cachedDefinitions = new();
+    private static readonly Dictionary<ZDOID, CachedRoleAssignments> _cachedAssignments = new();
     private static bool _initialized;
 
     public static void Initialize()
@@ -138,6 +152,12 @@ public static class WardRoleManager
             return CreateDefaultRoleDefinitions();
 
         string data = wardZdo.GetString(WardZdoKeys.RoleDefinitions, string.Empty);
+        if (_cachedDefinitions.TryGetValue(wardZdo.m_uid, out CachedRoleDefinitions cached) &&
+            (ReferenceEquals(cached.RawString, data) || string.Equals(cached.RawString, data, StringComparison.Ordinal)))
+        {
+            return cached.Roles;
+        }
+
         if (string.IsNullOrEmpty(data))
         {
             List<WardRoleDefinition> defaultRoles = CreateDefaultRoleDefinitions();
@@ -145,15 +165,15 @@ public static class WardRoleManager
             return defaultRoles;
         }
 
+        bool modified = false;
         List<WardRoleDefinition> roles = DeserializeRoles(data);
         if (roles.Count == 0)
         {
             roles = CreateDefaultRoleDefinitions();
-            SaveRoleDefinitions(wardZdo, roles);
+            modified = true;
         }
         else
         {
-            bool modified = false;
 
             for (int i = 0; i < roles.Count; i++)
             {
@@ -269,14 +289,23 @@ public static class WardRoleManager
                     modified = true;
                 }
             }
-
-            if (modified)
-            {
-                SaveRoleDefinitions(wardZdo, roles);
-            }
         }
 
         roles.Sort((a, b) => a.Level.CompareTo(b.Level));
+
+        if (modified)
+        {
+            SaveRoleDefinitions(wardZdo, roles);
+        }
+        else
+        {
+            _cachedDefinitions[wardZdo.m_uid] = new CachedRoleDefinitions
+            {
+                RawString = data,
+                Roles = roles
+            };
+        }
+
         return roles;
     }
 
@@ -291,6 +320,11 @@ public static class WardRoleManager
 
         string serialized = SerializeRoles(roles);
         wardZdo.Set(WardZdoKeys.RoleDefinitions, serialized);
+        _cachedDefinitions[wardZdo.m_uid] = new CachedRoleDefinitions
+        {
+            RawString = serialized,
+            Roles = roles
+        };
     }
 
     public static WardRoleAssignments GetRoleAssignments(ZDO wardZdo)
@@ -303,9 +337,21 @@ public static class WardRoleManager
             return new WardRoleAssignments();
 
         string data = wardZdo.GetString(WardZdoKeys.RoleAssignments, string.Empty);
+        if (_cachedAssignments.TryGetValue(wardZdo.m_uid, out CachedRoleAssignments cached) &&
+            (ReferenceEquals(cached.RawString, data) || string.Equals(cached.RawString, data, StringComparison.Ordinal)))
+        {
+            return cached.Assignments;
+        }
+
         if (!string.IsNullOrEmpty(data))
         {
-            return WardRoleAssignments.Deserialize(data);
+            WardRoleAssignments deserialized = WardRoleAssignments.Deserialize(data);
+            _cachedAssignments[wardZdo.m_uid] = new CachedRoleAssignments
+            {
+                RawString = data,
+                Assignments = deserialized
+            };
+            return deserialized;
         }
 
         WardRoleAssignments assignments = new();
@@ -318,6 +364,14 @@ public static class WardRoleManager
         {
             assignments.SyncFromLegacy(mgrRoster, resRoster);
             SaveRoleAssignments(wardZdo, assignments);
+        }
+        else
+        {
+            _cachedAssignments[wardZdo.m_uid] = new CachedRoleAssignments
+            {
+                RawString = data,
+                Assignments = assignments
+            };
         }
 
         return assignments;
@@ -338,6 +392,24 @@ public static class WardRoleManager
         assignments.SyncToLegacy(out WardRoster managers, out WardRoster residents);
         wardZdo.Set(WardZdoKeys.RolesManagers, managers.Serialize());
         wardZdo.Set(WardZdoKeys.RolesResidents, residents.Serialize());
+
+        _cachedAssignments[wardZdo.m_uid] = new CachedRoleAssignments
+        {
+            RawString = serialized,
+            Assignments = assignments
+        };
+    }
+
+    public static void InvalidateWard(ZDOID wardId)
+    {
+        _cachedDefinitions.Remove(wardId);
+        _cachedAssignments.Remove(wardId);
+    }
+
+    public static void ClearCaches()
+    {
+        _cachedDefinitions.Clear();
+        _cachedAssignments.Clear();
     }
 
     public static int GetPlayerRoleId(ZDO wardZdo, long playerId)

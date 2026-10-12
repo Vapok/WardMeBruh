@@ -486,6 +486,11 @@ public class WardMainWindow : MonoBehaviour
         {
             _remoteSelector.Refresh();
         }
+
+        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        {
+            EntityRenameDialog.Instance.ApplyFontSize(mode);
+        }
     }
 
     private void UpdateTabButtonDimensions()

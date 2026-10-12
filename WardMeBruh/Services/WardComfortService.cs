@@ -17,6 +17,7 @@ public static class WardComfortService
         AccessTools.Field(typeof(Piece), "s_allComfortPieces");
 
     private static readonly Dictionary<ZDOID, CachedComfort> _cache = new();
+    private const float CacheTtlSeconds = 5.0f;
     private static readonly List<Piece> _tempPieces = new();
 
     public static int GetWardComfort(PrivateArea ward)
@@ -27,7 +28,7 @@ public static class WardComfortService
         ZDOID wardId = ward.m_nview.GetZDO().m_uid;
         float now = Time.time;
 
-        if (_cache.TryGetValue(wardId, out CachedComfort cached) && now - cached.LastUpdateTime < 3.0f)
+        if (_cache.TryGetValue(wardId, out CachedComfort cached) && now - cached.LastUpdateTime < CacheTtlSeconds)
         {
             return cached.ComfortLevel;
         }
@@ -45,6 +46,11 @@ public static class WardComfortService
     public static void InvalidateCache(ZDOID wardId)
     {
         _cache.Remove(wardId);
+    }
+
+    public static void ClearCache()
+    {
+        _cache.Clear();
     }
 
     private static int CalculateWardMaxComfort(PrivateArea ward)
@@ -128,7 +134,6 @@ public static class WardComfortService
             totalComfort += piece.GetComfort();
         }
 
-        WardMeBruh.Log.Debug($"[Ward Comfort] Ward {ward.m_nview.GetZDO().m_uid} calculated Max Comfort: {totalComfort} across {validPieces.Count} pieces (Radius: {radius}m)");
         return totalComfort;
     }
 

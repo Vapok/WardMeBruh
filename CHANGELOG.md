@@ -1,5 +1,11 @@
-# 0.0.5 - In Development
-* Active development in progress.
+# 0.0.5 - Performance Optimizations & Custom Role HUD Fixes
+* Fixed chest and door hover text to properly display custom role names and colors instead of numeric role IDs.
+* Fixed territory status effect tooltip to show custom role display names.
+* Connected chest and door configuration dialog to the Ward UI font size settings (Small, Medium, Large).
+* Eliminated log spam when looking at chests and doors near overlapping wards.
+* Improved game performance and eliminated frame drops when looking at containers and doors with cached hover text.
+* Optimized role and permission lookups to reduce CPU usage and base stutter.
+* Improved background logging performance and safety across all threads.
 
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * Added Nested Sub-Wards: Place smaller personal or specialized wards inside a larger base territory with independent roles, permissions, and security access.

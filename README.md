@@ -51,7 +51,7 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 | **Sowilo** | `ᛋ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_sowilo.png" width="32" height="32" alt="Sowilo"/> | Forge (Lv 6) | 1 Yagluth Trophy, 20 Black Metal, 20 Tar | Yagluth | 80m |
 | **Laguz** | `ᛚ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_laguz.png" width="32" height="32" alt="Laguz"/> | Galdr Table (Lv 1) | 1 Queen Trophy, 20 Refined Eitr, 20 Black Marble | The Queen | 90m |
 | **Dagaz** | `ᛞ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_dagaz.png" width="32" height="32" alt="Dagaz"/> | Black Forge (Lv 2) | 1 Fader Trophy, 20 Flametal, 20 Blackwood | Fader | 100m |
-| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | Deep North Boss | 120m |
+| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | The Frozen King | 120m |
 
 *(Note: Feature unlocks per rune are fully configurable in `vapok.mods.wardmebruh.cfg`. Defaults are left for you to discover in-game).*
 

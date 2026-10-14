@@ -1,3 +1,63 @@
+# 0.0.5 - Runic Attunement Progression System & Network Optimizations
+* **Runic Attunement Progression Architecture (`WardProgressionService`, `WardRune`, `WardFeature`, `ProgressionMode`)**:
+  * Implemented an 8-rank progression system gated by the Elder Futhark runes (`Fehu`, `Uruz`, `Thurisaz`, `Isa`, `Sowilo`, `Laguz`, `Dagaz`, `Hagalaz`).
+  * Added `ProgressionMode` configuration supporting `None` (all features unlocked), `Linear` (ordered tier progression), and `Custom` (custom rune-feature mapping).
+  * Added `WardProgressionService` managing rank checks, feature unlocks, attunement rituals, and ZDO persistence (`wmb_rank`).
+  * Created `TabAttunement` UI panel displaying active rune glyphs, attunement status, Norse lore chapter modals, and ritual execution controls.
+* **Physical Floating Runestone Pedestals (`WardAttunementStones`, `FloatingRune`, `RuneTextureFactory`)**:
+  * Added dynamic physical runestone pedestals surrounding the ward monument in the 3D game world.
+  * Implemented `RuneTextureFactory` procedurally generating antialiased emissive Elder Futhark rune glyph textures at runtime.
+  * Added `FloatingRune` component controlling hovering animation, gentle floating bob, emissive rune glow, and particle activation upon attunement.
+* **Craftable Runic Keystones (`KeystoneItemFactory`, `SE_KeystoneLore`)**:
+  * Added 8 craftable Runic Keystone items (`wmb_keystone_fehu` through `wmb_keystone_hagalaz`) with custom recolored lightning models, lighting, and embedded 64x64 inventory icons.
+  * Implemented Norse lore story chapters on keystones via custom status effect tooltips (`SE_KeystoneLore`).
+  * Tiered crafting progression spanning Meadow wood, Black Forest bronze/surtling cores, Swamp iron/guik, Mountain silver, Plains black metal, Mistlands black marble/eitr, and Ashlands celestial remnants.
+* **Adventure Backpacks Integration (`ABAPI_Client`)**:
+  * Added reflection-based `ABAPI_Client` detecting and consuming keystones directly from worn backpacks during attunement rituals.
+* **Monster Spawner Suppression (`Patch_SpawnSystem`, `Patch_SpawnArea`, `Patch_CreatureSpawner`, `Patch_RandEventSystem`)**:
+  * Patched `SpawnSystem`, `SpawnArea`, `CreatureSpawner`, and `RandEventSystem` to check `WardFeature.MobSpawnBlock` against ward boundaries.
+  * Blocks creature spawning from natural spawners, nests, skeleton piles, and raid events within active ward coverage when unlocked.
+* **Server Admin Governance & Multiplayer Networking (`WardRoleManager`, `WardNetworkRouter`, `WardRegistryManager`)**:
+  * Server administrators automatically resolve to `Owner` role across all wards in `WardRoleManager.GetPlayerRoleId`, while progression rank locks apply equally to admins and players.
+  * Removed `Patch_ZNetScene.Prefix_Awake` periodic ward scan.
+  * Change-gated `WardRegistryManager.RegisterOrUpdate` and isolated join-sync broadcasts to requesting peers via `WMB_SyncWardsToPeer`, eliminating redundant RPC flood.
+* **Custom Role HUD & Hover Text Resolution (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`, `SE_WardTerritory`)**:
+  * Fixed custom role IDs displaying raw integer values instead of assigned display names and colors on hover text.
+  * Updated clearance lookups to call `WardRoleManager.GetRoleDisplayName` and `WardRoleManager.GetRoleColor` across container hover, door hover, ward stone hover HUD, and territory status effect.
+* **Hot-Path Hover Text & Placement Caching (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`)**:
+  * Implemented zero-allocation single-slot hover text caches for hovered containers and doors, eliminating per-frame string concatenation, localization lookups, and permission queries.
+  * Removed per-frame debug logging from `Patch_PrivateArea.HaveLocalAccessPrefix`.
+  * Single-frame caching for farming actions to bypass repeated component queries across overlapping wards.
+* **Role Serialization & Spatial Query Caching (`WardRoleManager`, `WardRegistryManager`, `WardComfortService`)**:
+  * Added ZDO-level cached role definitions and assignments to bypass repeated JSON deserialization on static wards.
+  * Optimized `WardRegistryManager.GetWardCoveringPoint` to iterate known wards without allocating temporary GC lists.
+* **Entity Configuration UI Font Scaling (`EntityRenameDialog`, `WardMainWindow`)**:
+  * Added dynamic font scaling to `EntityRenameDialog` for chest and door renaming dialogs, respecting `ConfigRegistry.GuiFontSize`.
+* **Thread-Safe Deduplicating Logger (`DeduplicatingLog`)**:
+  * Replaced `Time.frameCount` with a 50ms window driven by `Environment.TickCount` for thread-safe log deduplication across background threads and dedicated servers.
+
+# 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
+* **Nested Sub-Ward Architecture (`WardType.SubWard`, `WardPlacementChoiceModal`)**:
+  * Added `WardType.SubWard` supporting smaller self-contained sub-wards placed inside parent base territory.
+  * Implemented `WardPlacementChoiceModal` displaying an interactive choice dialog upon placing an overlapping ward stone, allowing players to choose between expanding the settlement (`ConfigureAsExtension`) or establishing an independent sub-ward (`ConfigureAsSubWard`).
+  * Sub-wards maintain independent roles, custom names, permissions, and container/door security access while linking to `WardZdoKeys.ParentWard` for base territory relationship.
+* **Geometric Union Sub-Ward Boundary Ray-Marching (`WardQueryService`, `WardCoverageCircle`, `CoverageInterval`)**:
+  * Replaced single-ward boundary clamping with 72-angle (5° step) radial ray-marching across the geometric union of the parent base ward and all linked extension wards.
+  * Dynamically merges overlapping 1D coverage intervals along each angle ray to locate continuous coverage exit points, enabling sub-wards to expand across and inside extension wards without artificial boundary choking.
+  * Enforces clearance against sibling sub-wards to prevent overlapping inner sub-ward boundaries.
+* **Custom Sub-Ward Shield Dome Shaders & Color Wheel (`WardColorWheelPicker`, `Patch_ShieldDomeImageEffect`, `WardForcefieldDome`)**:
+  * Implemented `WardColorWheelPicker` featuring procedural 160x160 circular antialiased HSV color wheel texture, pointer down/drag event handling, brightness slider, and preset swatches.
+  * Added `wmb_dome_color` ZDO key synchronizing custom hex colors over network RPC.
+  * Patched `ShieldDomeImageEffect.OnRenderImage` to generate and cache 256x1 gradient textures for the `Hidden/ShieldDomePass` shader per custom color, blitting sub-ward compute buffers with individual gradients while preserving vanilla gradients for main bases.
+  * Synchronized perimeter boundary line renderer and base lighting colors in `WardForcefieldDome.UpdatePerimeterTint`.
+* **Hierarchical Ward Selector & Management Checks (`RemoteWardSelectorModal`, `WardRegistryManager`)**:
+  * Refactored `RemoteWardSelectorModal.PopulateWards` to render a 2-level hierarchy: Main base wards display at the root, with child Extension Wards and Sub-Wards indented with visual tree indicators (`└─`) and type badges.
+  * Added permission validation gating: If a player owns a sub-ward in an unmanaged base, the main base is displayed for spatial hierarchy context while suppressing the "Manage" button.
+  * Added auto-parent repair in `RemoteWardSelectorModal` and `WardRegistryManager` restoring orphaned sub-wards and extensions to their spatial parent bases.
+* **Extension Ward Defenses & Power Decoupling (`WardQueryService`, `TabDefenses`)**:
+  * Implemented `GetEffectiveDefenseWardZdo` routing defense inquiries (pushback, mob shock damage, mob spawn block, raid cancellation) to the parent base while respecting local extension power state.
+  * Added independent power toggle on extension wards allowing individual perimeter sections to be powered on or off.
+
 # 0.0.3 - Weather Protection, Territory Management & UI Refinements
 * **Remote Ward Management & UI Architecture (`RemoteWardSelectorModal`, `WardMainWindow`, `UIFonts`)**:
   * Added `RemoteWardSelectorModal` allowing remote inspection and switching of managed wards across player-owned territory.

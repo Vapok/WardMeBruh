@@ -11,6 +11,9 @@ public class SE_WardTerritory : StatusEffect
     public static readonly int EffectHash = "SE_WardTerritory".GetStableHashCode();
 
     private WardRole _currentRole = WardRole.Guest;
+    private int _currentRoleId = (int)WardRole.Guest;
+    private ZDOID _effectiveWardId = ZDOID.None;
+    private bool _isAdmin;
     private string _baseName = "$wmb_ward_territory".Localize();
     private string _creatorName = "Unknown";
     private float _wardRadius = 32f;
@@ -60,6 +63,7 @@ public class SE_WardTerritory : StatusEffect
 
         ZDO zdo = ward.m_nview.GetZDO();
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
+        _effectiveWardId = effectiveZdo != null ? effectiveZdo.m_uid : ZDOID.None;
         _baseName = effectiveZdo.GetString(WardZdoKeys.CustomName, ward.m_name);
         if (string.IsNullOrEmpty(_baseName))
         {
@@ -67,6 +71,8 @@ public class SE_WardTerritory : StatusEffect
         }
 
         _currentRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
+        _currentRoleId = WardRoleManager.GetPlayerRoleId(effectiveZdo, playerId);
+        _isAdmin = WardPermissions.IsAdmin(playerId);
         _creatorName = effectiveZdo.GetString(ZDOVars.s_creatorName, "Unknown");
         _wardRadius = WardQueryService.GetWardRadius(ward);
 
@@ -80,14 +86,26 @@ public class SE_WardTerritory : StatusEffect
 
     public override string GetIconText()
     {
-        return WardRoleManager.GetRoleName(_currentRole).Localize();
+        ZDO wardZdo = (ZDOMan.instance != null && _effectiveWardId != ZDOID.None) ? ZDOMan.instance.GetZDO(_effectiveWardId) : null;
+        string roleName = WardRoleManager.GetRoleDisplayName(wardZdo, _currentRoleId);
+        if (_isAdmin)
+        {
+            return $"{roleName}\n[Server Admin]";
+        }
+        return roleName;
     }
 
     public override string GetTooltipString()
     {
+        ZDO wardZdo = (ZDOMan.instance != null && _effectiveWardId != ZDOID.None) ? ZDOMan.instance.GetZDO(_effectiveWardId) : null;
+        string roleName = WardRoleManager.GetRoleDisplayName(wardZdo, _currentRoleId);
         StringBuilder sb = new();
         sb.AppendLine($"<color=#fcd34d>{"$wmb_territory_label".Localize()}</color> {_baseName.Localize()}");
-        sb.AppendLine($"<color=#38bdf8>{"$wmb_clearance_label".Localize()}</color> {WardRoleManager.GetRoleName(_currentRole).Localize()}");
+        sb.AppendLine($"<color=#38bdf8>{"$wmb_clearance_label".Localize()}</color> {roleName}");
+        if (_isAdmin)
+        {
+            sb.AppendLine("<color=#f87171>[Server Admin]</color>");
+        }
         sb.AppendLine($"<color=#9ca3af>{"$wmb_owner_label".Localize()}</color> {_creatorName}");
         sb.AppendLine($"<color=#9ca3af>{"$wmb_perimeter_label".Localize()}</color> {_wardRadius:F0}{"$wmb_meters".Localize()}");
         PrivateArea ward = (m_character != null) ? WardQueryService.GetCoveringWard(m_character.transform.position) : null;

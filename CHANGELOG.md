@@ -1,3 +1,26 @@
+# 0.0.5 - Runic Attunement Progression System & Network Optimizations
+* Added Runic Attunement progression: Wards now start at Rank 0 and unlock features across 8 rune ranks using craftable Runic Keystones.
+* Added physical runestone pedestals that orbit the ward stone in the world and light up as each rune is attuned.
+* Added 8 craftable Runic Keystones with custom models, glow effects, Norse lore stories, and recipe progression from Meadows to Ashlands.
+* Added Adventure Backpacks integration so keystones carried in worn backpacks are detected and used during attunement.
+* Added spawner suppression to stop creature spawns from natural spawners, creature nests, and skeleton piles inside ward boundaries.
+* Updated server admin handling so admins always have Owner authority on all wards while still following ward rank locks.
+* Optimized multiplayer networking to eliminate duplicate sync broadcasts and lower network traffic on busy servers.
+* Cached chest and door hover text to remove micro-stutters and improve framerates in large bases.
+* Fixed chest and door hover text to show custom role names and colors instead of internal numbers.
+* Connected chest and door configuration windows to the font size toggle (Small, Medium, Large).
+* Fixed territory status effect tooltip to show custom role display names.
+
+# 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
+* Added Nested Sub-Wards: Place smaller personal or specialized wards inside a larger base territory with independent roles, permissions, and security access.
+* Added Placement Selection: When placing a ward stone inside an existing base, choose between expanding the settlement as an Extension Ward or creating an independent Sub-Ward.
+* Added Customizable Dome Colors: Sub-wards can customize their forcefield shield dome, perimeter boundary ring, and ground lighting with an interactive color wheel in the Defenses tab.
+* Added Ward Hierarchy: The "Other Wards" territory menu now displays bases hierarchically, showing main wards at the top with their extension and sub-wards grouped cleanly underneath.
+* Added Base Extension Defenses: Extension wards now properly inherit defensive protections (enemy knockback, shock damage, mob suppression, and raid blocking) managed from the main base.
+* Added Extension Power Controls: Added an independent power toggle on extension wards so individual areas can be switched on or off as needed.
+* Improved Boundary Calculations: Sub-ward boundaries now calculate against the entire combined area of the main base and all attached extensions.
+* Improved Permission Checks: In the territory menu, main base wards now display for reference if you own a sub-ward inside them, while management buttons remain restricted to wards you have permission to manage.
+
 # 0.0.3 - Weather Protection, Territory Management & UI Refinements
 * Added Remote Ward Territory Management via the "Other Wards" modal to inspect and switch active management across player-owned wards.
 * Converted entire UI and all dialogs to TextMeshPro for crisp text rendering and consistent font scaling.

@@ -34,7 +34,7 @@ internal static class Patch_TeleportWorld
         if (localWard != null && localWard.m_nview != null && localWard.m_nview.IsValid())
         {
             ZDO localWardZdo = localWard.m_nview.GetZDO();
-            if (localWardZdo != null && localWardZdo.GetBool(WardZdoKeys.PortalAccess, false))
+            if (localWardZdo != null && WardQueryService.HasFeatureEnabled(localWardZdo, WardZdoKeys.PortalAccess, playerId))
             {
                 ZDO localPortalZdo = __instance.m_nview.GetZDO();
                 int roleInt = localPortalZdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
@@ -60,7 +60,7 @@ internal static class Patch_TeleportWorld
                 if (destWard != null && destWard.m_nview != null && destWard.m_nview.IsValid())
                 {
                     ZDO destWardZdo = destWard.m_nview.GetZDO();
-                    if (destWardZdo != null && destWardZdo.GetBool(WardZdoKeys.PortalAccess, false))
+                    if (destWardZdo != null && WardQueryService.HasFeatureEnabled(destWardZdo, WardZdoKeys.PortalAccess, playerId))
                     {
                         int roleInt = destZdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
                         WardRole destRequiredRole = (WardRole)roleInt;
@@ -77,7 +77,7 @@ internal static class Patch_TeleportWorld
                     if (knownWard != null)
                     {
                         ZDO destWardZdo = ZDOMan.instance.GetZDO(knownWard.Id);
-                        if (destWardZdo != null && destWardZdo.GetBool(WardZdoKeys.PortalAccess, false))
+                        if (destWardZdo != null && WardQueryService.HasFeatureEnabled(destWardZdo, WardZdoKeys.PortalAccess, playerId))
                         {
                             int roleInt = destZdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
                             WardRole destRequiredRole = (WardRole)roleInt;

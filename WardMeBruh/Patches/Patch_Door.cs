@@ -113,7 +113,7 @@ internal static class Patch_Door
 
         ZDO wardZdo = coveringWard.m_nview.GetZDO();
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        bool autoCloseEnabled = WardPermissions.HasFeatureAccess(wardZdo, WardZdoKeys.AutoCloseDoors, playerId);
+        bool autoCloseEnabled = WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.AutoCloseDoors, playerId);
         if (!autoCloseEnabled)
             return;
 
@@ -171,6 +171,12 @@ internal static class Patch_Door
         }
     }
 
+    private static ZDOID _cachedDoorId = ZDOID.None;
+    private static string _cachedDoorBaseText = string.Empty;
+    private static string _cachedDoorFinalText = string.Empty;
+    private static int _cachedDoorMinRole = -1;
+    private static string _cachedDoorCustomName = string.Empty;
+
     [HarmonyPatch(nameof(Door.GetHoverText))]
     [HarmonyPostfix]
     private static void GetHoverTextPostfix(Door __instance, ref string __result)
@@ -181,6 +187,17 @@ internal static class Patch_Door
         ZDO doorZdo = __instance.m_nview.GetZDO();
         string customName = doorZdo.GetString(WardZdoKeys.DoorName, string.Empty);
         int minRoleInt = doorZdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest);
+
+        if (doorZdo.m_uid == _cachedDoorId &&
+            string.Equals(__result, _cachedDoorBaseText, StringComparison.Ordinal) &&
+            string.Equals(customName, _cachedDoorCustomName, StringComparison.Ordinal) &&
+            minRoleInt == _cachedDoorMinRole)
+        {
+            __result = _cachedDoorFinalText;
+            return;
+        }
+
+        string originalResult = __result;
         WardRole minRole = (WardRole)minRoleInt;
 
         string localizedName = Localization.instance.Localize(__instance.m_name);
@@ -220,11 +237,12 @@ internal static class Patch_Door
         {
             ZDO wardZdo = coveringWard.m_nview.GetZDO();
 
-            if (minRole > WardRole.Guest)
+            if (minRoleInt != (int)WardRole.Guest)
             {
                 bool hasAccess = WardPermissions.CanOpenDoor(doorZdo, wardZdo, playerId);
                 string colorHex = hasAccess ? "#a3e635" : "#f87171";
-                statusLine += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>";
+                string roleDisplayName = WardRoleManager.GetRoleDisplayName(wardZdo, minRoleInt);
+                statusLine += $"<color={colorHex}>[{roleDisplayName} {"$wmb_clearance".Localize()}]</color>";
             }
 
             canRename = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
@@ -254,5 +272,11 @@ internal static class Patch_Door
             string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_door".Localize()}");
             __result += renamePrompt;
         }
+
+        _cachedDoorId = doorZdo.m_uid;
+        _cachedDoorBaseText = originalResult;
+        _cachedDoorFinalText = __result;
+        _cachedDoorMinRole = minRoleInt;
+        _cachedDoorCustomName = customName;
     }
 }

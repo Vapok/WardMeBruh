@@ -1,0 +1,17 @@
+# WardMeBruh
+
+> WardMeBruh is a comprehensive valheim ward interaction, permission management, and player role system. developed by Vapok.
+
+## Developer & AI Information
+
+- [API Integration Guide](Docs/WardMeBruhAPI.md): Complete guide for mod developers and AI agents integrating with WardMeBruh.
+- [API Client Wrapper](Docs/WardMeBruhAPI_Client.cs): Zero-dependency drop-in C# file providing full typed access via cached reflection delegates.
+- [Agent Guidelines](AGENTS.md): Absolute architectural invariants, anti-reflection mandates, and integration guides for AI assistants.
+
+## Critical Invariants for Developers & AI Agents
+
+- **Wards manage territory protection and granular player roles (Owner, Resident, Guest)**: Wards manage territory protection and granular player roles (Owner, Resident, Guest).
+- **External mods must register custom permissions using WardMeBruhAPI**: External mods must register custom permissions using WardMeBruhAPI.RegisterRoleFeature or check access using WardMeBruhAPIClient.HasPermission.
+- **Zero reflection on internal classes (WardManager, WardGuiPatches, etc**: Zero reflection on internal classes (WardManager, WardGuiPatches, etc.). Always use the official API.
+- **No Private Reflection**: Never reflect into or patch internal classes.
+- **Feature Requests**: If functionality is desired, submit an issue at https://github.com/Vapok/WardMeBruh/issues or visit https://discord.gg/5YAJkRFBXt.

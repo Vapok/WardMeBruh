@@ -1,6 +1,8 @@
+using System.Collections.Generic;
 using HarmonyLib;
 using UnityEngine;
 using WardMeBruh.Configuration;
+using WardMeBruh.Models;
 using WardMeBruh.Networking;
 using WardMeBruh.Services;
 using WardMeBruh.UI;
@@ -57,28 +59,30 @@ internal static class Patch_WearNTear
         if (wardZdo == null || !wardZdo.GetBool(ZDOVars.s_enabled, true))
             return;
 
-        if (wardZdo.GetBool(WardZdoKeys.WeatherRoof, false))
+        if (WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.WeatherRoof))
         {
             s_haveRoofRef(__instance) = true;
             s_rainWetRef(__instance) = false;
         }
 
-        if (wardZdo.GetBool(WardZdoKeys.AshShield, false))
+        if (WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.AshShield))
         {
             s_haveAshRoofRef(__instance) = true;
             __instance.m_ashDamageImmune = true;
         }
 
-        if (wardZdo.GetBool(WardZdoKeys.LavaShield, false))
+        if (WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.LavaShield))
         {
             __instance.m_ashDamageImmune = true;
         }
 
-        if (wardZdo.GetBool(WardZdoKeys.SnowShield, false))
+        if (WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.SnowShield))
         {
             __instance.m_snowDamageImmune = true;
         }
     }
+
+    private static readonly HashSet<ZDOID> s_destroyingWards = new();
 
     [HarmonyPatch(nameof(WearNTear.Destroy))]
     [HarmonyPrefix]
@@ -90,18 +94,126 @@ internal static class Patch_WearNTear
         PrivateArea ward = __instance.GetComponent<PrivateArea>();
         if (ward != null)
         {
-            ZDOID wardId = __instance.m_nview.GetZDO().m_uid;
-            string wardName = __instance.m_nview.GetZDO().GetString(WardZdoKeys.CustomName, ward.m_name);
-            WardMeBruh.Log.Debug($"[Ward Lifecycle] Unregistering Ward {wardId} ('{wardName}') on WearNTear.Destroy");
-            WardRegistryManager.Instance.Unregister(wardId);
+            ZDO zdo = __instance.m_nview.GetZDO();
+            ZDOID wardId = zdo.m_uid;
 
-            if (ZNet.instance != null && ZNet.instance.IsServer())
+            if (!s_destroyingWards.Add(wardId))
+                return;
+
+            try
             {
-                WardNetworkRouter.BroadcastRegistry();
+                WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                if (wardType == WardType.Main)
+                {
+                    DestroyConnectedExtensionWards(wardId);
+                }
+
+                string wardName = zdo.GetString(WardZdoKeys.CustomName, ward.m_name);
+                WardMeBruh.Log.Debug($"[Ward Lifecycle] Unregistering Ward {wardId} ('{wardName}') on WearNTear.Destroy");
+                WardRegistryManager.Instance.Unregister(wardId);
+
+                if (ZNet.instance != null && ZNet.instance.IsServer())
+                {
+                    WardNetworkRouter.BroadcastRegistry();
+                }
+                else
+                {
+                    WardNetworkRouter.SendUnregisterWard(wardId);
+                }
             }
-            else
+            finally
             {
-                WardNetworkRouter.SendUnregisterWard(wardId);
+                s_destroyingWards.Remove(wardId);
+            }
+        }
+    }
+
+    private static void DestroyConnectedExtensionWards(ZDOID mainWardId)
+    {
+        List<WearNTear> extensionsToDestroy = new();
+
+        if (PrivateArea.m_allAreas != null)
+        {
+            for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+            {
+                PrivateArea area = PrivateArea.m_allAreas[i];
+                if (area == null || area.m_nview == null || !area.m_nview.IsValid())
+                    continue;
+
+                ZDO aZdo = area.m_nview.GetZDO();
+                WardType aType = (WardType)aZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                ZDOID aParent = aZdo.GetZDOID(WardZdoKeys.ParentWard);
+                if (aType == WardType.Extension && aParent == mainWardId)
+                {
+                    WearNTear wnt = area.GetComponent<WearNTear>();
+                    if (wnt != null && !extensionsToDestroy.Contains(wnt))
+                    {
+                        extensionsToDestroy.Add(wnt);
+                    }
+                }
+            }
+        }
+
+        if (WardRegistryManager.Instance != null)
+        {
+            List<KnownExtensionWard> registeredExts = WardRegistryManager.Instance.GetExtensionsForParent(mainWardId);
+            for (int i = 0; i < registeredExts.Count; i++)
+            {
+                KnownExtensionWard ext = registeredExts[i];
+                if (ZDOMan.instance != null)
+                {
+                    ZDO extZdo = ZDOMan.instance.GetZDO(ext.Id);
+                    if (extZdo != null && extZdo.IsValid())
+                    {
+                        ZNetView nview = (ZNetScene.instance != null) ? ZNetScene.instance.FindInstance(extZdo) : null;
+                        if (nview != null)
+                        {
+                            WearNTear wnt = nview.GetComponent<WearNTear>();
+                            if (wnt != null && !extensionsToDestroy.Contains(wnt))
+                            {
+                                extensionsToDestroy.Add(wnt);
+                                continue;
+                            }
+                        }
+
+                        DropExtensionVanillaResources(extZdo.GetPosition());
+                        if (extZdo.IsOwner())
+                        {
+                            ZDOMan.instance.DestroyZDO(extZdo);
+                        }
+                    }
+                }
+                WardRegistryManager.Instance.Unregister(ext.Id);
+            }
+        }
+
+        for (int i = 0; i < extensionsToDestroy.Count; i++)
+        {
+            WearNTear wnt = extensionsToDestroy[i];
+            if (wnt != null && wnt.gameObject != null)
+            {
+                wnt.Remove();
+            }
+        }
+    }
+
+    private static void DropExtensionVanillaResources(Vector3 position)
+    {
+        GameObject wardPrefab = ZNetScene.instance != null ? ZNetScene.instance.GetPrefab("piece_protect") : null;
+        if (wardPrefab == null)
+            return;
+
+        Piece piece = wardPrefab.GetComponent<Piece>();
+        if (piece == null || piece.m_resources == null)
+            return;
+
+        for (int r = 0; r < piece.m_resources.Length; r++)
+        {
+            Piece.Requirement req = piece.m_resources[r];
+            if (req != null && req.m_resItem != null && req.m_amount > 0)
+            {
+                Vector3 dropPos = position + Vector3.up * 0.5f + UnityEngine.Random.insideUnitSphere * 0.25f;
+                ItemDrop.DropItem(req.m_resItem.m_itemData, req.m_amount, dropPos, Quaternion.identity);
             }
         }
     }

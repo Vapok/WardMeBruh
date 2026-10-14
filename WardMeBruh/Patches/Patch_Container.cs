@@ -103,6 +103,13 @@ internal static class Patch_Container
         return true;
     }
 
+    private static ZDOID _cachedContainerId = ZDOID.None;
+    private static string _cachedBaseText = string.Empty;
+    private static string _cachedFinalText = string.Empty;
+    private static int _cachedMinRole = -1;
+    private static bool _cachedIsFuel;
+    private static string _cachedCustomName = string.Empty;
+
     [HarmonyPatch(nameof(Container.GetHoverText))]
     [HarmonyPostfix]
     private static void GetHoverTextPostfix(Container __instance, ref string __result)
@@ -113,8 +120,20 @@ internal static class Patch_Container
         ZDO containerZdo = __instance.m_nview.GetZDO();
         string customName = containerZdo.GetString(WardZdoKeys.ContainerName, string.Empty);
         int minRoleInt = containerZdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
-        WardRole minRole = (WardRole)minRoleInt;
         bool isFuelDepot = containerZdo.GetBool(WardZdoKeys.ContainerIsFuel, false);
+
+        if (containerZdo.m_uid == _cachedContainerId &&
+            string.Equals(__result, _cachedBaseText, StringComparison.Ordinal) &&
+            string.Equals(customName, _cachedCustomName, StringComparison.Ordinal) &&
+            minRoleInt == _cachedMinRole &&
+            isFuelDepot == _cachedIsFuel)
+        {
+            __result = _cachedFinalText;
+            return;
+        }
+
+        string originalResult = __result;
+        WardRole minRole = (WardRole)minRoleInt;
 
         string localizedName = Localization.instance.Localize(__instance.m_name);
         if (string.IsNullOrEmpty(localizedName))
@@ -159,11 +178,12 @@ internal static class Patch_Container
         {
             ZDO wardZdo = coveringWard.m_nview.GetZDO();
 
-            if (minRole > WardRole.Resident)
+            if (minRoleInt != (int)WardRole.Resident)
             {
                 bool hasAccess = WardPermissions.CanAccessContainer(containerZdo, wardZdo, playerId);
                 string colorHex = hasAccess ? "#a3e635" : "#f87171";
-                statusLine += $"<color={colorHex}>[{WardRoleManager.GetRoleName(minRole).Localize()} {"$wmb_clearance".Localize()}]</color>";
+                string roleDisplayName = WardRoleManager.GetRoleDisplayName(wardZdo, minRoleInt);
+                statusLine += $"<color={colorHex}>[{roleDisplayName} {"$wmb_clearance".Localize()}]</color>";
             }
 
             canRename = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
@@ -193,5 +213,12 @@ internal static class Patch_Container
             string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_chest".Localize()}");
             __result += renamePrompt;
         }
+
+        _cachedContainerId = containerZdo.m_uid;
+        _cachedBaseText = originalResult;
+        _cachedFinalText = __result;
+        _cachedMinRole = minRoleInt;
+        _cachedIsFuel = isFuelDepot;
+        _cachedCustomName = customName;
     }
 }

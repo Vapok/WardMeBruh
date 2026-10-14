@@ -142,7 +142,7 @@ public class EntityRenameDialog : MonoBehaviour
         });
 
         GameObject roleObj = GUIManager.Instance.CreateButton(
-            $"{"$wmb_role".Localize()}: {"$wmb_role_resident".Localize()}", 
+            "$wmb_role_resident".Localize(), 
             _panel.transform, 
             new Vector2(0.5f, 0.5f), 
             new Vector2(0.5f, 0.5f), 
@@ -151,7 +151,7 @@ public class EntityRenameDialog : MonoBehaviour
             34f);
         _roleBtn = roleObj.GetComponent<Button>();
         _roleBtn.onClick.AddListener(OnRoleClicked);
-        _roleTxt = WardUIFactory.SetupButtonText(roleObj, $"{"$wmb_role".Localize()}: {"$wmb_role_resident".Localize()}", 12f, WardColorPalette.IceBlue);
+        _roleTxt = WardUIFactory.SetupButtonText(roleObj, "$wmb_role_resident".Localize(), 12f, WardColorPalette.IceBlue);
 
         GameObject depotObj = GUIManager.Instance.CreateButton(
             "$wmb_depot_no".Localize(), 
@@ -228,8 +228,10 @@ public class EntityRenameDialog : MonoBehaviour
         roleRt.anchoredPosition = new Vector2(0f, -18f);
         roleRt.sizeDelta = new Vector2(160f, 34f);
 
-        WardRole role = (WardRole)zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Resident);
+        int role = zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Resident);
         UpdateRoleButton(role);
+
+        ApplyCurrentFontSize();
 
         _panel.SetActive(true);
         _nameInput.ActivateInputField();
@@ -279,11 +281,13 @@ public class EntityRenameDialog : MonoBehaviour
         depotRt.anchoredPosition = new Vector2(80f, -18f);
         depotRt.sizeDelta = new Vector2(140f, 34f);
 
-        WardRole role = (WardRole)zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
+        int role = zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
         UpdateRoleButton(role);
 
         bool isFuel = zdo.GetBool(WardZdoKeys.ContainerIsFuel, false);
         UpdateDepotButton(isFuel);
+
+        ApplyCurrentFontSize();
 
         _panel.SetActive(true);
         _nameInput.ActivateInputField();
@@ -291,13 +295,34 @@ public class EntityRenameDialog : MonoBehaviour
         SetInputBlocked(true);
     }
 
-    private void UpdateRoleButton(WardRole role)
+    public void ApplyFontSize(WardFontSizeMode mode)
+    {
+        if (_panel == null)
+            return;
+
+        WardMainWindow.ApplyFontSizeToHierarchy(_panel, mode);
+    }
+
+    private void ApplyCurrentFontSize()
+    {
+        WardFontSizeMode fontMode = ConfigRegistry.GuiFontSize != null 
+            ? ConfigRegistry.GuiFontSize.Value 
+            : WardFontSizeMode.Small;
+        ApplyFontSize(fontMode);
+    }
+
+    private void UpdateRoleButton(int roleId)
     {
         _roleBtn.interactable = _canManage;
         if (_roleTxt != null)
         {
-            _roleTxt.text = $"{"$wmb_role".Localize()}: {WardRoleManager.GetRoleName(role).Localize()}";
-            _roleTxt.color = role >= WardRole.Manager ? WardColorPalette.GoldAmber : (role == WardRole.Resident ? WardColorPalette.IceBlue : WardColorPalette.TextMuted);
+            ZDO wardZdo = _coveringWard != null && _coveringWard.m_nview != null && _coveringWard.m_nview.IsValid()
+                ? _coveringWard.m_nview.GetZDO()
+                : null;
+            string roleName = WardRoleManager.GetRoleDisplayName(wardZdo, roleId);
+            Color roleColor = WardRoleManager.GetRoleColor(wardZdo, roleId);
+            _roleTxt.text = roleName;
+            _roleTxt.color = roleColor;
         }
     }
 
@@ -320,11 +345,15 @@ public class EntityRenameDialog : MonoBehaviour
         if (zdo == null)
             return;
 
+        ZDO wardZdo = _coveringWard != null && _coveringWard.m_nview != null && _coveringWard.m_nview.IsValid()
+            ? _coveringWard.m_nview.GetZDO()
+            : null;
+
         int currentRoleInt = _isDoor
             ? zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest)
             : zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
 
-        WardRole nextRole = (WardRole)(((currentRoleInt + 1) % 4));
+        int nextRole = WardRoleManager.GetNextRoleId(wardZdo, currentRoleInt);
 
         if (ZDOMan.instance != null)
         {
@@ -333,13 +362,13 @@ public class EntityRenameDialog : MonoBehaviour
 
         if (_isDoor)
         {
-            zdo.Set(WardZdoKeys.DoorMinRole, (int)nextRole);
-            WardNetworkRouter.SendSetRoleLock(_activeEntityId, nextRole, true);
+            zdo.Set(WardZdoKeys.DoorMinRole, nextRole);
+            WardNetworkRouter.SendSetRoleLock(_activeEntityId, (WardRole)nextRole, true);
         }
         else
         {
-            zdo.Set(WardZdoKeys.ContainerMinRole, (int)nextRole);
-            WardNetworkRouter.SendSetRoleLock(_activeEntityId, nextRole, false);
+            zdo.Set(WardZdoKeys.ContainerMinRole, nextRole);
+            WardNetworkRouter.SendSetRoleLock(_activeEntityId, (WardRole)nextRole, false);
         }
 
         UpdateRoleButton(nextRole);

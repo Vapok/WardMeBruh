@@ -2,6 +2,7 @@
 
 using System;
 using System.Reflection;
+using APIManager;
 using BepInEx;
 using HarmonyLib;
 using JetBrains.Annotations;
@@ -25,7 +26,7 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
 {
     private const string _pluginId = "vapok.mods.wardmebruh";
     private const string _displayName = "WardMeBruh";
-    private const string _version = "0.0.3";
+    private const string _version = "0.0.5";
     public static bool ValheimAwake;
     public static Waiting Waiter;
 
@@ -53,17 +54,19 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
         WardRoleManager.Initialize();
 
         _config = new ConfigRegistry(_instance);
+        Items.KeystoneItemFactory.Initialize();
 
         Localizer.Waiter.StatusChanged += InitializeModule;
 
         _harmony = new Harmony(Info.Metadata.GUID);
         _harmony.PatchAll(Assembly.GetExecutingAssembly());
 
+        Patcher.Patch(new[] { "WardMeBruh.API" });
+
         ModSplashManager.Register(new ModSplashDossier(_instance)
         {
             Tagline = "A quality-of-life mod for ward interaction and protection in Valheim.",
             ShowOnStartup = ConfigRegistry.ShowSplashOnStartup,
-            EnableTelemetry = ConfigRegistry.EnableTelemetry,
         });
 
         if (GUIManager.IsHeadless())

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Vapok.Common.Abstractions;
 
 namespace WardMeBruh.Logging;
@@ -7,7 +8,9 @@ public class DeduplicatingLog : ILogIt
 {
     private readonly ILogIt _innerLog;
     private readonly object _lock = new();
-    private string _lastDebugMessage = string.Empty;
+    private readonly HashSet<string> _messagesThisWindow = new(StringComparer.Ordinal);
+    private int _lastTimestamp;
+    private const int WindowMs = 50;
 
     public DeduplicatingLog(ILogIt innerLog)
     {
@@ -19,12 +22,17 @@ public class DeduplicatingLog : ILogIt
         if (message == null)
             return;
 
+        int now = Environment.TickCount;
         lock (_lock)
         {
-            if (string.Equals(message, _lastDebugMessage, StringComparison.Ordinal))
-                return;
+            if (now - _lastTimestamp > WindowMs)
+            {
+                _lastTimestamp = now;
+                _messagesThisWindow.Clear();
+            }
 
-            _lastDebugMessage = message;
+            if (!_messagesThisWindow.Add(message))
+                return;
         }
 
         _innerLog.Debug(message);

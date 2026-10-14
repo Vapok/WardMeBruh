@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+#if ! API
+using WardMeBruh.Configuration;
 using WardMeBruh.Services;
+#endif
 
 namespace WardMeBruh.API;
 
@@ -18,7 +20,11 @@ public static class WardMeBruhAPI
     /// <returns>True if WardMeBruh is loaded; otherwise false.</returns>
     public static bool IsLoaded()
     {
+#if ! API
         return true;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -27,7 +33,11 @@ public static class WardMeBruhAPI
     /// <returns>Collection of permission ID strings.</returns>
     public static IEnumerable<string> GetAllPermissionIds()
     {
+#if ! API
         return WardRoleManager.GetAllPermissionIds();
+#else
+        return Array.Empty<string>();
+#endif
     }
 
     /// <summary>
@@ -47,12 +57,43 @@ public static class WardMeBruhAPI
         WardRole defaultRole = WardRole.Resident, 
         int sortOrder = 100)
     {
+#if ! API
         if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(displayName))
             return;
 
         FeaturePermission perm = new(id, displayName, category, description ?? string.Empty, defaultRole, sortOrder);
         WardRoleManager.RegisterPermission(perm);
         WardMeBruh.Log.Info($"[API] Registered external role feature '{displayName}' ({id}) under {category} category (Default: {defaultRole})");
+#endif
+    }
+
+    /// <summary>
+    /// Registers a custom external role feature permission into the WardMeBruh permission matrix, gated by a specific Runic Attunement progression tier.
+    /// </summary>
+    /// <param name="id">Unique identifier for the permission (e.g. "com.author.mod.feature").</param>
+    /// <param name="displayName">Human-readable label displayed in the Management matrix.</param>
+    /// <param name="category">Capability category under which the feature is grouped.</param>
+    /// <param name="description">Tooltip explanation of what this permission grants.</param>
+    /// <param name="requiredRune">Rune tier required to unlock this feature when progression is active.</param>
+    /// <param name="defaultRole">Default minimum role level required to access this feature.</param>
+    /// <param name="sortOrder">Visual sort ordering within the category.</param>
+    public static void RegisterRoleFeature(
+        string id, 
+        string displayName, 
+        WardCapabilityCategory category, 
+        string description, 
+        WardRune requiredRune,
+        WardRole defaultRole = WardRole.Resident, 
+        int sortOrder = 100)
+    {
+#if ! API
+        if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(displayName))
+            return;
+
+        FeaturePermission perm = new(id, displayName, category, description ?? string.Empty, defaultRole, sortOrder, requiredRune);
+        WardRoleManager.RegisterPermission(perm);
+        WardMeBruh.Log.Info($"[API] Registered external role feature '{displayName}' ({id}) under {category} category (Required Rune: {requiredRune}, Default: {defaultRole})");
+#endif
     }
 
     /// <summary>
@@ -112,6 +153,7 @@ public static class WardMeBruhAPI
         string colorHex, 
         IEnumerable<string> defaultPermissions = null)
     {
+#if ! API
         if (string.IsNullOrEmpty(name))
             return;
 
@@ -132,6 +174,7 @@ public static class WardMeBruhAPI
 
         WardRoleManager.RegisterRoleTemplate(roleDef);
         WardMeBruh.Log.Info($"[API] Registered external role template '{name}' (Level {level}, Color {safeColor})");
+#endif
     }
 
     /// <summary>
@@ -143,6 +186,7 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted or if outside any ward territory; otherwise false.</returns>
     public static bool HasFeatureAccess(Vector3 point, string featureId, long playerId = 0L)
     {
+#if ! API
         if (string.IsNullOrEmpty(featureId))
             return false;
 
@@ -156,6 +200,9 @@ public static class WardMeBruhAPI
         }
 
         return WardRoleManager.CanPerform(wardZdo, playerId, featureId);
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -167,6 +214,7 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted; otherwise false.</returns>
     public static bool HasFeatureAccess(PrivateArea ward, string featureId, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return false;
 
@@ -180,6 +228,9 @@ public static class WardMeBruhAPI
 
         ZDO zdo = ward.m_nview.GetZDO();
         return WardRoleManager.CanPerform(zdo, playerId, featureId);
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -190,10 +241,14 @@ public static class WardMeBruhAPI
     /// <returns>True if access is granted; otherwise false.</returns>
     public static bool HasFeatureAccess(Player player, string featureId)
     {
+#if ! API
         if (player == null)
             return false;
 
         return HasFeatureAccess(player.transform.position, featureId, player.GetPlayerID());
+#else
+        return true;
+#endif
     }
 
     /// <summary>
@@ -204,6 +259,7 @@ public static class WardMeBruhAPI
     /// <returns>Assigned WardRole enum, or WardRole.Guest if outside any ward.</returns>
     public static WardRole GetPlayerRole(Vector3 point, long playerId = 0L)
     {
+#if ! API
         ZDO wardZdo = WardQueryService.GetCoveringWardZdo(point);
         if (wardZdo == null)
             return WardRole.Guest;
@@ -214,6 +270,9 @@ public static class WardMeBruhAPI
         }
 
         return WardPermissions.GetPlayerRole(wardZdo, playerId);
+#else
+        return WardRole.Guest;
+#endif
     }
 
     /// <summary>
@@ -224,6 +283,7 @@ public static class WardMeBruhAPI
     /// <returns>Assigned WardRole enum, or WardRole.Guest if invalid.</returns>
     public static WardRole GetPlayerRole(PrivateArea ward, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return WardRole.Guest;
 
@@ -234,10 +294,20 @@ public static class WardMeBruhAPI
 
         ZDO zdo = ward.m_nview.GetZDO();
         return WardPermissions.GetPlayerRole(zdo, playerId);
+#else
+        return WardRole.Guest;
+#endif
     }
 
+    /// <summary>
+    /// Retrieves the display name of the player's role at a specific world position.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <param name="playerId">Player ID to evaluate, or 0 to query the local player.</param>
+    /// <returns>Role name string, or "None" if outside any ward.</returns>
     public static string GetPlayerRoleName(Vector3 point, long playerId = 0L)
     {
+#if ! API
         ZDO wardZdo = WardQueryService.GetCoveringWardZdo(point);
         if (wardZdo == null)
             return "None";
@@ -259,10 +329,20 @@ public static class WardMeBruhAPI
 
         WardRole role = WardPermissions.GetPlayerRole(wardZdo, playerId);
         return role.ToString();
+#else
+        return "Guest";
+#endif
     }
 
+    /// <summary>
+    /// Retrieves the display name of the player's role for a specific ward.
+    /// </summary>
+    /// <param name="ward">PrivateArea component instance.</param>
+    /// <param name="playerId">Player ID to evaluate, or 0 to query the local player.</param>
+    /// <returns>Role name string, or "None" if invalid.</returns>
     public static string GetPlayerRoleName(PrivateArea ward, long playerId = 0L)
     {
+#if ! API
         if (ward == null || ward.m_nview == null || !ward.m_nview.IsValid())
             return "None";
 
@@ -284,6 +364,9 @@ public static class WardMeBruhAPI
 
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
         return role.ToString();
+#else
+        return "Guest";
+#endif
     }
 
     /// <summary>
@@ -293,7 +376,11 @@ public static class WardMeBruhAPI
     /// <returns>True if inside an active ward boundary; otherwise false.</returns>
     public static bool IsInsideWard(Vector3 point)
     {
+#if ! API
         return WardQueryService.GetCoveringWard(point) != null || WardRegistryManager.Instance.GetWardCoveringPoint(point) != null;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -303,12 +390,16 @@ public static class WardMeBruhAPI
     /// <returns>True if the ward's shield dome is active; otherwise false.</returns>
     public static bool IsWardShieldActive(Vector3 point)
     {
+#if ! API
         PrivateArea ward = WardQueryService.GetCoveringWard(point);
         if (ward != null)
             return ward.IsEnabled();
 
         KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
         return known != null && known.IsEnabled;
+#else
+        return false;
+#endif
     }
 
     /// <summary>
@@ -318,12 +409,16 @@ public static class WardMeBruhAPI
     /// <returns>Ward radius in meters (defaults to 32.0m if not found).</returns>
     public static float GetWardRadius(Vector3 point)
     {
+#if ! API
         PrivateArea ward = WardQueryService.GetCoveringWard(point);
         if (ward != null)
             return WardQueryService.GetWardRadius(ward);
 
         KnownWard known = WardRegistryManager.Instance.GetWardCoveringPoint(point);
         return known != null ? known.Radius : 32.0f;
+#else
+        return 32.0f;
+#endif
     }
 
     /// <summary>
@@ -333,12 +428,16 @@ public static class WardMeBruhAPI
     /// <returns>Custom ward name string, or empty string if not found.</returns>
     public static string GetWardName(Vector3 point)
     {
+#if ! API
         ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
         if (zdo != null)
         {
             return zdo.GetString(WardZdoKeys.CustomName, "Ward Stone");
         }
         return string.Empty;
+#else
+        return string.Empty;
+#endif
     }
 
     /// <summary>
@@ -348,6 +447,149 @@ public static class WardMeBruhAPI
     /// <returns>PrivateArea instance if loaded within scene; otherwise null.</returns>
     public static PrivateArea GetCoveringWard(Vector3 point)
     {
+#if ! API
         return WardQueryService.GetCoveringWard(point);
+#else
+        return null;
+#endif
+    }
+
+    /// <summary>
+    /// Returns whether the Runic Attunement Progression System is currently enabled on the active server or session.
+    /// </summary>
+    /// <returns>True if progression system is enabled; false if all features are globally unlocked.</returns>
+    public static bool IsProgressionEnabled()
+    {
+#if ! API
+        return ConfigRegistry.EnableProgressionSystem != null && ConfigRegistry.EnableProgressionSystem.Value;
+#else
+        return false;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether a specific Elder Futhark rune is attuned on the ward covering the specified world coordinates.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <param name="rune">Rune enum value to verify.</param>
+    /// <returns>True if the covering ward has attuned this rune; otherwise false.</returns>
+    public static bool IsRuneAttuned(Vector3 point, WardRune rune)
+    {
+#if ! API
+        ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
+        return zdo != null && WardProgressionService.IsRuneAttuned(zdo, rune);
+#else
+        return false;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether a specific Elder Futhark rune is attuned on the specified ward ZDO.
+    /// </summary>
+    /// <param name="wardZdo">Ward network data object.</param>
+    /// <param name="rune">Rune enum value to verify.</param>
+    /// <returns>True if attuned; otherwise false.</returns>
+    public static bool IsRuneAttuned(ZDO wardZdo, WardRune rune)
+    {
+#if ! API
+        return wardZdo != null && WardProgressionService.IsRuneAttuned(wardZdo, rune);
+#else
+        return false;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether a specific built-in ward capability feature is currently unlocked on the ward covering the specified position.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <param name="feature">Built-in WardFeature enum token.</param>
+    /// <param name="playerId">Optional player ID for checking admin bypass privileges.</param>
+    /// <returns>True if feature is unlocked; otherwise false.</returns>
+    public static bool IsFeatureUnlocked(Vector3 point, WardFeature feature, long playerId = 0)
+    {
+#if ! API
+        ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
+        return zdo != null && WardProgressionService.IsFeatureUnlocked(zdo, feature, playerId);
+#else
+        return true;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether a specific built-in ward capability feature is currently unlocked on the specified ward ZDO.
+    /// </summary>
+    /// <param name="wardZdo">Ward network data object.</param>
+    /// <param name="feature">Built-in WardFeature enum token.</param>
+    /// <param name="playerId">Optional player ID for checking admin bypass privileges.</param>
+    /// <returns>True if feature is unlocked; otherwise false.</returns>
+    public static bool IsFeatureUnlocked(ZDO wardZdo, WardFeature feature, long playerId = 0)
+    {
+#if ! API
+        return wardZdo != null && WardProgressionService.IsFeatureUnlocked(wardZdo, feature, playerId);
+#else
+        return true;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether an external 3rd-party mod feature (registered via Path A) is currently unlocked on the ward covering the specified position.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <param name="externalFeatureId">Unique external feature identifier string (e.g. "com.author.mod.feature").</param>
+    /// <param name="playerId">Optional player ID for checking admin bypass privileges.</param>
+    /// <returns>True if feature is unlocked or progression disabled; otherwise false.</returns>
+    public static bool IsExternalFeatureUnlocked(Vector3 point, string externalFeatureId, long playerId = 0)
+    {
+#if ! API
+        ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
+        return zdo != null && WardProgressionService.IsExternalFeatureUnlocked(zdo, externalFeatureId, playerId);
+#else
+        return true;
+#endif
+    }
+
+    /// <summary>
+    /// Checks whether an external 3rd-party mod feature (registered via Path A) is currently unlocked on the specified ward ZDO.
+    /// </summary>
+    /// <param name="wardZdo">Ward network data object.</param>
+    /// <param name="externalFeatureId">Unique external feature identifier string (e.g. "com.author.mod.feature").</param>
+    /// <param name="playerId">Optional player ID for checking admin bypass privileges.</param>
+    /// <returns>True if feature is unlocked or progression disabled; otherwise false.</returns>
+    public static bool IsExternalFeatureUnlocked(ZDO wardZdo, string externalFeatureId, long playerId = 0)
+    {
+#if ! API
+        return wardZdo != null && WardProgressionService.IsExternalFeatureUnlocked(wardZdo, externalFeatureId, playerId);
+#else
+        return true;
+#endif
+    }
+
+    /// <summary>
+    /// Retrieves the bitmask of all attuned runes on the ward covering the specified world position.
+    /// </summary>
+    /// <param name="point">World position to check.</param>
+    /// <returns>Bitmask integer where bit index corresponds to (1 &lt;&lt; (int)WardRune).</returns>
+    public static int GetAttunedMask(Vector3 point)
+    {
+#if ! API
+        ZDO zdo = WardQueryService.GetCoveringWardZdo(point);
+        return zdo != null ? WardProgressionService.GetAttunedMask(zdo) : 0;
+#else
+        return 0;
+#endif
+    }
+
+    /// <summary>
+    /// Retrieves the bitmask of all attuned runes on the specified ward ZDO.
+    /// </summary>
+    /// <param name="wardZdo">Ward network data object.</param>
+    /// <returns>Bitmask integer where bit index corresponds to (1 &lt;&lt; (int)WardRune).</returns>
+    public static int GetAttunedMask(ZDO wardZdo)
+    {
+#if ! API
+        return wardZdo != null ? WardProgressionService.GetAttunedMask(wardZdo) : 0;
+#else
+        return 0;
+#endif
     }
 }

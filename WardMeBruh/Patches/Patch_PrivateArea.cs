@@ -5,8 +5,10 @@ using HarmonyLib;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using WardMeBruh.API;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
+using WardMeBruh.Networking;
 using WardMeBruh.Services;
 using WardMeBruh.UI;
 
@@ -28,9 +30,9 @@ internal static class Patch_PrivateArea
             return;
 
         ZDO zdo = __instance.m_nview.GetZDO();
-        WardRegistryManager.Instance.RegisterOrUpdate(zdo);
+        bool changed = WardRegistryManager.Instance.RegisterOrUpdate(zdo);
 
-        float customRadius = zdo.GetFloat(WardZdoKeys.Radius, 32.0f);
+        float customRadius = WardQueryService.GetWardRadius(__instance);
         if (__instance.m_areaMarker != null)
         {
             __instance.m_areaMarker.m_radius = customRadius;
@@ -39,11 +41,20 @@ internal static class Patch_PrivateArea
         string wardName = zdo.GetString(WardZdoKeys.CustomName, __instance.m_name);
         WardMeBruh.Log.Debug($"[Ward Lifecycle] Registered Ward {zdo.m_uid} ('{wardName}') at {__instance.transform.position}, Radius: {customRadius}m");
 
+        if (changed && ZNet.instance != null && !ZNet.instance.IsServer())
+        {
+            WardNetworkRouter.SendRegisterWard(zdo.m_uid);
+        }
+
         if (!Jotunn.Managers.GUIManager.IsHeadless())
         {
             if (__instance.GetComponent<Components.WardForcefieldDome>() == null)
             {
                 __instance.gameObject.AddComponent<Components.WardForcefieldDome>();
+            }
+            if (__instance.GetComponent<Components.WardAttunementStones>() == null)
+            {
+                __instance.gameObject.AddComponent<Components.WardAttunementStones>();
             }
         }
     }
@@ -86,31 +97,86 @@ internal static class Patch_PrivateArea
         if (coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid())
         {
             ZDO coveringZdo = coveringWard.m_nview.GetZDO();
+            WardType coveringType = (WardType)coveringZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (coveringType == WardType.SubWard)
+            {
+                Piece piece = __instance.GetComponent<Piece>();
+                if (piece != null)
+                {
+                    piece.DropResources();
+                }
+
+                if (Player.m_localPlayer != null)
+                {
+                    Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_msg_subward_placement_denied".Localize());
+                }
+
+                if (ZNetScene.instance != null)
+                {
+                    ZNetScene.instance.Destroy(__instance.gameObject);
+                }
+                else
+                {
+                    UnityEngine.Object.Destroy(__instance.gameObject);
+                }
+                return;
+            }
+
             ZDO rootParentZdo = WardQueryService.GetEffectiveWardZdo(coveringZdo);
             if (rootParentZdo != null && rootParentZdo.m_uid != zdo.m_uid)
             {
-                zdo.Set(WardZdoKeys.ParentWard, rootParentZdo.m_uid);
+                long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+                bool canExtend = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreExtendWard) || WardPermissions.IsAdmin(playerId);
+                bool canSubWard = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreSubWard) || WardPermissions.IsAdmin(playerId);
 
-                string parentName = rootParentZdo.GetString(WardZdoKeys.CustomName, coveringWard.m_name);
-                zdo.Set(WardZdoKeys.CustomName, parentName);
-
-                float parentRadius = rootParentZdo.GetFloat(WardZdoKeys.Radius, 32.0f);
-                zdo.Set(WardZdoKeys.Radius, parentRadius);
-                if (__instance.m_areaMarker != null)
+                if (!canExtend && !canSubWard)
                 {
-                    __instance.m_areaMarker.m_radius = parentRadius;
+                    Piece piece = __instance.GetComponent<Piece>();
+                    if (piece != null)
+                    {
+                        piece.DropResources();
+                    }
+
+                    if (Player.m_localPlayer != null)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_msg_subward_placement_denied".Localize());
+                    }
+
+                    if (ZNetScene.instance != null)
+                    {
+                        ZNetScene.instance.Destroy(__instance.gameObject);
+                    }
+                    else
+                    {
+                        UnityEngine.Object.Destroy(__instance.gameObject);
+                    }
+                    return;
                 }
 
-                bool parentEnabled = coveringWard.IsEnabled();
-                zdo.Set(ZDOVars.s_enabled, parentEnabled);
+                if (canExtend && canSubWard && !Jotunn.Managers.GUIManager.IsHeadless() && Player.m_localPlayer != null)
+                {
+                    WardPlacementChoiceModal.Instance?.Open(__instance, coveringWard);
+                    return;
+                }
 
-                WardRegistryManager.Instance.RegisterOrUpdate(zdo);
-                WardMeBruh.Log.Info($"[Base Extension] New Ward {zdo.m_uid} placed inside active shield of Ward {rootParentZdo.m_uid} ('{parentName}'). Linked as extension.");
-                return;
+                if (canExtend && !canSubWard)
+                {
+                    WardPlacementChoiceModal.ConfigureAsExtension(__instance, coveringWard);
+                    return;
+                }
+
+                if (canSubWard)
+                {
+                    WardPlacementChoiceModal.ConfigureAsSubWard(__instance, coveringWard);
+                    return;
+                }
             }
         }
 
-        WardRegistryManager.Instance.RegisterOrUpdate(zdo);
+        if (WardRegistryManager.Instance.RegisterOrUpdate(zdo) && ZNet.instance != null && !ZNet.instance.IsServer())
+        {
+            WardNetworkRouter.SendRegisterWard(zdo.m_uid);
+        }
     }
 
     [HarmonyPatch(nameof(PrivateArea.IsEnabled))]
@@ -128,14 +194,18 @@ internal static class Patch_PrivateArea
         if (parentId == ZDOID.None)
             return true;
 
-        ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
-        if (parentZdo == null || !parentZdo.IsValid())
-            return true;
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        ZDO parentZdo = (parentId != ZDOID.None && ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
+        bool parentEnabled = parentZdo == null || !parentZdo.IsValid() || parentZdo.GetBool(ZDOVars.s_enabled, true);
 
-        __result = parentZdo.GetBool(ZDOVars.s_enabled, true);
+        bool localEnabled = zdo.GetBool(ZDOVars.s_enabled, true);
+        __result = parentEnabled && localEnabled;
         return false;
     }
 
+
+    private static int _lastFarmingCheckFrame = -1;
+    private static bool _lastFarmingResult;
 
     [HarmonyPatch(nameof(PrivateArea.HaveLocalAccess))]
     [HarmonyPrefix]
@@ -153,17 +223,28 @@ internal static class Patch_PrivateArea
         long playerId = Player.m_localPlayer.GetPlayerID();
         ZDO zdo = __instance.m_nview.GetZDO();
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
-        WardRole playerRole = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
 
-        bool isFarming = IsFarmingAction(Player.m_localPlayer);
+        bool isFarming = GetCachedIsFarmingAction(Player.m_localPlayer);
         bool allowed = isFarming
-            ? WardPermissions.CanFarm(effectiveZdo, playerId)
+            ? (WardPermissions.CanFarm(effectiveZdo, playerId) || WardPermissions.CanHarvest(effectiveZdo, playerId))
             : WardPermissions.CanBuild(effectiveZdo, playerId);
-
-        WardMeBruh.Log.Debug($"[Placement Check] HaveLocalAccess (Farming: {isFarming}) for Player {playerId} (Role: {playerRole}) in Ward {zdo.m_uid}: {allowed}");
 
         __result = allowed;
         return false;
+    }
+
+    private static bool GetCachedIsFarmingAction(Player player)
+    {
+        if (player == null)
+            return false;
+
+        int currentFrame = Time.frameCount;
+        if (currentFrame == _lastFarmingCheckFrame)
+            return _lastFarmingResult;
+
+        _lastFarmingCheckFrame = currentFrame;
+        _lastFarmingResult = IsFarmingAction(player);
+        return _lastFarmingResult;
     }
 
     private static bool IsFarmingAction(Player player)
@@ -232,6 +313,16 @@ internal static class Patch_PrivateArea
                 return true;
         }
 
+        GameObject hoverObj = player.GetHoverObject();
+        if (hoverObj != null)
+        {
+            if (hoverObj.GetComponent<Pickable>() != null || hoverObj.GetComponent<Plant>() != null)
+                return true;
+
+            if (hoverObj.GetComponentInParent<Pickable>() != null || hoverObj.GetComponentInParent<Plant>() != null)
+                return true;
+        }
+
         return false;
     }
 
@@ -266,13 +357,48 @@ internal static class Patch_PrivateArea
             flag = true;
             if (PrivateArea.m_allAreas != null)
             {
+                long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
                 for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
                 {
                     PrivateArea allArea = PrivateArea.m_allAreas[i];
-                    if (allArea != null && allArea.IsInside(point, radius) && !allArea.HaveLocalAccess())
+                    if (allArea == null || !allArea.IsEnabled())
+                        continue;
+
+                    ZDO coveringZdo = allArea.m_nview != null ? allArea.m_nview.GetZDO() : null;
+                    if (coveringZdo == null)
+                        continue;
+
+                    WardType coveringType = (WardType)coveringZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                    float areaRadius = WardQueryService.GetWardRadius(allArea);
+                    float dist = Utils.DistanceXZ(point, allArea.transform.position);
+
+                    if (coveringType == WardType.SubWard)
                     {
-                        flag = false;
-                        list.Add(allArea);
+                        if (dist < areaRadius + 1.0f)
+                        {
+                            flag = false;
+                            list.Add(allArea);
+                        }
+                    }
+                    else
+                    {
+                        if (dist <= areaRadius)
+                        {
+                            ZDO rootParentZdo = WardQueryService.GetEffectiveWardZdo(coveringZdo);
+                            bool canExtend = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreExtendWard) || WardPermissions.IsAdmin(playerId);
+                            bool canSubWard = WardRoleManager.CanPerform(rootParentZdo, playerId, WardPermissionIds.CoreSubWard) || WardPermissions.IsAdmin(playerId);
+
+                            if (!canExtend && !canSubWard)
+                            {
+                                flag = false;
+                                list.Add(allArea);
+                            }
+                        }
+                        else if (allArea.IsInside(point, radius) && !allArea.HaveLocalAccess())
+                        {
+                            flag = false;
+                            list.Add(allArea);
+                        }
                     }
                 }
             }
@@ -355,16 +481,6 @@ internal static class Patch_PrivateArea
         if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
             return true;
 
-        PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(__instance);
-        if (effectiveWard != __instance)
-        {
-            if (effectiveWard.m_nview != null && effectiveWard.m_nview.IsValid())
-            {
-                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerID);
-                return false;
-            }
-        }
-
         if (!__instance.m_nview.IsOwner())
             return false;
 
@@ -441,13 +557,13 @@ internal static class Patch_PrivateArea
         {
             if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {effectiveZdo.m_uid}");
-                effectiveWard.m_nview.InvokeRPC("ToggleEnabled", playerId);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) triggering power toggle for Ward {zdo.m_uid}");
+                __instance.m_nview.InvokeRPC("ToggleEnabled", playerId);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {effectiveZdo.m_uid} (core.power permission required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied power toggle for Ward {zdo.m_uid} (core.power permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }
@@ -457,13 +573,13 @@ internal static class Patch_PrivateArea
         {
             if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {effectiveZdo.m_uid}");
-                OnOpenWardGuiRequested?.Invoke(effectiveWard);
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) opening Ward Hub for Ward {zdo.m_uid}");
+                OnOpenWardGuiRequested?.Invoke(__instance);
                 return false;
             }
             else
             {
-                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {effectiveZdo.m_uid} (core.view_gui permission required)");
+                WardMeBruh.Log.Debug($"[Ward Interact] Player '{player.GetPlayerName()}' ({playerId}) denied opening Ward Hub for Ward {zdo.m_uid} (core.view_gui permission required)");
                 player.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$piece_noaccess"));
                 return false;
             }
@@ -515,9 +631,10 @@ internal static class Patch_PrivateArea
             sb.Append($"\n$piece_guardstone_owner: {creatorName}");
         }
 
-        WardRole role = WardPermissions.GetPlayerRole(effectiveZdo, playerId);
-        string roleColor = role >= WardRole.Manager ? "#fcd34d" : "#38bdf8";
-        sb.Append($"\n{"$wmb_clearance_label".Localize()} <color={roleColor}><b>[{WardRoleManager.GetRoleName(role).Localize()}]</b></color>");
+        int roleId = WardRoleManager.GetPlayerRoleId(effectiveZdo, playerId);
+        Color roleColor = WardRoleManager.GetRoleColor(effectiveZdo, roleId);
+        string roleName = WardRoleManager.GetRoleDisplayName(effectiveZdo, roleId);
+        sb.Append($"\n{"$wmb_clearance_label".Localize()} <color=#{ColorUtility.ToHtmlStringRGB(roleColor)}><b>[{roleName}]</b></color>");
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
@@ -535,5 +652,52 @@ internal static class Patch_PrivateArea
 
         __result = Localization.instance.Localize(sb.ToString());
         return false;
+    }
+}
+
+[HarmonyPatch(typeof(Piece), nameof(Piece.DropResources))]
+internal static class Patch_Piece_DropResources
+{
+    [HarmonyPostfix]
+    private static void Postfix(Piece __instance)
+    {
+        if (__instance == null)
+            return;
+
+        PrivateArea privateArea = __instance.GetComponent<PrivateArea>();
+        if (privateArea == null || privateArea.m_nview == null || !privateArea.m_nview.IsValid())
+            return;
+
+        ZDO zdo = privateArea.m_nview.GetZDO();
+        List<string> refundItems = WardProgressionService.GetAttunementRefundItems(zdo);
+        if (refundItems.Count == 0)
+            return;
+
+        for (int i = 0; i < refundItems.Count; i++)
+        {
+            string prefabName = refundItems[i];
+            GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab(prefabName) : null;
+            if (prefab == null && Jotunn.Managers.PrefabManager.Instance != null)
+            {
+                prefab = Jotunn.Managers.PrefabManager.Instance.GetPrefab(prefabName);
+            }
+
+            if (prefab != null)
+            {
+                Vector3 dropPos = __instance.transform.position + Vector3.up * 0.6f + UnityEngine.Random.insideUnitSphere * 0.25f;
+                ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+                if (itemDrop != null)
+                {
+                    ItemDrop.DropItem(itemDrop.m_itemData, 1, dropPos, UnityEngine.Random.rotation);
+                }
+                else
+                {
+                    UnityEngine.Object.Instantiate(prefab, dropPos, UnityEngine.Random.rotation);
+                }
+            }
+        }
+
+        zdo.Set(WardZdoKeys.AttunedRunes, 0);
+        zdo.Set(WardZdoKeys.ProgressionLevel, 0);
     }
 }

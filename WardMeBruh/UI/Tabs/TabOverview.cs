@@ -36,6 +36,22 @@ public class TabOverview
     private Action<string, Color> _setComfortBadge;
     private Action<string, Color> _setPortalBadge;
 
+    private GameObject _protectionsCardRoot;
+    private GameObject _weatherRoofRow;
+    private GameObject _regenRow;
+    private GameObject _deathSkillRow;
+    private GameObject _foodFreezeRow;
+    private GameObject _ghostBaseRow;
+    private GameObject _raidRow;
+    private GameObject _spawnRow;
+    private GameObject _tamesRow;
+    private GameObject _repairRow;
+    private GameObject _fuelRow;
+    private GameObject _doorRow;
+    private GameObject _comfortRow;
+    private GameObject _portalRow;
+    private GameObject _noProtectionsRow;
+
     private string _currentEnteredName = string.Empty;
 
     public GameObject Root => _root;
@@ -63,20 +79,22 @@ public class TabOverview
         _grantedCardRoot = card2.parent.parent.gameObject;
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_protections");
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_weather_roof", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_regen_boost", "...", WardColorPalette.TextMuted, out _setRegenBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_death_skill", "...", WardColorPalette.TextMuted, out _setDeathSkillBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_food_freeze", "...", WardColorPalette.TextMuted, out _setFoodFreezeBadge);
+        _protectionsCardRoot = card3.parent.parent.gameObject;
+        _weatherRoofRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_weather_roof", "...", WardColorPalette.TextMuted, out _setWeatherRoofBadge);
+        _regenRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_regen_boost", "...", WardColorPalette.TextMuted, out _setRegenBadge);
+        _deathSkillRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_death_skill", "...", WardColorPalette.TextMuted, out _setDeathSkillBadge);
+        _foodFreezeRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_food_freeze", "...", WardColorPalette.TextMuted, out _setFoodFreezeBadge);
 
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_ghost_base", "...", WardColorPalette.TextMuted, out _setGhostBaseBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_raid_suppression", "...", WardColorPalette.TextMuted, out _setRaidBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_spawn_suppression", "...", WardColorPalette.TextMuted, out _setSpawnBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_defenses_tames_name", "...", WardColorPalette.TextMuted, out _setTamesBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_repair", "...", WardColorPalette.TextMuted, out _setRepairBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_card_fuel", "...", WardColorPalette.TextMuted, out _setFuelBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_upkeep_autodoors_name", "...", WardColorPalette.TextMuted, out _setDoorBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_max_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
-        WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_portal", "...", WardColorPalette.TextMuted, out _setPortalBadge);
+        _ghostBaseRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_ghost_base", "...", WardColorPalette.TextMuted, out _setGhostBaseBadge);
+        _raidRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_raid_suppression", "...", WardColorPalette.TextMuted, out _setRaidBadge);
+        _spawnRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_spawn_suppression", "...", WardColorPalette.TextMuted, out _setSpawnBadge);
+        _tamesRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_defenses_tames_name", "...", WardColorPalette.TextMuted, out _setTamesBadge);
+        _repairRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_repair", "...", WardColorPalette.TextMuted, out _setRepairBadge);
+        _fuelRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_upkeep_card_fuel", "...", WardColorPalette.TextMuted, out _setFuelBadge);
+        _doorRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_upkeep_autodoors_name", "...", WardColorPalette.TextMuted, out _setDoorBadge);
+        _comfortRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_max_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
+        _portalRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_portal", "...", WardColorPalette.TextMuted, out _setPortalBadge);
+        _noProtectionsRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_no_attunements".Localize(), "-", WardColorPalette.TextMuted, out _);
     }
 
     public void Bind(PrivateArea ward)
@@ -101,10 +119,26 @@ public class TabOverview
 
         long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
         string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "Unknown");
-        _setOwnerBadge?.Invoke(creatorName, WardColorPalette.ValheimBeige);
+        WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+        string ownerBadgeText = creatorName;
+        if (wardType == WardType.SubWard)
+        {
+            ownerBadgeText += $" <color=#93c5fd>({"$wmb_ward_type_subward".Localize()})</color>";
+        }
+        else if (wardType == WardType.Extension)
+        {
+            ownerBadgeText += $" <color=#fcd34d>({"$wmb_ward_type_extension".Localize()})</color>";
+        }
+        _setOwnerBadge?.Invoke(ownerBadgeText, WardColorPalette.ValheimBeige);
 
+        bool isAdmin = WardPermissions.IsAdmin(playerId);
         Color roleColor = role >= WardRole.Manager ? WardColorPalette.GoldAmber : WardColorPalette.IceBlue;
-        _setRoleBadge?.Invoke($"[ {WardRoleManager.GetRoleName(role).Localize()} ]", roleColor);
+        string roleText = $"[ {WardRoleManager.GetRoleName(role).Localize()} ]";
+        if (isAdmin)
+        {
+            roleText += "\n<size=80%><color=#f87171>[Server Admin]</color></size>";
+        }
+        _setRoleBadge?.Invoke(roleText, roleColor);
 
         bool isEnabled = _ward.IsEnabled();
         string statusText = isEnabled ? $"● {"$wmb_active".Localize()}" : $"○ {"$wmb_inactive".Localize()}";
@@ -135,31 +169,61 @@ public class TabOverview
             _grantedRows.Add(row);
         }
 
-        UpdatePerkBadge(_setWeatherRoofBadge, zdo.GetBool(WardZdoKeys.WeatherRoof, false));
-        UpdatePerkBadge(_setRegenBadge, zdo.GetBool(WardZdoKeys.RegenBoost, true));
-        UpdatePerkBadge(_setDeathSkillBadge, zdo.GetBool(WardZdoKeys.DeathSkillShield, true));
-        UpdatePerkBadge(_setFoodFreezeBadge, zdo.GetBool(WardZdoKeys.FoodFreeze, true));
+        int unlockedProtectionsCount = 0;
 
-        UpdatePerkBadge(_setGhostBaseBadge, zdo.GetBool(WardZdoKeys.GhostBase, false));
-        UpdatePerkBadge(_setRaidBadge, zdo.GetBool(WardZdoKeys.RaidSuppress, false));
-        UpdatePerkBadge(_setSpawnBadge, zdo.GetBool(WardZdoKeys.SpawnSuppress, false));
-        UpdatePerkBadge(_setTamesBadge, isEnabled);
-        UpdatePerkBadge(_setRepairBadge, zdo.GetBool(WardZdoKeys.RepairEnabled, false));
-        UpdatePerkBadge(_setFuelBadge, zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false));
-        UpdatePerkBadge(_setDoorBadge, zdo.GetBool(WardZdoKeys.AutoCloseDoors, false));
-
-        bool maxComfortEnabled = zdo.GetBool(WardZdoKeys.MaxComfort, false);
-        if (maxComfortEnabled && isEnabled)
+        void UpdateGatedPerk(GameObject row, WardFeature feature, Action<string, Color> badgeSetter, bool isActive)
         {
-            int comfortLvl = WardComfortService.GetWardComfort(_ward);
-            _setComfortBadge?.Invoke($"✔  {"$wmb_overview_lvl".Localize()} {comfortLvl}", WardColorPalette.RunicGreen);
-        }
-        else
-        {
-            UpdatePerkBadge(_setComfortBadge, false);
+            bool isUnlocked = WardProgressionService.IsFeatureUnlocked(zdo, feature, playerId);
+            if (row != null)
+            {
+                row.SetActive(isUnlocked);
+            }
+            if (isUnlocked)
+            {
+                unlockedProtectionsCount++;
+                UpdatePerkBadge(badgeSetter, isActive);
+            }
         }
 
-        UpdatePerkBadge(_setPortalBadge, zdo.GetBool(WardZdoKeys.PortalAccess, false));
+        UpdateGatedPerk(_weatherRoofRow, WardFeature.WeatherRoof, _setWeatherRoofBadge, zdo.GetBool(WardZdoKeys.WeatherRoof, false));
+        UpdateGatedPerk(_regenRow, WardFeature.RegenBoost, _setRegenBadge, zdo.GetBool(WardZdoKeys.RegenBoost, true));
+        UpdateGatedPerk(_deathSkillRow, WardFeature.DeathSkillShield, _setDeathSkillBadge, zdo.GetBool(WardZdoKeys.DeathSkillShield, true));
+        UpdateGatedPerk(_foodFreezeRow, WardFeature.FoodFreeze, _setFoodFreezeBadge, zdo.GetBool(WardZdoKeys.FoodFreeze, true));
+
+        UpdateGatedPerk(_ghostBaseRow, WardFeature.GhostBase, _setGhostBaseBadge, zdo.GetBool(WardZdoKeys.GhostBase, false));
+        UpdateGatedPerk(_raidRow, WardFeature.RaidSuppression, _setRaidBadge, zdo.GetBool(WardZdoKeys.RaidSuppress, false));
+        UpdateGatedPerk(_spawnRow, WardFeature.SpawnSuppression, _setSpawnBadge, zdo.GetBool(WardZdoKeys.SpawnSuppress, false));
+        UpdateGatedPerk(_tamesRow, WardFeature.ProtectTames, _setTamesBadge, isEnabled);
+        UpdateGatedPerk(_repairRow, WardFeature.AreaRepair, _setRepairBadge, zdo.GetBool(WardZdoKeys.RepairEnabled, false));
+        UpdateGatedPerk(_fuelRow, WardFeature.AutoFuel, _setFuelBadge, zdo.GetBool(WardZdoKeys.AutoFuelEnabled, false));
+        UpdateGatedPerk(_doorRow, WardFeature.AutoCloseDoors, _setDoorBadge, zdo.GetBool(WardZdoKeys.AutoCloseDoors, false));
+
+        bool comfortUnlocked = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.MaxComfort, playerId);
+        if (_comfortRow != null)
+        {
+            _comfortRow.SetActive(comfortUnlocked);
+        }
+        if (comfortUnlocked)
+        {
+            unlockedProtectionsCount++;
+            bool maxComfortEnabled = zdo.GetBool(WardZdoKeys.MaxComfort, false);
+            if (maxComfortEnabled && isEnabled)
+            {
+                int comfortLvl = WardComfortService.GetWardComfort(_ward);
+                _setComfortBadge?.Invoke($"✔  {"$wmb_overview_lvl".Localize()} {comfortLvl}", WardColorPalette.RunicGreen);
+            }
+            else
+            {
+                UpdatePerkBadge(_setComfortBadge, false);
+            }
+        }
+
+        UpdateGatedPerk(_portalRow, WardFeature.PortalAccess, _setPortalBadge, zdo.GetBool(WardZdoKeys.PortalAccess, false));
+
+        if (_noProtectionsRow != null)
+        {
+            _noProtectionsRow.SetActive(unlockedProtectionsCount == 0);
+        }
     }
 
     private void OnTogglePowerClicked()

@@ -47,6 +47,12 @@ public static class WardUIExtensions
         layoutElement.flexibleWidth = 0f;
         layoutElement.flexibleHeight = 0f;
 
+        WardButtonAutoResizer resizer = obj.GetComponent<WardButtonAutoResizer>();
+        if (resizer != null)
+        {
+            resizer.RefreshWidth();
+        }
+
         return layoutElement;
     }
 

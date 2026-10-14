@@ -92,6 +92,10 @@ public class TabRoles
         });
 
         long ownerId = effectiveZdo.GetLong(ZDOVars.s_creator, 0L);
+        if (ownerId == 0L && _ward.m_piece != null)
+        {
+            ownerId = _ward.m_piece.GetCreator();
+        }
 
         if (canManage)
         {
@@ -411,8 +415,23 @@ public class TabRoles
         if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
             return;
 
+        if (playerId == 0L)
+            return;
+
         ZDO zdo = _ward.m_nview.GetZDO();
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo) ?? zdo;
+
+        long ownerId = effectiveZdo.GetLong(ZDOVars.s_creator, 0L);
+        if (ownerId == 0L && _ward.m_piece != null)
+        {
+            ownerId = _ward.m_piece.GetCreator();
+        }
+
+        if (playerId == ownerId)
+        {
+            WardMeBruh.Log.Warning($"[TabRoles] Cannot change role for ward owner {playerName} ({playerId}).");
+            return;
+        }
 
         WardRoleAssignments assignments = WardRoleManager.GetRoleAssignments(effectiveZdo);
         assignments.SetRole(playerId, playerName, targetRoleId);

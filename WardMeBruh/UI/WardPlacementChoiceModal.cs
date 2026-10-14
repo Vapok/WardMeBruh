@@ -89,7 +89,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
         bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
             ZInput.GetKeyDown(KeyCode.Escape) ||
             (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
 
         if (closeRequested)
         {
@@ -99,7 +99,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
         if (isGamepad)
         {
-            if (ZInput.GetButtonDown("JoyButtonY") && _subwardBtn != null && _subwardBtn.interactable)
+            if ((ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory")) && _subwardBtn != null && _subwardBtn.interactable)
             {
                 OnSubWardClicked();
                 return;
@@ -117,7 +117,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
                 }
             }
 
-            if (ZInput.GetButtonDown("JoyButtonA"))
+            if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
             {
                 GameObject currentObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
                 if (currentObj != null)
@@ -139,19 +139,32 @@ public class WardPlacementChoiceModal : MonoBehaviour
         _wasGamepadActive = isGamepad;
         if (_extendBtnText != null)
         {
+            string aGlyph = WardGamepadNavHelper.GetGamepadGlyph("A");
             _extendBtnText.text = isGamepad 
-                ? "<color=yellow><b>[A]</b></color> " + "$wmb_placement_btn_extend".Localize() 
+                ? $"{aGlyph} " + "$wmb_placement_btn_extend".Localize() 
                 : "$wmb_placement_btn_extend".Localize();
         }
         if (_subwardBtnText != null)
         {
+            string yGlyph = WardGamepadNavHelper.GetGamepadGlyph("Y");
             _subwardBtnText.text = isGamepad 
-                ? "<color=yellow><b>[Y]</b></color> " + "$wmb_placement_btn_subward".Localize() 
+                ? $"{yGlyph} " + "$wmb_placement_btn_subward".Localize() 
                 : "$wmb_placement_btn_subward".Localize();
         }
         if (_gamepadLegend != null)
         {
             _gamepadLegend.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+                if (legendText != null)
+                {
+                    string a = WardGamepadNavHelper.GetGamepadGlyph("A");
+                    string y = WardGamepadNavHelper.GetGamepadGlyph("Y");
+                    string b = WardGamepadNavHelper.GetGamepadGlyph("B");
+                    legendText.text = $"<color=#e2d6b5>{a} Extend   {y} Sub-Ward   {b} Cancel</color>";
+                }
+            }
         }
     }
 

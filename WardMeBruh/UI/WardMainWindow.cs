@@ -137,15 +137,21 @@ public class WardMainWindow : MonoBehaviour
                 return;
             }
 
-            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
-                ZInput.GetKeyDown(KeyCode.Escape) ||
-                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
-
             bool isInputFieldFocused = EventSystem.current != null && 
                 EventSystem.current.currentSelectedGameObject != null && 
                 (EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null ||
                  EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null);
+
+            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
+                ZInput.GetKeyDown(KeyCode.Escape) ||
+                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
+
+            if (isInputFieldFocused && closeRequested)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+                return;
+            }
 
             if (!closeRequested && !isInputFieldFocused && Time.frameCount != _openedFrame && ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.IsDown())
             {
@@ -651,10 +657,11 @@ public class WardMainWindow : MonoBehaviour
                 if (_footerAttunementBtnText != null)
                 {
                     bool isGamepad = ZInput.IsGamepadActive();
+                    string yGlyph = WardGamepadNavHelper.GetGamepadGlyph("Y");
                     if (_isAttunementViewOpen)
                     {
                         string retText = "$wmb_btn_return_to_base_settings".Localize();
-                        _footerAttunementBtnText.text = isGamepad ? $"[Y] {retText}" : retText;
+                        _footerAttunementBtnText.text = isGamepad ? $"{yGlyph} {retText}" : retText;
                         _footerAttunementBtnText.color = WardColorPalette.ValheimBeige;
                     }
                     else
@@ -668,7 +675,7 @@ public class WardMainWindow : MonoBehaviour
                         }
 
                         string attuneText = "$wmb_btn_ward_attunement".Localize();
-                        _footerAttunementBtnText.text = isGamepad ? $"[Y] {attuneText}" : attuneText;
+                        _footerAttunementBtnText.text = isGamepad ? $"{yGlyph} {attuneText}" : attuneText;
                         if (isReady)
                         {
                             _footerAttunementBtnText.color = WardColorPalette.GoldAmber;
@@ -847,12 +854,14 @@ public class WardMainWindow : MonoBehaviour
         if (_otherWardsBtnText != null)
         {
             string baseOtherWards = "$wmb_other_wards".Localize();
-            _otherWardsBtnText.text = isGamepad ? $"[X] {baseOtherWards}" : baseOtherWards;
+            string xGlyph = WardGamepadNavHelper.GetGamepadGlyph("X");
+            _otherWardsBtnText.text = isGamepad ? $"{xGlyph} {baseOtherWards}" : baseOtherWards;
         }
 
         if (_closeBtnText != null)
         {
-            _closeBtnText.text = isGamepad ? "[B] X" : "X";
+            string bGlyph = WardGamepadNavHelper.GetGamepadGlyph("B");
+            _closeBtnText.text = isGamepad ? $"{bGlyph} X" : "X";
         }
 
         if (_fontSizeBtnText != null)
@@ -863,7 +872,8 @@ public class WardMainWindow : MonoBehaviour
                 WardFontSizeMode.Large => "$wmb_font_large".Localize(),
                 _ => "$wmb_font_small".Localize()
             };
-            _fontSizeBtnText.text = isGamepad ? $"[R3] {baseFont}" : baseFont;
+            string rsGlyph = WardGamepadNavHelper.GetGamepadGlyph("RS");
+            _fontSizeBtnText.text = isGamepad ? $"{rsGlyph} {baseFont}" : baseFont;
         }
 
         UpdateAttunementFooter();

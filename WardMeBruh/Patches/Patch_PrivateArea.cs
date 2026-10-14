@@ -649,9 +649,7 @@ internal static class Patch_PrivateArea
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
         {
             string toggleAction = isEnabled ? "$piece_guardstone_deactivate" : "$piece_guardstone_activate";
-            string altKeyStr = ZInput.IsGamepadActive() ? "LT" : "LeftShift";
-            string useKeyStr = ZInput.IsGamepadActive() ? "$KEY_Use" : "E";
-            sb.Append($"\n[<color=yellow><b>{altKeyStr} + {useKeyStr}</b></color>] {toggleAction.Localize()}");
+            sb.Append($"\n[<color=yellow><b>$KEY_AltKeys + $KEY_Use</b></color>] {toggleAction.Localize()}");
         }
 
         __result = Localization.instance.Localize(sb.ToString());

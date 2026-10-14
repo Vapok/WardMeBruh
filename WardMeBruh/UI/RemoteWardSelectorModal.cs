@@ -394,11 +394,24 @@ public class RemoteWardSelectorModal
     {
         if (_closeBtnText != null)
         {
-            _closeBtnText.text = isGamepad ? "<color=yellow><b>[B]</b></color> X" : "X";
+            string bGlyph = WardGamepadNavHelper.GetGamepadGlyph("B");
+            _closeBtnText.text = isGamepad ? $"{bGlyph} X" : "X";
         }
         if (_gamepadLegend != null)
         {
             _gamepadLegend.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+                if (legendText != null)
+                {
+                    string dpad = WardGamepadNavHelper.GetGamepadGlyph("DPad");
+                    string a = WardGamepadNavHelper.GetGamepadGlyph("A");
+                    string b = WardGamepadNavHelper.GetGamepadGlyph("B");
+                    string rs = WardGamepadNavHelper.GetGamepadGlyph("RS");
+                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select Ward   {b} Back   {rs} Scroll</color>";
+                }
+            }
         }
     }
 
@@ -410,7 +423,7 @@ public class RemoteWardSelectorModal
         if (!isGamepad || !IsOpen)
             return;
 
-        if (ZInput.GetButtonDown("JoyButtonB"))
+        if (ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose"))
         {
             Close();
             return;
@@ -424,7 +437,7 @@ public class RemoteWardSelectorModal
             }
         }
 
-        if (ZInput.GetButtonDown("JoyButtonA") && _currentSelected != null)
+        if ((ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use")) && _currentSelected != null)
         {
             if (_currentSelected is Button btn && btn.interactable)
             {

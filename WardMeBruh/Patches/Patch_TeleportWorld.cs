@@ -140,8 +140,7 @@ internal static class Patch_TeleportWorld
 
         if (canConfigure)
         {
-            string altKeyStr = ZInput.IsGamepadActive() ? "LT" : "LeftShift";
-            string configPrompt = Localization.instance.Localize($"\n[<color=yellow><b>{altKeyStr} + $KEY_Use</b></color>] {"$wmb_configure_portal".Localize()}");
+            string configPrompt = Localization.instance.Localize($"\n[<color=yellow><b>$KEY_AltKeys + $KEY_Use</b></color>] {"$wmb_configure_portal".Localize()}");
             __result += configPrompt;
         }
 

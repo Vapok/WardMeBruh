@@ -92,7 +92,7 @@ public class EntityRenameDialog : MonoBehaviour
             bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
                 ZInput.GetKeyDown(KeyCode.Escape) ||
                 (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
 
             if (closeRequested)
             {
@@ -127,20 +127,22 @@ public class EntityRenameDialog : MonoBehaviour
             WardGamepadNavHelper.ApplyGamepadColorBlock(selectables[i]);
         }
 
-        if (!WardGamepadNavHelper.GetDirectionInput(out bool up, out bool down, out bool left, out bool right))
+        if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
         {
-            if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("Use"))
+            GameObject curGo = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            if (curGo != null)
             {
-                GameObject curGo = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
-                if (curGo != null)
+                Button curBtn = curGo.GetComponent<Button>();
+                if (curBtn != null && curBtn.interactable)
                 {
-                    Button curBtn = curGo.GetComponent<Button>();
-                    if (curBtn != null && curBtn.interactable)
-                    {
-                        curBtn.onClick?.Invoke();
-                    }
+                    curBtn.onClick?.Invoke();
+                    return;
                 }
             }
+        }
+
+        if (!WardGamepadNavHelper.GetDirectionInput(out bool up, out bool down, out bool left, out bool right))
+        {
             return;
         }
 
@@ -169,15 +171,29 @@ public class EntityRenameDialog : MonoBehaviour
         bool isGamepad = ZInput.IsGamepadActive();
         if (_saveBtnTxt != null)
         {
-            _saveBtnTxt.text = isGamepad ? $"[X] {"$wmb_save".Localize()}" : "$wmb_save".Localize();
+            string xGlyph = WardGamepadNavHelper.GetGamepadGlyph("X");
+            _saveBtnTxt.text = isGamepad ? $"{xGlyph} {"$wmb_save".Localize()}" : "$wmb_save".Localize();
         }
         if (_cancelBtnTxt != null)
         {
-            _cancelBtnTxt.text = isGamepad ? $"[B] {"$wmb_cancel".Localize()}" : "$wmb_cancel".Localize();
+            string bGlyph = WardGamepadNavHelper.GetGamepadGlyph("B");
+            _cancelBtnTxt.text = isGamepad ? $"{bGlyph} {"$wmb_cancel".Localize()}" : "$wmb_cancel".Localize();
         }
         if (_gamepadLegend != null)
         {
             _gamepadLegend.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+                if (legendText != null)
+                {
+                    string dpad = WardGamepadNavHelper.GetGamepadGlyph("DPad");
+                    string a = WardGamepadNavHelper.GetGamepadGlyph("A");
+                    string x = WardGamepadNavHelper.GetGamepadGlyph("X");
+                    string b = WardGamepadNavHelper.GetGamepadGlyph("B");
+                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select/Toggle   {x} Save   {b} Cancel</color>";
+                }
+            }
         }
     }
 

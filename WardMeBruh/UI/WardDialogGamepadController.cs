@@ -43,8 +43,7 @@ public class WardDialogGamepadController
 
             TextMeshProUGUI tmpLeft = _tabBumperLeft.GetComponent<TextMeshProUGUI>();
             tmpLeft.font = UIFonts.GetPrimaryFont();
-            tmpLeft.text = "<color=yellow><b>LB</b></color>";
-            tmpLeft.fontSize = 13f;
+            tmpLeft.fontSize = 18f;
             tmpLeft.alignment = TextAlignmentOptions.Center;
 
             _tabBumperRight = new GameObject("TabBumperRight", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
@@ -59,8 +58,7 @@ public class WardDialogGamepadController
 
             TextMeshProUGUI tmpRight = _tabBumperRight.GetComponent<TextMeshProUGUI>();
             tmpRight.font = UIFonts.GetPrimaryFont();
-            tmpRight.text = "<color=yellow><b>RB</b></color>";
-            tmpRight.fontSize = 13f;
+            tmpRight.fontSize = 18f;
             tmpRight.alignment = TextAlignmentOptions.Center;
         }
 
@@ -72,12 +70,11 @@ public class WardDialogGamepadController
         legendRt.anchorMax = new Vector2(1f, 0f);
         legendRt.pivot = new Vector2(0.5f, 0f);
         legendRt.offsetMin = new Vector2(30f, 2f);
-        legendRt.offsetMax = new Vector2(-30f, 16f);
+        legendRt.offsetMax = new Vector2(-30f, 20f);
 
         _legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         _legendText.font = UIFonts.GetPrimaryFont();
-        _legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[LT/RT]</b> Sections   <b>[A]</b> Select/Toggle   <b>[R-Stick]</b> Scroll</color>";
-        _legendText.fontSize = 11f;
+        _legendText.fontSize = 12f;
         _legendText.alignment = TextAlignmentOptions.Center;
         _legendText.color = WardColorPalette.ValheimBeige;
 
@@ -86,6 +83,7 @@ public class WardDialogGamepadController
 
     public void OnWindowOpened()
     {
+        _currentSelected = null;
         UpdateKeyhints(ZInput.IsGamepadActive());
         if (ZInput.IsGamepadActive())
         {
@@ -95,6 +93,7 @@ public class WardDialogGamepadController
 
     public void OnTabChanged()
     {
+        _currentSelected = null;
         if (ZInput.IsGamepadActive())
         {
             FocusFirstElement();
@@ -108,16 +107,43 @@ public class WardDialogGamepadController
         if (_tabBumperLeft != null)
         {
             _tabBumperLeft.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI tmpLeft = _tabBumperLeft.GetComponent<TextMeshProUGUI>();
+                if (tmpLeft != null)
+                {
+                    tmpLeft.text = WardGamepadNavHelper.GetGamepadGlyph("LB");
+                }
+            }
         }
 
         if (_tabBumperRight != null)
         {
             _tabBumperRight.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI tmpRight = _tabBumperRight.GetComponent<TextMeshProUGUI>();
+                if (tmpRight != null)
+                {
+                    tmpRight.text = WardGamepadNavHelper.GetGamepadGlyph("RB");
+                }
+            }
         }
 
         if (_gamepadLegend != null)
         {
             _gamepadLegend.SetActive(isGamepad);
+            if (isGamepad && _legendText != null)
+            {
+                string dpad = WardGamepadNavHelper.GetGamepadGlyph("DPad");
+                string lt = WardGamepadNavHelper.GetGamepadGlyph("LT");
+                string rt = WardGamepadNavHelper.GetGamepadGlyph("RT");
+                string a = WardGamepadNavHelper.GetGamepadGlyph("A");
+                string rs = WardGamepadNavHelper.GetGamepadGlyph("RS");
+                string b = WardGamepadNavHelper.GetGamepadGlyph("B");
+
+                _legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {lt}{rt} Sections   {a} Select/Toggle   {rs} Scroll   {b} Close</color>";
+            }
         }
     }
 
@@ -142,6 +168,15 @@ public class WardDialogGamepadController
             return;
         }
 
+        if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+        {
+            Selectable eventSelected = EventSystem.current.currentSelectedGameObject.GetComponent<Selectable>();
+            if (eventSelected != null && eventSelected != _currentSelected && !(eventSelected is InputField) && !(eventSelected is TMP_InputField) && !(eventSelected is Scrollbar))
+            {
+                _currentSelected = eventSelected;
+            }
+        }
+
         HandleTabSwitching();
         HandleSectionJumping();
         HandleDirectShortcuts();
@@ -151,11 +186,11 @@ public class WardDialogGamepadController
 
     private void HandleTabSwitching()
     {
-        if (ZInput.GetButtonDown("JoyTabLeft"))
+        if (ZInput.GetButtonDown("JoyLBumper") || ZInput.GetButtonDown("JoyTabLeft"))
         {
             _window.NavigateTabPrevious();
         }
-        else if (ZInput.GetButtonDown("JoyTabRight"))
+        else if (ZInput.GetButtonDown("JoyRBumper") || ZInput.GetButtonDown("JoyTabRight"))
         {
             _window.NavigateTabNext();
         }
@@ -163,7 +198,7 @@ public class WardDialogGamepadController
 
     private void HandleDirectShortcuts()
     {
-        if (ZInput.GetButtonDown("JoyButtonY"))
+        if (ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory"))
         {
             bool progressionEnabled = ConfigRegistry.EnableProgressionSystem != null && ConfigRegistry.EnableProgressionSystem.Value;
             if (progressionEnabled)
@@ -243,12 +278,14 @@ public class WardDialogGamepadController
 
     private void HandleDirectionalNavigation()
     {
+        if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
+        {
+            SubmitCurrent();
+            return;
+        }
+
         if (!WardGamepadNavHelper.GetDirectionInput(out bool up, out bool down, out bool left, out bool right))
         {
-            if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("Use"))
-            {
-                SubmitCurrent();
-            }
             return;
         }
 

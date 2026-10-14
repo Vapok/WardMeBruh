@@ -210,8 +210,7 @@ internal static class Patch_Container
 
         if (canRename)
         {
-            string altKeyStr = ZInput.IsGamepadActive() ? "LT" : "LeftShift";
-            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>{altKeyStr} + $KEY_Use</b></color>] {"$wmb_configure_chest".Localize()}");
+            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>$KEY_AltKeys + $KEY_Use</b></color>] {"$wmb_configure_chest".Localize()}");
             __result += renamePrompt;
         }
 

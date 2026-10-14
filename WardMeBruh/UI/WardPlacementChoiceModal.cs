@@ -1,6 +1,7 @@
 using Jotunn.Managers;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using WardMeBruh.Components;
 using WardMeBruh.Configuration;
@@ -20,6 +21,11 @@ public class WardPlacementChoiceModal : MonoBehaviour
     private PrivateArea _coveringWard;
     private Button _extendBtn;
     private Button _subwardBtn;
+    private TextMeshProUGUI _extendBtnText;
+    private TextMeshProUGUI _subwardBtnText;
+    private GameObject _gamepadLegend;
+    private TextMeshProUGUI _legendText;
+    private bool _wasGamepadActive;
     private bool _isInputBlocked;
 
     public static WardPlacementChoiceModal Instance
@@ -71,17 +77,81 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
     private void Update()
     {
-        if (IsOpen)
-        {
-            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
-                ZInput.GetKeyDown(KeyCode.Escape) ||
-                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+        if (!IsOpen)
+            return;
 
-            if (closeRequested)
+        bool isGamepad = ZInput.IsGamepadActive();
+        if (isGamepad != _wasGamepadActive)
+        {
+            UpdateKeyhints(isGamepad);
+        }
+
+        bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
+            ZInput.GetKeyDown(KeyCode.Escape) ||
+            (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
+            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+
+        if (closeRequested)
+        {
+            OnSubWardClicked();
+            return;
+        }
+
+        if (isGamepad)
+        {
+            if (ZInput.GetButtonDown("JoyButtonY") && _subwardBtn != null && _subwardBtn.interactable)
             {
                 OnSubWardClicked();
+                return;
             }
+
+            if (WardGamepadNavHelper.GetDirectionInput(out int navX, out int navY))
+            {
+                if (navX < 0 && _extendBtn != null)
+                {
+                    _extendBtn.Select();
+                }
+                else if (navX > 0 && _subwardBtn != null && _subwardBtn.interactable)
+                {
+                    _subwardBtn.Select();
+                }
+            }
+
+            if (ZInput.GetButtonDown("JoyButtonA"))
+            {
+                GameObject currentObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+                if (currentObj != null)
+                {
+                    Button btn = currentObj.GetComponent<Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick.Invoke();
+                        return;
+                    }
+                }
+                OnExtendClicked();
+            }
+        }
+    }
+
+    public void UpdateKeyhints(bool isGamepad)
+    {
+        _wasGamepadActive = isGamepad;
+        if (_extendBtnText != null)
+        {
+            _extendBtnText.text = isGamepad 
+                ? "<color=yellow><b>[A]</b></color> " + "$wmb_placement_btn_extend".Localize() 
+                : "$wmb_placement_btn_extend".Localize();
+        }
+        if (_subwardBtnText != null)
+        {
+            _subwardBtnText.text = isGamepad 
+                ? "<color=yellow><b>[Y]</b></color> " + "$wmb_placement_btn_subward".Localize() 
+                : "$wmb_placement_btn_subward".Localize();
+        }
+        if (_gamepadLegend != null)
+        {
+            _gamepadLegend.SetActive(isGamepad);
         }
     }
 
@@ -142,12 +212,14 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _panel.transform,
             new Vector2(0.5f, 0f),
             new Vector2(0.5f, 0f),
-            new Vector2(-110f, 45f),
+            new Vector2(-110f, 48f),
             200f,
             44f);
         extendBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 44f);
         WardUIFactory.SetupButtonText(extendBtnObj, "$wmb_placement_btn_extend".Localize(), 15f, WardColorPalette.GoldAmber);
         _extendBtn = extendBtnObj.GetComponent<Button>();
+        _extendBtnText = extendBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+        WardGamepadNavHelper.ApplyGamepadColorBlock(_extendBtn);
         _extendBtn.onClick.AddListener(OnExtendClicked);
 
         GameObject subwardBtnObj = GUIManager.Instance.CreateButton(
@@ -155,13 +227,31 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _panel.transform,
             new Vector2(0.5f, 0f),
             new Vector2(0.5f, 0f),
-            new Vector2(110f, 45f),
+            new Vector2(110f, 48f),
             200f,
             44f);
         subwardBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 44f);
         WardUIFactory.SetupButtonText(subwardBtnObj, "$wmb_placement_btn_subward".Localize(), 15f, WardColorPalette.IceBlue);
         _subwardBtn = subwardBtnObj.GetComponent<Button>();
+        _subwardBtnText = subwardBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+        WardGamepadNavHelper.ApplyGamepadColorBlock(_subwardBtn);
         _subwardBtn.onClick.AddListener(OnSubWardClicked);
+
+        _gamepadLegend = new GameObject("GamepadLegend", typeof(RectTransform), typeof(TextMeshProUGUI));
+        _gamepadLegend.transform.SetParent(_panel.transform, false);
+        RectTransform legendRt = _gamepadLegend.GetComponent<RectTransform>();
+        legendRt.anchorMin = new Vector2(0f, 0f);
+        legendRt.anchorMax = new Vector2(1f, 0f);
+        legendRt.pivot = new Vector2(0.5f, 0f);
+        legendRt.offsetMin = new Vector2(20f, 8f);
+        legendRt.offsetMax = new Vector2(-20f, 26f);
+
+        _legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+        _legendText.font = UIFonts.GetPrimaryFont();
+        _legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Extend   <b>[Y]</b> Sub-Ward   <b>[B]</b> Cancel</color>";
+        _legendText.fontSize = 12f;
+        _legendText.alignment = TextAlignmentOptions.Center;
+        _legendText.color = WardColorPalette.ValheimBeige;
 
         _panel.SetActive(false);
     }
@@ -184,6 +274,12 @@ public class WardPlacementChoiceModal : MonoBehaviour
             ZDO coveringZdo = coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid() ? coveringWard.m_nview.GetZDO() : null;
             float maxSubRadius = WardQueryService.GetMaxAllowedSubWardRadius(pendingWard.m_nview.GetZDO(), pendingWard.transform.position, coveringZdo);
             _subwardBtn.interactable = maxSubRadius >= 1.0f;
+        }
+
+        UpdateKeyhints(ZInput.IsGamepadActive());
+        if (ZInput.IsGamepadActive() && _extendBtn != null)
+        {
+            _extendBtn.Select();
         }
 
         _panel.SetActive(true);

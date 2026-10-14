@@ -269,7 +269,8 @@ internal static class Patch_Door
 
         if (canRename)
         {
-            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>LeftShift + $KEY_Use</b></color>] {"$wmb_configure_door".Localize()}");
+            string altKeyStr = ZInput.IsGamepadActive() ? "LT" : "LeftShift";
+            string renamePrompt = Localization.instance.Localize($"\n[<color=yellow><b>{altKeyStr} + $KEY_Use</b></color>] {"$wmb_configure_door".Localize()}");
             __result += renamePrompt;
         }
 

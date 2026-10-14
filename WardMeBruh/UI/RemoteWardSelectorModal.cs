@@ -18,6 +18,12 @@ public class RemoteWardSelectorModal
     private Action<KnownWard> _onWardSelected;
     private PrivateArea _activeWard;
     private PrivateArea _physicalWard;
+    private ScrollRect _scrollRect;
+    private GameObject _closeBtn;
+    private TextMeshProUGUI _closeBtnText;
+    private GameObject _gamepadLegend;
+    private readonly List<Selectable> _selectableButtons = new();
+    private Selectable _currentSelected;
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
 
@@ -55,22 +61,40 @@ public class RemoteWardSelectorModal
         WardTextElement titleWte = titleObj.GetComponent<WardTextElement>();
         titleWte.baseFontSize = 18;
 
-        GameObject closeBtn = GUIManager.Instance.CreateButton(
+        _closeBtn = GUIManager.Instance.CreateButton(
             "X", 
             _panel.transform, 
             new Vector2(1f, 1f), 
             new Vector2(1f, 1f), 
             new Vector2(-30f, -32f), 
-            34f, 
+            54f, 
             32f);
-        closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(34f, 32f);
-        WardUIFactory.SetupButtonText(closeBtn, "X", 14f, WardColorPalette.DangerRed);
-        closeBtn.GetComponent<Button>().onClick.AddListener(Close);
+        _closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(54f, 32f);
+        WardUIFactory.SetupButtonText(_closeBtn, "X", 14f, WardColorPalette.DangerRed);
+        _closeBtnText = _closeBtn.GetComponentInChildren<TextMeshProUGUI>();
+        _closeBtn.GetComponent<Button>().onClick.AddListener(Close);
 
         GameObject scrollAreaObj = WardUIFactory.CreateScrollArea(_panel.transform, out _listContainer);
+        _scrollRect = scrollAreaObj.GetComponent<ScrollRect>();
         RectTransform scrollRt = scrollAreaObj.GetComponent<RectTransform>();
         scrollRt.offsetMin = new Vector2(25f, 25f);
         scrollRt.offsetMax = new Vector2(-25f, -60f);
+
+        _gamepadLegend = new GameObject("GamepadLegend", typeof(RectTransform), typeof(TextMeshProUGUI));
+        _gamepadLegend.transform.SetParent(_panel.transform, false);
+        RectTransform legendRt = _gamepadLegend.GetComponent<RectTransform>();
+        legendRt.anchorMin = new Vector2(0f, 0f);
+        legendRt.anchorMax = new Vector2(1f, 0f);
+        legendRt.pivot = new Vector2(0.5f, 0f);
+        legendRt.offsetMin = new Vector2(30f, 4f);
+        legendRt.offsetMax = new Vector2(-30f, 20f);
+
+        TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+        legendText.font = UIFonts.GetPrimaryFont();
+        legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Select Ward   <b>[B]</b> Back   <b>[R-Stick]</b> Scroll</color>";
+        legendText.fontSize = 11f;
+        legendText.alignment = TextAlignmentOptions.Center;
+        legendText.color = WardColorPalette.ValheimBeige;
 
         _panel.SetActive(false);
     }
@@ -84,6 +108,7 @@ public class RemoteWardSelectorModal
         _physicalWard = physicalWard;
         _panel.SetActive(true);
         Refresh();
+        UpdateKeyhints(ZInput.IsGamepadActive());
     }
 
     public void Close()
@@ -102,6 +127,8 @@ public class RemoteWardSelectorModal
                 UnityEngine.Object.Destroy(_itemCards[i]);
         }
         _itemCards.Clear();
+        _selectableButtons.Clear();
+        _currentSelected = null;
 
         if (_listContainer != null)
         {
@@ -339,7 +366,11 @@ public class RemoteWardSelectorModal
 
                 WardUIFactory.SetupButtonText(manageBtn, "$wmb_modal_manage_btn".Localize(), 12f, WardColorPalette.ValheimBeige);
 
-                manageBtn.GetComponent<Button>().onClick.AddListener(() =>
+                Button btn = manageBtn.GetComponent<Button>();
+                WardGamepadNavHelper.ApplyGamepadColorBlock(btn);
+                _selectableButtons.Add(btn);
+
+                btn.onClick.AddListener(() =>
                 {
                     Close();
                     _onWardSelected?.Invoke(ward);
@@ -350,6 +381,89 @@ public class RemoteWardSelectorModal
         if (WardMainWindow.Instance != null && _panel != null)
         {
             WardMainWindow.ApplyFontSizeToHierarchy(_panel, WardMainWindow.Instance.CurrentFontSizeMode);
+        }
+
+        if (ZInput.IsGamepadActive() && _selectableButtons.Count > 0)
+        {
+            _currentSelected = _selectableButtons[0];
+            _currentSelected.Select();
+        }
+    }
+
+    public void UpdateKeyhints(bool isGamepad)
+    {
+        if (_closeBtnText != null)
+        {
+            _closeBtnText.text = isGamepad ? "<color=yellow><b>[B]</b></color> X" : "X";
+        }
+        if (_gamepadLegend != null)
+        {
+            _gamepadLegend.SetActive(isGamepad);
+        }
+    }
+
+    public void UpdateNavigation()
+    {
+        bool isGamepad = ZInput.IsGamepadActive();
+        UpdateKeyhints(isGamepad);
+
+        if (!isGamepad || !IsOpen)
+            return;
+
+        if (ZInput.GetButtonDown("JoyButtonB"))
+        {
+            Close();
+            return;
+        }
+
+        if (WardGamepadNavHelper.GetDirectionInput(out int navX, out int navY))
+        {
+            if (navY != 0 && _selectableButtons.Count > 0)
+            {
+                StepSelection(-navY);
+            }
+        }
+
+        if (ZInput.GetButtonDown("JoyButtonA") && _currentSelected != null)
+        {
+            if (_currentSelected is Button btn && btn.interactable)
+            {
+                btn.onClick.Invoke();
+            }
+        }
+
+        float joyY = ZInput.GetJoyRightStickY();
+        if (Mathf.Abs(joyY) > 0.1f && _scrollRect != null)
+        {
+            _scrollRect.verticalNormalizedPosition = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + joyY * 0.05f);
+        }
+    }
+
+    private void StepSelection(int direction)
+    {
+        if (_selectableButtons.Count == 0)
+            return;
+
+        int currentIndex = _selectableButtons.IndexOf(_currentSelected);
+        int nextIndex = currentIndex + direction;
+        if (currentIndex < 0)
+        {
+            nextIndex = direction > 0 ? 0 : _selectableButtons.Count - 1;
+        }
+        else
+        {
+            nextIndex = Mathf.Clamp(nextIndex, 0, _selectableButtons.Count - 1);
+        }
+
+        Selectable target = _selectableButtons[nextIndex];
+        if (target != null && target.interactable)
+        {
+            _currentSelected = target;
+            target.Select();
+            if (_scrollRect != null && target.transform is RectTransform rt)
+            {
+                WardGamepadNavHelper.EnsureVisible(_scrollRect, rt);
+            }
         }
     }
 

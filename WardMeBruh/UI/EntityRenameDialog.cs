@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Jotunn.Managers;
 using TMPro;
 using UnityEngine;
@@ -21,6 +22,11 @@ public class EntityRenameDialog : MonoBehaviour
     private TextMeshProUGUI _roleTxt;
     private Button _depotBtn;
     private TextMeshProUGUI _depotTxt;
+    private Button _saveBtn;
+    private Button _cancelBtn;
+    private TextMeshProUGUI _saveBtnTxt;
+    private TextMeshProUGUI _cancelBtnTxt;
+    private GameObject _gamepadLegend;
 
     private enum ConfigEntityType
     {
@@ -91,7 +97,87 @@ public class EntityRenameDialog : MonoBehaviour
             if (closeRequested)
             {
                 Close();
+                return;
             }
+
+            if (ZInput.IsGamepadActive())
+            {
+                if (ZInput.GetButtonDown("JoyButtonX"))
+                {
+                    OnSaveClicked();
+                    return;
+                }
+
+                HandleGamepadNavigation();
+            }
+        }
+    }
+
+    private void HandleGamepadNavigation()
+    {
+        List<Selectable> selectables = new List<Selectable>();
+        if (_nameInput != null && _nameInput.gameObject.activeInHierarchy) selectables.Add(_nameInput);
+        if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy) selectables.Add(_roleBtn);
+        if (_depotBtn != null && _depotBtn.gameObject.activeInHierarchy) selectables.Add(_depotBtn);
+        if (_saveBtn != null && _saveBtn.gameObject.activeInHierarchy) selectables.Add(_saveBtn);
+        if (_cancelBtn != null && _cancelBtn.gameObject.activeInHierarchy) selectables.Add(_cancelBtn);
+
+        for (int i = 0; i < selectables.Count; i++)
+        {
+            WardGamepadNavHelper.ApplyGamepadColorBlock(selectables[i]);
+        }
+
+        if (!WardGamepadNavHelper.GetDirectionInput(out bool up, out bool down, out bool left, out bool right))
+        {
+            if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("Use"))
+            {
+                GameObject curGo = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+                if (curGo != null)
+                {
+                    Button curBtn = curGo.GetComponent<Button>();
+                    if (curBtn != null && curBtn.interactable)
+                    {
+                        curBtn.onClick?.Invoke();
+                    }
+                }
+            }
+            return;
+        }
+
+        GameObject selectedGo = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        Selectable curSel = selectedGo != null ? selectedGo.GetComponent<Selectable>() : null;
+        int curIdx = curSel != null ? selectables.IndexOf(curSel) : -1;
+
+        int nextIdx = 0;
+        if (down || right)
+        {
+            nextIdx = curIdx < 0 ? 0 : (curIdx + 1) % selectables.Count;
+        }
+        else if (up || left)
+        {
+            nextIdx = curIdx < 0 ? selectables.Count - 1 : (curIdx - 1 + selectables.Count) % selectables.Count;
+        }
+
+        if (nextIdx >= 0 && nextIdx < selectables.Count && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(selectables[nextIdx].gameObject);
+        }
+    }
+
+    private void RefreshKeyhints()
+    {
+        bool isGamepad = ZInput.IsGamepadActive();
+        if (_saveBtnTxt != null)
+        {
+            _saveBtnTxt.text = isGamepad ? $"[X] {"$wmb_save".Localize()}" : "$wmb_save".Localize();
+        }
+        if (_cancelBtnTxt != null)
+        {
+            _cancelBtnTxt.text = isGamepad ? $"[B] {"$wmb_cancel".Localize()}" : "$wmb_cancel".Localize();
+        }
+        if (_gamepadLegend != null)
+        {
+            _gamepadLegend.SetActive(isGamepad);
         }
     }
 
@@ -180,8 +266,9 @@ public class EntityRenameDialog : MonoBehaviour
             new Vector2(-80f, 32f), 
             130f, 
             36f);
-        WardUIFactory.SetupButtonText(saveBtn, "$wmb_save".Localize(), 13f, WardColorPalette.ValheimOrange);
-        saveBtn.GetComponent<Button>().onClick.AddListener(OnSaveClicked);
+        _saveBtn = saveBtn.GetComponent<Button>();
+        _saveBtnTxt = WardUIFactory.SetupButtonText(saveBtn, "$wmb_save".Localize(), 13f, WardColorPalette.ValheimOrange);
+        _saveBtn.onClick.AddListener(OnSaveClicked);
 
         GameObject cancelBtn = GUIManager.Instance.CreateButton(
             "$wmb_cancel".Localize(), 
@@ -191,8 +278,25 @@ public class EntityRenameDialog : MonoBehaviour
             new Vector2(80f, 32f), 
             130f, 
             36f);
-        WardUIFactory.SetupButtonText(cancelBtn, "$wmb_cancel".Localize(), 13f, WardColorPalette.TextMuted);
-        cancelBtn.GetComponent<Button>().onClick.AddListener(Close);
+        _cancelBtn = cancelBtn.GetComponent<Button>();
+        _cancelBtnTxt = WardUIFactory.SetupButtonText(cancelBtn, "$wmb_cancel".Localize(), 13f, WardColorPalette.TextMuted);
+        _cancelBtn.onClick.AddListener(Close);
+
+        _gamepadLegend = new GameObject("GamepadLegend", typeof(RectTransform), typeof(TextMeshProUGUI));
+        _gamepadLegend.transform.SetParent(_panel.transform, false);
+        RectTransform glRt = _gamepadLegend.GetComponent<RectTransform>();
+        glRt.anchorMin = new Vector2(0f, 0f);
+        glRt.anchorMax = new Vector2(1f, 0f);
+        glRt.pivot = new Vector2(0.5f, 0f);
+        glRt.anchoredPosition = new Vector2(0f, 6f);
+        glRt.sizeDelta = new Vector2(440f, 20f);
+
+        TextMeshProUGUI glText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+        glText.font = UIFonts.GetPrimaryFont();
+        glText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Toggle   <b>[X]</b> Save   <b>[B]</b> Cancel</color>";
+        glText.fontSize = 11f;
+        glText.alignment = TextAlignmentOptions.Center;
+        glText.color = WardColorPalette.ValheimBeige;
 
         _panel.SetActive(false);
     }
@@ -242,8 +346,20 @@ public class EntityRenameDialog : MonoBehaviour
         ApplyCurrentFontSize();
 
         _panel.SetActive(true);
-        _nameInput.ActivateInputField();
-        _nameInput.Select();
+        RefreshKeyhints();
+        if (ZInput.IsGamepadActive())
+        {
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+            }
+        }
+        else
+        {
+            _nameInput.ActivateInputField();
+            _nameInput.Select();
+        }
         SetInputBlocked(true);
     }
 
@@ -286,6 +402,15 @@ public class EntityRenameDialog : MonoBehaviour
         ApplyCurrentFontSize();
 
         _panel.SetActive(true);
+        RefreshKeyhints();
+        if (ZInput.IsGamepadActive())
+        {
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+            }
+        }
         SetInputBlocked(true);
     }
 
@@ -341,8 +466,20 @@ public class EntityRenameDialog : MonoBehaviour
         ApplyCurrentFontSize();
 
         _panel.SetActive(true);
-        _nameInput.ActivateInputField();
-        _nameInput.Select();
+        RefreshKeyhints();
+        if (ZInput.IsGamepadActive())
+        {
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+            }
+        }
+        else
+        {
+            _nameInput.ActivateInputField();
+            _nameInput.Select();
+        }
         SetInputBlocked(true);
     }
 

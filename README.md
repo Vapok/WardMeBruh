@@ -110,11 +110,30 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 
 ## 🕹️ Controls
 
-| Action | Control | Description |
+### In-World Controls
+
+| Action | Keyboard / Mouse | Gamepad | Description |
+| :--- | :--- | :--- | :--- |
+| **Open Ward Hub** | <kbd>E</kbd> or <kbd>G</kbd> | <kbd>A</kbd> | Opens the ward management interface at a ward monument. |
+| **Toggle Ward Power** | — | <kbd>LT</kbd> + <kbd>A</kbd> | Toggles ward activation directly in-world without opening the menu. |
+| **Configure Door / Chest** | <kbd>Shift</kbd> + <kbd>E</kbd> | <kbd>LT</kbd> + <kbd>A</kbd> | Opens the role access and renaming configuration dialog. |
+| **Configure Portal** | <kbd>Shift</kbd> + <kbd>E</kbd> | <kbd>LT</kbd> + <kbd>A</kbd> | Opens the portal role access configuration dialog. |
+| **Standard Interact** | <kbd>E</kbd> | <kbd>A</kbd> | Standard door/chest/portal interaction (checked against role clearance). |
+
+### Ward Hub Dialog Navigation (Gamepad)
+
+| Action | Gamepad Control | Description |
 | :--- | :--- | :--- |
-| **Open Ward Menu** | <kbd>E</kbd> or <kbd>G</kbd> | Opens the ward interface at a ward stone. |
-| **Quick-Name Entity** | <kbd>Shift</kbd> + <kbd>E</kbd> | Renames targeted door or chest in-world. |
-| **Interact** | <kbd>E</kbd> | Standard door/chest/portal interaction (checked against role clearance). |
+| **Switch Tabs** | <kbd>LB</kbd> / <kbd>RB</kbd> | Cycles forward and backward through Ward Hub tabs. |
+| **Jump Sections** | <kbd>LT</kbd> / <kbd>RT</kbd> | Jumps the cursor to the previous or next card/section. |
+| **Navigate Elements** | <kbd>D-Pad</kbd> or Left Stick | Moves focus between buttons, toggles, and sliders. |
+| **Select / Toggle** | <kbd>A</kbd> | Activates the focused button or toggles a checkbox. |
+| **Adjust Sliders** | <kbd>D-Pad Left</kbd> / <kbd>Right</kbd> | Steps slider values (e.g. ward radius, repair threshold). |
+| **Runic Attunement** | <kbd>Y</kbd> | Direct shortcut to open the Runic Attunement progression menu. |
+| **Other Wards** | <kbd>X</kbd> | Direct shortcut to open the Remote Ward territory registry. |
+| **Cycle Font Size** | <kbd>R3</kbd> (Right Stick Click) | Cycles UI text scaling between Small, Medium, and Large. |
+| **Scroll Viewport** | Right Stick (Up / Down) | Smoothly scrolls the active tab or modal content. |
+| **Close / Back** | <kbd>B</kbd> | Closes the open modal or exits the Ward Hub. |
 
 ---
 

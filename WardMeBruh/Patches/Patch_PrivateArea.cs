@@ -638,16 +638,20 @@ internal static class Patch_PrivateArea
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
-            string hubKey = (ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
-                ? ConfigRegistry.OpenWardHubKey.Value.ToString()
-                : "E";
+            string hubKey = ZInput.IsGamepadActive()
+                ? "$KEY_Use"
+                : ((ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
+                    ? ConfigRegistry.OpenWardHubKey.Value.ToString()
+                    : "E");
             sb.Append($"\n[<color=yellow><b>{hubKey}</b></color>] {"$wmb_open_ward_hub".Localize()}");
         }
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
         {
             string toggleAction = isEnabled ? "$piece_guardstone_deactivate" : "$piece_guardstone_activate";
-            sb.Append($"\n[<color=yellow><b>LeftShift + E</b></color>] {toggleAction}");
+            string altKeyStr = ZInput.IsGamepadActive() ? "LT" : "LeftShift";
+            string useKeyStr = ZInput.IsGamepadActive() ? "$KEY_Use" : "E";
+            sb.Append($"\n[<color=yellow><b>{altKeyStr} + {useKeyStr}</b></color>] {toggleAction.Localize()}");
         }
 
         __result = Localization.instance.Localize(sb.ToString());

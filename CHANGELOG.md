@@ -1,3 +1,14 @@
+# 0.0.6 - Full Controller Support & Gamepad Navigation
+* Added complete controller support for managing wards, permissions, defenses, and upkeep from a gamepad.
+* Added bumper tab navigation ([LB] / [RB]) and trigger section jumping ([LT] / [RT]) to navigate the Ward Hub.
+* Added direct controller shortcuts: [Y] for Runic Attunement, [X] for Other Wards, [R3] for Font Size, and [B] for Back/Close.
+* Added glowing focus highlights and auto-scrolling so selected settings and controls stay centered in view.
+* Added controller keyhints and on-screen button legend bars across all menus and dialogs.
+* Added in-world gamepad prompts: [A] to open the Ward Hub and [LT + A] to configure doors, chests, and portals.
+* Added full gamepad navigation and card selection to the Remote Ward selector.
+* Added controller navigation, button shortcuts ([A] Extend, [Y] Sub-Ward, [B] Cancel), and input blocking to the territory placement prompt.
+* Added portal configuration prompts showing permitted access roles with in-world [LT + A] configuration support.
+
 # 0.0.5 - Runic Attunement Progression System & Network Optimizations
 * Added Runic Attunement progression: Wards now start at Rank 0 and unlock features across 8 rune ranks using craftable Runic Keystones.
 * Added physical runestone pedestals that orbit the ward stone in the world and light up as each rune is attuned.

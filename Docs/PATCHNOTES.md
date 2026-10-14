@@ -1,3 +1,28 @@
+# 0.0.6 - Full Controller Support & Gamepad Navigation
+* **Centralized Gamepad Navigation Infrastructure (`WardGamepadNavHelper`)**:
+  * Implemented debounced analog and directional navigation (`GetDirectionInput`) with initial delay (0.32s) and repeat rate (0.12s) across D-pad and Left Stick.
+  * Implemented trigger debouncing (`GetTriggerInput`) with a 0.25s lockout for bumper/trigger navigation.
+  * Implemented `ApplyGamepadColorBlock` setting high-contrast warm Valheim gold selection and highlight glow (`#FFC740`) on focused UI elements.
+  * Added `EnsureVisible` calculating normalized scroll rect offsets to keep active controls and section cards centered within scrolling viewports.
+* **Ward Hub Gamepad Controller (`WardDialogGamepadController`)**:
+  * Integrated dedicated gamepad lifecycle and input routing in `WardMainWindow`.
+  * Added tab navigation via `JoyTabLeft` (LB / L1) and `JoyTabRight` (RB / R1) with visual bumper badges on the tab bar.
+  * Added section card jumping via `JoyLTrigger` (LT / L2) and `JoyRTrigger` (RT / R2).
+  * Added element navigation across toggles, buttons, and sliders via D-Pad and Left Stick.
+  * Added slider horizontal stepping (Left/Right) for dome radius and repair threshold controls.
+  * Added direct gamepad shortcuts: `JoyButtonY` (Attunement Rituals), `JoyButtonX` (Other Wards modal), `JoyRStick` (Cycle GUI font size), and `JoyButtonB` (Close window).
+  * Added analog right stick viewport scrolling (`GetJoyRightStickY`).
+  * Added bottom controller legend displaying context keyhints.
+* **Remote Ward Selector & Placement Choice Modal Navigation (`RemoteWardSelectorModal`, `WardPlacementChoiceModal`)**:
+  * Added vertical selectable tracking, directional navigation, and auto-scrolling to `RemoteWardSelectorModal`.
+  * Added directional button navigation, `[A] Extend`, `[Y] Sub-Ward`, `[B] Cancel` shortcuts, and legend bars to `WardPlacementChoiceModal`.
+  * Patched `Player.TakeInput` (`Patch_PlayerInput.TakeInputPrefix`) to suppress native player input while `WardPlacementChoiceModal` is active.
+* **In-World Gamepad Interacts & Portal Access Prompts (`Patch_PrivateArea`, `Patch_Door`, `Patch_Container`, `Patch_TeleportWorld`)**:
+  * Added dynamic hover prompt detection via `ZInput.IsGamepadActive()`:
+    * Ward Stone: `[A] Open Ward Hub`, `[LT + A] Deactivate / Activate Ward`.
+    * Doors & Chests: `[LT + A] Configure Door / Chest`.
+    * Portals: Added `Patch_TeleportWorld` displaying assigned role clearance and `[LT + A] Configure Portal` prompt.
+
 # 0.0.5 - Runic Attunement Progression System & Network Optimizations
 * **Runic Attunement Progression Architecture (`WardProgressionService`, `WardRune`, `WardFeature`, `ProgressionMode`)**:
   * Implemented an 8-rank progression system gated by the Elder Futhark runes (`Fehu`, `Uruz`, `Thurisaz`, `Isa`, `Sowilo`, `Laguz`, `Dagaz`, `Hagalaz`).

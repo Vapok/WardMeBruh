@@ -113,7 +113,7 @@ internal static class Patch_Door
 
         ZDO wardZdo = coveringWard.m_nview.GetZDO();
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
-        bool autoCloseEnabled = WardPermissions.HasFeatureAccess(wardZdo, WardZdoKeys.AutoCloseDoors, playerId);
+        bool autoCloseEnabled = WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.AutoCloseDoors, playerId);
         if (!autoCloseEnabled)
             return;
 

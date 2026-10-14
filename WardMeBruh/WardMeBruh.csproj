@@ -139,6 +139,8 @@
         <Compile Include="API\**\*.cs" />
         <Compile Include="Models\WardRole.cs" />
         <Compile Include="Models\WardCapabilityCategory.cs" />
+        <Compile Include="Models\WardRune.cs" />
+        <Compile Include="Models\WardFeature.cs" />
         <Compile Include="Properties\AssemblyInfo.cs" />
     </ItemGroup>
     <ItemGroup>
@@ -147,6 +149,7 @@
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="Translations\English.json" />
+        <EmbeddedResource Include="Resources\Icons\*.png" />
         <Content Include="ILRepack.Config.props" />
         <Content Include="ILRepack.targets" />
     </ItemGroup>

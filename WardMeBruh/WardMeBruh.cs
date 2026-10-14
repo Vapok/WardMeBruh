@@ -54,6 +54,7 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
         WardRoleManager.Initialize();
 
         _config = new ConfigRegistry(_instance);
+        Items.KeystoneItemFactory.Initialize();
 
         Localizer.Waiter.StatusChanged += InitializeModule;
 

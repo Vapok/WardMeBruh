@@ -1,4 +1,5 @@
 using HarmonyLib;
+using WardMeBruh.Items;
 using WardMeBruh.Models;
 
 namespace WardMeBruh.Patches;
@@ -17,5 +18,7 @@ internal static class Patch_ObjectDB
         {
             __instance.m_StatusEffects.Add(template);
         }
+
+        KeystoneItemFactory.SyncObjectDbItems(__instance);
     }
 }

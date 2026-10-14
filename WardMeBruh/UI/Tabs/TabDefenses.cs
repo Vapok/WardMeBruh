@@ -48,6 +48,29 @@ public class TabDefenses
     private readonly List<GameObject> _standardDefenseCards = new();
     private GameObject _delegatedCard;
     private GameObject _visualsCard;
+
+    private GameObject _cardRepulsionObj;
+    private GameObject _pushbackRowObj;
+    private GameObject _shockCreatureRowObj;
+    private GameObject _shockPlayerRowObj;
+
+    private GameObject _cardCamouflageObj;
+    private GameObject _ghostBaseRowObj;
+    private GameObject _raidSuppressRowObj;
+    private GameObject _spawnSuppressRowObj;
+
+    private GameObject _cardBiomeObj;
+    private GameObject _weatherRoofRowObj;
+    private GameObject _ashShieldRowObj;
+    private GameObject _lavaShieldRowObj;
+    private GameObject _snowShieldRowObj;
+    private GameObject _waterDrainRowObj;
+
+    private GameObject _cardSanctuaryObj;
+    private GameObject _maxComfortRowObj;
+    private GameObject _regenBoostRowObj;
+    private GameObject _deathSkillRowObj;
+    private GameObject _foodFreezeRowObj;
     private Action<string, Color> _setDelegatedBadge;
 
     private GameObject _domeColorRowObj;
@@ -87,16 +110,16 @@ public class TabDefenses
         WardUIFactory.CreateSliderRow(
             cardDomain, 
             "$wmb_defenses_radius", 
-            10f, 
+            0f, 
             maxRadius, 
-            30f, 
+            25f, 
             true, 
             $"{"$wmb_meters".Localize()}", 
             OnRadiusChanged, 
             out _setRadiusSlider,
             out _setRadiusSliderInteractable,
             out _setRadiusSliderRange,
-            5f,
+            maxRadius <= 50f ? 1f : 5f,
             true);
         WardUIFactory.CreateBadgeRow(cardDomain, "$wmb_defenses_land_coverage", "~2,827 m²", WardColorPalette.ValheimBeige, out _setAreaBadge);
 
@@ -106,7 +129,8 @@ public class TabDefenses
         _delegatedCard.SetActive(false);
 
         Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_repulsion");
-        _standardDefenseCards.Add(card1.parent.parent.gameObject);
+        _cardRepulsionObj = card1.parent.parent.gameObject;
+        _standardDefenseCards.Add(_cardRepulsionObj);
         WardUIFactory.CreateSliderRow(
             card1, 
             "$wmb_defenses_pushback", 
@@ -117,6 +141,7 @@ public class TabDefenses
             " N", 
             v => SetZdoFloat(WardZdoKeys.PushbackForce, v, "defenses.combat"), 
             out _setPushbackSlider);
+        _pushbackRowObj = card1.GetChild(card1.childCount - 1).gameObject;
 
         WardUIFactory.CreateSliderRow(
             card1, 
@@ -128,6 +153,7 @@ public class TabDefenses
             " dmg", 
             v => SetZdoFloat(WardZdoKeys.ShockCreatureDmg, v, "defenses.combat"), 
             out _setShockCreatureSlider);
+        _shockCreatureRowObj = card1.GetChild(card1.childCount - 1).gameObject;
 
         WardUIFactory.CreateSliderRow(
             card1, 
@@ -139,15 +165,18 @@ public class TabDefenses
             " dmg", 
             v => SetZdoFloat(WardZdoKeys.ShockPlayerDmg, v, "defenses.combat"), 
             out _setShockPlayerSlider);
+        _shockPlayerRowObj = card1.GetChild(card1.childCount - 1).gameObject;
 
         Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_camouflage");
-        _standardDefenseCards.Add(card2.parent.parent.gameObject);
+        _cardCamouflageObj = card2.parent.parent.gameObject;
+        _standardDefenseCards.Add(_cardCamouflageObj);
         WardUIFactory.CreateToggleRow(
             card2, 
             "$wmb_defenses_ghost_base", 
             false, 
             v => SetZdoBool(WardZdoKeys.GhostBase, v, "defenses.camouflage"), 
             out _setGhostBase);
+        _ghostBaseRowObj = card2.GetChild(card2.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             card2, 
@@ -155,6 +184,7 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.RaidSuppress, v, "defenses.camouflage"), 
             out _setRaidSuppress);
+        _raidSuppressRowObj = card2.GetChild(card2.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             card2, 
@@ -162,15 +192,18 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.SpawnSuppress, v, "defenses.camouflage"), 
             out _setSpawnSuppress);
+        _spawnSuppressRowObj = card2.GetChild(card2.childCount - 1).gameObject;
 
         Transform cardBiome = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_biome");
-        _standardDefenseCards.Add(cardBiome.parent.parent.gameObject);
+        _cardBiomeObj = cardBiome.parent.parent.gameObject;
+        _standardDefenseCards.Add(_cardBiomeObj);
         WardUIFactory.CreateToggleRow(
             cardBiome, 
             "$wmb_upkeep_weather_roof", 
             false, 
             v => SetZdoBool(WardZdoKeys.WeatherRoof, v, "defenses.biome"), 
             out _setWeatherRoof);
+        _weatherRoofRowObj = cardBiome.GetChild(cardBiome.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             cardBiome, 
@@ -178,6 +211,7 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.AshShield, v, "defenses.biome"), 
             out _setAshShield);
+        _ashShieldRowObj = cardBiome.GetChild(cardBiome.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             cardBiome, 
@@ -185,6 +219,7 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.LavaShield, v, "defenses.biome"), 
             out _setLavaShield);
+        _lavaShieldRowObj = cardBiome.GetChild(cardBiome.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             cardBiome, 
@@ -192,6 +227,7 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.SnowShield, v, "defenses.biome"), 
             out _setSnowShield);
+        _snowShieldRowObj = cardBiome.GetChild(cardBiome.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             cardBiome, 
@@ -199,15 +235,18 @@ public class TabDefenses
             false, 
             v => SetZdoBool(WardZdoKeys.WaterDrain, v, "upkeep.waterdrain"), 
             out _setWaterDrain);
+        _waterDrainRowObj = cardBiome.GetChild(cardBiome.childCount - 1).gameObject;
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_sanctuary");
-        _standardDefenseCards.Add(card3.parent.parent.gameObject);
+        _cardSanctuaryObj = card3.parent.parent.gameObject;
+        _standardDefenseCards.Add(_cardSanctuaryObj);
         WardUIFactory.CreateToggleRow(
             card3, 
             "$wmb_defenses_max_comfort", 
             false, 
             v => SetZdoBool(WardZdoKeys.MaxComfort, v, "upkeep.perks"), 
             out _setMaxComfort);
+        _maxComfortRowObj = card3.GetChild(card3.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             card3,
@@ -215,6 +254,7 @@ public class TabDefenses
             true,
             v => SetZdoBool(WardZdoKeys.RegenBoost, v, "upkeep.perks"),
             out _setRegenBoost);
+        _regenBoostRowObj = card3.GetChild(card3.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             card3,
@@ -222,6 +262,7 @@ public class TabDefenses
             true,
             v => SetZdoBool(WardZdoKeys.DeathSkillShield, v, "upkeep.perks"),
             out _setDeathSkill);
+        _deathSkillRowObj = card3.GetChild(card3.childCount - 1).gameObject;
 
         WardUIFactory.CreateToggleRow(
             card3,
@@ -229,6 +270,7 @@ public class TabDefenses
             true,
             v => SetZdoBool(WardZdoKeys.FoodFreeze, v, "upkeep.perks"),
             out _setFoodFreeze);
+        _foodFreezeRowObj = card3.GetChild(card3.childCount - 1).gameObject;
 
         Transform card4 = WardUIFactory.CreateCard(listContainer, "$wmb_defenses_card_visuals");
         _visualsCard = card4.parent.parent.gameObject;
@@ -463,25 +505,23 @@ public class TabDefenses
         }
 
         WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
-        float sliderMin = 10f;
+        float sliderMin = 0f;
         float sliderMax = maxRadius;
-        float sliderStep = 5f;
+        float sliderStep = 1f;
 
         if (wardType == WardType.SubWard)
         {
             float maxAllowed = WardQueryService.GetMaxAllowedSubWardRadius(zdo, _ward.transform.position);
             sliderMax = Mathf.Max(1f, Mathf.Floor(maxAllowed));
-            if (sliderMax < 50f)
-            {
-                sliderStep = 1f;
-                sliderMin = 1f;
-            }
-            else
-            {
-                sliderMin = 10f;
-                sliderStep = 5f;
-            }
         }
+        else
+        {
+            float progressionSliderMax = WardProgressionService.GetEffectiveSliderMaxRadius(zdo, playerId);
+            sliderMax = Mathf.Min(sliderMax, progressionSliderMax);
+        }
+
+        sliderMin = 0f;
+        sliderStep = (sliderMax - sliderMin) <= 50f ? 1f : 5f;
 
         ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
         string parentName = "Parent Ward";
@@ -532,13 +572,45 @@ public class TabDefenses
             }
         }
 
-        for (int i = 0; i < _standardDefenseCards.Count; i++)
-        {
-            if (_standardDefenseCards[i] != null)
-            {
-                _standardDefenseCards[i].SetActive(!isDelegated);
-            }
-        }
+        bool hasPushback = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.PushbackForce, playerId);
+        bool hasShock = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.CreatureShock, playerId);
+        bool hasPlayerShock = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.PlayerShock, playerId);
+        if (_pushbackRowObj != null) _pushbackRowObj.SetActive(hasPushback);
+        if (_shockCreatureRowObj != null) _shockCreatureRowObj.SetActive(hasShock);
+        if (_shockPlayerRowObj != null) _shockPlayerRowObj.SetActive(hasPlayerShock);
+        if (_cardRepulsionObj != null) _cardRepulsionObj.SetActive(!isDelegated && (hasPushback || hasShock || hasPlayerShock));
+
+        bool hasGhostBase = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.GhostBase, playerId);
+        bool hasRaidSuppress = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.RaidSuppression, playerId);
+        bool hasSpawnSuppress = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.SpawnSuppression, playerId);
+        if (_ghostBaseRowObj != null) _ghostBaseRowObj.SetActive(hasGhostBase);
+        if (_raidSuppressRowObj != null) _raidSuppressRowObj.SetActive(hasRaidSuppress);
+        if (_spawnSuppressRowObj != null) _spawnSuppressRowObj.SetActive(hasSpawnSuppress);
+        if (_cardCamouflageObj != null) _cardCamouflageObj.SetActive(!isDelegated && (hasGhostBase || hasRaidSuppress || hasSpawnSuppress));
+
+        bool hasWeatherRoof = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.WeatherRoof, playerId);
+        bool hasAshShield = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.AshShield, playerId);
+        bool hasLavaShield = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.LavaShield, playerId);
+        bool hasSnowShield = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.SnowShield, playerId);
+        bool hasWaterDrain = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.WaterDrain, playerId);
+        if (_weatherRoofRowObj != null) _weatherRoofRowObj.SetActive(hasWeatherRoof);
+        if (_ashShieldRowObj != null) _ashShieldRowObj.SetActive(hasAshShield);
+        if (_lavaShieldRowObj != null) _lavaShieldRowObj.SetActive(hasLavaShield);
+        if (_snowShieldRowObj != null) _snowShieldRowObj.SetActive(hasSnowShield);
+        if (_waterDrainRowObj != null) _waterDrainRowObj.SetActive(hasWaterDrain);
+        if (_cardBiomeObj != null) _cardBiomeObj.SetActive(!isDelegated && (hasWeatherRoof || hasAshShield || hasLavaShield || hasSnowShield || hasWaterDrain));
+
+        bool hasMaxComfort = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.MaxComfort, playerId);
+        bool hasRegenBoost = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.RegenBoost, playerId) ||
+                             WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.StaminaRegenBoost, playerId) ||
+                             WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.EitrRegenBoost, playerId);
+        bool hasDeathSkill = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.DeathSkillShield, playerId);
+        bool hasFoodFreeze = WardProgressionService.IsFeatureUnlocked(zdo, WardFeature.FoodFreeze, playerId);
+        if (_maxComfortRowObj != null) _maxComfortRowObj.SetActive(hasMaxComfort);
+        if (_regenBoostRowObj != null) _regenBoostRowObj.SetActive(hasRegenBoost);
+        if (_deathSkillRowObj != null) _deathSkillRowObj.SetActive(hasDeathSkill);
+        if (_foodFreezeRowObj != null) _foodFreezeRowObj.SetActive(hasFoodFreeze);
+        if (_cardSanctuaryObj != null) _cardSanctuaryObj.SetActive(!isDelegated && (hasMaxComfort || hasRegenBoost || hasDeathSkill || hasFoodFreeze));
 
         if (_visualsCard != null)
         {
@@ -716,6 +788,26 @@ public class TabDefenses
         }
     }
 
+    private static WardFeature? GetFeatureForKey(int key)
+    {
+        if (key == WardZdoKeys.PushbackForce) return WardFeature.PushbackForce;
+        if (key == WardZdoKeys.ShockCreatureDmg) return WardFeature.CreatureShock;
+        if (key == WardZdoKeys.ShockPlayerDmg) return WardFeature.PlayerShock;
+        if (key == WardZdoKeys.GhostBase) return WardFeature.GhostBase;
+        if (key == WardZdoKeys.RaidSuppress) return WardFeature.RaidSuppression;
+        if (key == WardZdoKeys.SpawnSuppress) return WardFeature.SpawnSuppression;
+        if (key == WardZdoKeys.WeatherRoof) return WardFeature.WeatherRoof;
+        if (key == WardZdoKeys.AshShield) return WardFeature.AshShield;
+        if (key == WardZdoKeys.LavaShield) return WardFeature.LavaShield;
+        if (key == WardZdoKeys.SnowShield) return WardFeature.SnowShield;
+        if (key == WardZdoKeys.WaterDrain) return WardFeature.WaterDrain;
+        if (key == WardZdoKeys.MaxComfort) return WardFeature.MaxComfort;
+        if (key == WardZdoKeys.RegenBoost) return WardFeature.RegenBoost;
+        if (key == WardZdoKeys.DeathSkillShield) return WardFeature.DeathSkillShield;
+        if (key == WardZdoKeys.FoodFreeze) return WardFeature.FoodFreeze;
+        return null;
+    }
+
     private void SetZdoBool(int key, bool val, string permissionId)
     {
         if (_isRefreshing)
@@ -727,6 +819,17 @@ public class TabDefenses
             ZDO zdo = _ward.m_nview.GetZDO();
             if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
             {
+                WardFeature? feature = GetFeatureForKey(key);
+                if (feature.HasValue && !WardProgressionService.IsFeatureUnlocked(zdo, feature.Value, playerId))
+                {
+                    if (Player.m_localPlayer != null)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_feature_locked_by_rune".Localize());
+                    }
+                    Refresh();
+                    return;
+                }
+
                 WardNetworkRouter.SendWardBool(zdo.m_uid, key, val);
                 Refresh();
             }
@@ -748,6 +851,17 @@ public class TabDefenses
             ZDO zdo = _ward.m_nview.GetZDO();
             if (WardRoleManager.CanPerform(zdo, playerId, permissionId))
             {
+                WardFeature? feature = GetFeatureForKey(key);
+                if (feature.HasValue && !WardProgressionService.IsFeatureUnlocked(zdo, feature.Value, playerId))
+                {
+                    if (Player.m_localPlayer != null)
+                    {
+                        Player.m_localPlayer.Message(MessageHud.MessageType.Center, "$wmb_feature_locked_by_rune".Localize());
+                    }
+                    Refresh();
+                    return;
+                }
+
                 WardNetworkRouter.SendWardFloat(zdo.m_uid, key, val);
             }
             else
@@ -776,13 +890,16 @@ public class TabDefenses
             maxRadius = Mathf.Min(100f, (float)ConfigRegistry.MaxWardRadius.Value);
         }
 
-        float minRadius = 10f;
+        float minRadius = 0f;
         WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
         if (wardType == WardType.SubWard)
         {
             float maxAllowed = WardQueryService.GetMaxAllowedSubWardRadius(zdo, _ward.transform.position);
             maxRadius = Mathf.Max(1f, Mathf.Floor(maxAllowed));
-            minRadius = maxRadius < 50f ? 1f : 10f;
+        }
+        else
+        {
+            maxRadius = WardProgressionService.GetEffectiveSliderMaxRadius(zdo, playerId);
         }
 
         float clampedValue = Mathf.Clamp(value, minRadius, maxRadius);

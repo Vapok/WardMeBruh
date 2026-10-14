@@ -59,7 +59,7 @@ public class AreaRepairService : MonoBehaviour
                     continue;
 
                 ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
-                if (effectiveZdo == null || !effectiveZdo.GetBool(WardZdoKeys.RepairEnabled, false))
+                if (effectiveZdo == null || !WardQueryService.HasFeatureEnabled(effectiveZdo, WardZdoKeys.RepairEnabled))
                     continue;
 
                 bool isServer = ZNet.instance != null && ZNet.instance.IsServer();
@@ -91,7 +91,7 @@ public class AreaRepairService : MonoBehaviour
                     continue;
 
                 ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
-                if (effectiveZdo == null || !effectiveZdo.GetBool(WardZdoKeys.RepairEnabled, false))
+                if (effectiveZdo == null || !WardQueryService.HasFeatureEnabled(effectiveZdo, WardZdoKeys.RepairEnabled))
                     continue;
 
                 float radius = WardQueryService.GetWardRadius(ward);

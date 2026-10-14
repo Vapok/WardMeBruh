@@ -20,7 +20,8 @@ internal static class Patch_RestedComfort
             return;
 
         ZDO wardZdo = (ward.m_nview != null && ward.m_nview.IsValid()) ? ward.m_nview.GetZDO() : null;
-        if (wardZdo == null || !wardZdo.GetBool(WardZdoKeys.MaxComfort, false))
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        if (wardZdo == null || !WardQueryService.HasFeatureEnabled(wardZdo, WardZdoKeys.MaxComfort, playerId))
             return;
 
         int wardMaxComfort = WardComfortService.GetWardComfort(ward);

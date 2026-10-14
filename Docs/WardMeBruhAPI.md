@@ -3,8 +3,11 @@
 
 ## Contents
 
+- [ABAPIClient](#T-AdventureBackpacks-API-Client-ABAPIClient 'AdventureBackpacks.API.Client.ABAPIClient')
 - [WardMeBruhAPI](#T-WardMeBruh-API-WardMeBruhAPI 'WardMeBruh.API.WardMeBruhAPI')
   - [GetAllPermissionIds()](#M-WardMeBruh-API-WardMeBruhAPI-GetAllPermissionIds 'WardMeBruh.API.WardMeBruhAPI.GetAllPermissionIds')
+  - [GetAttunedMask(point)](#M-WardMeBruh-API-WardMeBruhAPI-GetAttunedMask-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.GetAttunedMask(UnityEngine.Vector3)')
+  - [GetAttunedMask(wardZdo)](#M-WardMeBruh-API-WardMeBruhAPI-GetAttunedMask-ZDO- 'WardMeBruh.API.WardMeBruhAPI.GetAttunedMask(ZDO)')
   - [GetCoveringWard(point)](#M-WardMeBruh-API-WardMeBruhAPI-GetCoveringWard-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.GetCoveringWard(UnityEngine.Vector3)')
   - [GetPlayerRole(point,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRole-UnityEngine-Vector3,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRole(UnityEngine.Vector3,System.Int64)')
   - [GetPlayerRole(ward,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-GetPlayerRole-PrivateArea,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.GetPlayerRole(PrivateArea,System.Int64)')
@@ -15,10 +18,18 @@
   - [HasFeatureAccess(point,featureId,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-HasFeatureAccess-UnityEngine-Vector3,System-String,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.HasFeatureAccess(UnityEngine.Vector3,System.String,System.Int64)')
   - [HasFeatureAccess(ward,featureId,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-HasFeatureAccess-PrivateArea,System-String,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.HasFeatureAccess(PrivateArea,System.String,System.Int64)')
   - [HasFeatureAccess(player,featureId)](#M-WardMeBruh-API-WardMeBruhAPI-HasFeatureAccess-Player,System-String- 'WardMeBruh.API.WardMeBruhAPI.HasFeatureAccess(Player,System.String)')
+  - [IsExternalFeatureUnlocked(point,externalFeatureId,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-IsExternalFeatureUnlocked-UnityEngine-Vector3,System-String,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.IsExternalFeatureUnlocked(UnityEngine.Vector3,System.String,System.Int64)')
+  - [IsExternalFeatureUnlocked(wardZdo,externalFeatureId,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-IsExternalFeatureUnlocked-ZDO,System-String,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.IsExternalFeatureUnlocked(ZDO,System.String,System.Int64)')
+  - [IsFeatureUnlocked(point,feature,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-IsFeatureUnlocked-UnityEngine-Vector3,WardMeBruh-Models-WardFeature,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.IsFeatureUnlocked(UnityEngine.Vector3,WardMeBruh.Models.WardFeature,System.Int64)')
+  - [IsFeatureUnlocked(wardZdo,feature,playerId)](#M-WardMeBruh-API-WardMeBruhAPI-IsFeatureUnlocked-ZDO,WardMeBruh-Models-WardFeature,System-Int64- 'WardMeBruh.API.WardMeBruhAPI.IsFeatureUnlocked(ZDO,WardMeBruh.Models.WardFeature,System.Int64)')
   - [IsInsideWard(point)](#M-WardMeBruh-API-WardMeBruhAPI-IsInsideWard-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.IsInsideWard(UnityEngine.Vector3)')
   - [IsLoaded()](#M-WardMeBruh-API-WardMeBruhAPI-IsLoaded 'WardMeBruh.API.WardMeBruhAPI.IsLoaded')
+  - [IsProgressionEnabled()](#M-WardMeBruh-API-WardMeBruhAPI-IsProgressionEnabled 'WardMeBruh.API.WardMeBruhAPI.IsProgressionEnabled')
+  - [IsRuneAttuned(point,rune)](#M-WardMeBruh-API-WardMeBruhAPI-IsRuneAttuned-UnityEngine-Vector3,WardMeBruh-Models-WardRune- 'WardMeBruh.API.WardMeBruhAPI.IsRuneAttuned(UnityEngine.Vector3,WardMeBruh.Models.WardRune)')
+  - [IsRuneAttuned(wardZdo,rune)](#M-WardMeBruh-API-WardMeBruhAPI-IsRuneAttuned-ZDO,WardMeBruh-Models-WardRune- 'WardMeBruh.API.WardMeBruhAPI.IsRuneAttuned(ZDO,WardMeBruh.Models.WardRune)')
   - [IsWardShieldActive(point)](#M-WardMeBruh-API-WardMeBruhAPI-IsWardShieldActive-UnityEngine-Vector3- 'WardMeBruh.API.WardMeBruhAPI.IsWardShieldActive(UnityEngine.Vector3)')
   - [RegisterRoleFeature(id,displayName,category,description,defaultRole,sortOrder)](#M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleFeature-System-String,System-String,WardMeBruh-Models-WardCapabilityCategory,System-String,WardMeBruh-Models-WardRole,System-Int32- 'WardMeBruh.API.WardMeBruhAPI.RegisterRoleFeature(System.String,System.String,WardMeBruh.Models.WardCapabilityCategory,System.String,WardMeBruh.Models.WardRole,System.Int32)')
+  - [RegisterRoleFeature(id,displayName,category,description,requiredRune,defaultRole,sortOrder)](#M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleFeature-System-String,System-String,WardMeBruh-Models-WardCapabilityCategory,System-String,WardMeBruh-Models-WardRune,WardMeBruh-Models-WardRole,System-Int32- 'WardMeBruh.API.WardMeBruhAPI.RegisterRoleFeature(System.String,System.String,WardMeBruh.Models.WardCapabilityCategory,System.String,WardMeBruh.Models.WardRune,WardMeBruh.Models.WardRole,System.Int32)')
   - [RegisterRoleFeature(id,displayName,categoryName,description,defaultRole,sortOrder)](#M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleFeature-System-String,System-String,System-String,System-String,WardMeBruh-Models-WardRole,System-Int32- 'WardMeBruh.API.WardMeBruhAPI.RegisterRoleFeature(System.String,System.String,System.String,System.String,WardMeBruh.Models.WardRole,System.Int32)')
   - [RegisterRoleFeature(id,displayName,description,defaultRole,sortOrder)](#M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleFeature-System-String,System-String,System-String,WardMeBruh-Models-WardRole,System-Int32- 'WardMeBruh.API.WardMeBruhAPI.RegisterRoleFeature(System.String,System.String,System.String,WardMeBruh.Models.WardRole,System.Int32)')
   - [RegisterRoleTemplate(name,level,colorHex,defaultPermissions)](#M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleTemplate-System-String,System-Int32,System-String,System-Collections-Generic-IEnumerable{System-String}- 'WardMeBruh.API.WardMeBruhAPI.RegisterRoleTemplate(System.String,System.Int32,System.String,System.Collections.Generic.IEnumerable{System.String})')
@@ -26,6 +37,7 @@
   - [AccessChests](#F-WardMeBruh-API-WardPermissionIds-AccessChests 'WardMeBruh.API.WardPermissionIds.AccessChests')
   - [AccessDoors](#F-WardMeBruh-API-WardPermissionIds-AccessDoors 'WardMeBruh.API.WardPermissionIds.AccessDoors')
   - [AccessPortals](#F-WardMeBruh-API-WardPermissionIds-AccessPortals 'WardMeBruh.API.WardPermissionIds.AccessPortals')
+  - [CoreAttuneWard](#F-WardMeBruh-API-WardPermissionIds-CoreAttuneWard 'WardMeBruh.API.WardPermissionIds.CoreAttuneWard')
   - [CoreBenefits](#F-WardMeBruh-API-WardPermissionIds-CoreBenefits 'WardMeBruh.API.WardPermissionIds.CoreBenefits')
   - [CoreBuilding](#F-WardMeBruh-API-WardPermissionIds-CoreBuilding 'WardMeBruh.API.WardPermissionIds.CoreBuilding')
   - [CoreDomeAccess](#F-WardMeBruh-API-WardPermissionIds-CoreDomeAccess 'WardMeBruh.API.WardPermissionIds.CoreDomeAccess')
@@ -49,6 +61,18 @@
   - [UpkeepRepair](#F-WardMeBruh-API-WardPermissionIds-UpkeepRepair 'WardMeBruh.API.WardPermissionIds.UpkeepRepair')
   - [UpkeepSecurity](#F-WardMeBruh-API-WardPermissionIds-UpkeepSecurity 'WardMeBruh.API.WardPermissionIds.UpkeepSecurity')
   - [UpkeepWaterDrain](#F-WardMeBruh-API-WardPermissionIds-UpkeepWaterDrain 'WardMeBruh.API.WardPermissionIds.UpkeepWaterDrain')
+
+<a name='T-AdventureBackpacks-API-Client-ABAPIClient'></a>
+## ABAPIClient `type`
+
+##### Namespace
+
+AdventureBackpacks.API.Client
+
+##### Summary
+
+Lightweight, zero-dependency client wrapper for AdventureBackpacks API.
+Drop this file into your mod project to interact with AdventureBackpacks without adding assembly references or repacking DLLs.
 
 <a name='T-WardMeBruh-API-WardMeBruhAPI'></a>
 ## WardMeBruhAPI `type`
@@ -75,6 +99,40 @@ Collection of permission ID strings.
 ##### Parameters
 
 This method has no parameters.
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-GetAttunedMask-UnityEngine-Vector3-'></a>
+### GetAttunedMask(point) `method`
+
+##### Summary
+
+Retrieves the bitmask of all attuned runes on the ward covering the specified world position.
+
+##### Returns
+
+Bitmask integer where bit index corresponds to (1 << (int)WardRune).
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| point | [UnityEngine.Vector3](#T-UnityEngine-Vector3 'UnityEngine.Vector3') | World position to check. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-GetAttunedMask-ZDO-'></a>
+### GetAttunedMask(wardZdo) `method`
+
+##### Summary
+
+Retrieves the bitmask of all attuned runes on the specified ward ZDO.
+
+##### Returns
+
+Bitmask integer where bit index corresponds to (1 << (int)WardRune).
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| wardZdo | [ZDO](#T-ZDO 'ZDO') | Ward network data object. |
 
 <a name='M-WardMeBruh-API-WardMeBruhAPI-GetCoveringWard-UnityEngine-Vector3-'></a>
 ### GetCoveringWard(point) `method`
@@ -255,6 +313,82 @@ True if access is granted; otherwise false.
 | player | [Player](#T-Player 'Player') | Player instance to evaluate. |
 | featureId | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Permission ID registered with WardMeBruh. |
 
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsExternalFeatureUnlocked-UnityEngine-Vector3,System-String,System-Int64-'></a>
+### IsExternalFeatureUnlocked(point,externalFeatureId,playerId) `method`
+
+##### Summary
+
+Checks whether an external 3rd-party mod feature (registered via Path A) is currently unlocked on the ward covering the specified position.
+
+##### Returns
+
+True if feature is unlocked or progression disabled; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| point | [UnityEngine.Vector3](#T-UnityEngine-Vector3 'UnityEngine.Vector3') | World position to check. |
+| externalFeatureId | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Unique external feature identifier string (e.g. "com.author.mod.feature"). |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Optional player ID for checking admin bypass privileges. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsExternalFeatureUnlocked-ZDO,System-String,System-Int64-'></a>
+### IsExternalFeatureUnlocked(wardZdo,externalFeatureId,playerId) `method`
+
+##### Summary
+
+Checks whether an external 3rd-party mod feature (registered via Path A) is currently unlocked on the specified ward ZDO.
+
+##### Returns
+
+True if feature is unlocked or progression disabled; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| wardZdo | [ZDO](#T-ZDO 'ZDO') | Ward network data object. |
+| externalFeatureId | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Unique external feature identifier string (e.g. "com.author.mod.feature"). |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Optional player ID for checking admin bypass privileges. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsFeatureUnlocked-UnityEngine-Vector3,WardMeBruh-Models-WardFeature,System-Int64-'></a>
+### IsFeatureUnlocked(point,feature,playerId) `method`
+
+##### Summary
+
+Checks whether a specific built-in ward capability feature is currently unlocked on the ward covering the specified position.
+
+##### Returns
+
+True if feature is unlocked; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| point | [UnityEngine.Vector3](#T-UnityEngine-Vector3 'UnityEngine.Vector3') | World position to check. |
+| feature | [WardMeBruh.Models.WardFeature](#T-WardMeBruh-Models-WardFeature 'WardMeBruh.Models.WardFeature') | Built-in WardFeature enum token. |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Optional player ID for checking admin bypass privileges. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsFeatureUnlocked-ZDO,WardMeBruh-Models-WardFeature,System-Int64-'></a>
+### IsFeatureUnlocked(wardZdo,feature,playerId) `method`
+
+##### Summary
+
+Checks whether a specific built-in ward capability feature is currently unlocked on the specified ward ZDO.
+
+##### Returns
+
+True if feature is unlocked; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| wardZdo | [ZDO](#T-ZDO 'ZDO') | Ward network data object. |
+| feature | [WardMeBruh.Models.WardFeature](#T-WardMeBruh-Models-WardFeature 'WardMeBruh.Models.WardFeature') | Built-in WardFeature enum token. |
+| playerId | [System.Int64](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int64 'System.Int64') | Optional player ID for checking admin bypass privileges. |
+
 <a name='M-WardMeBruh-API-WardMeBruhAPI-IsInsideWard-UnityEngine-Vector3-'></a>
 ### IsInsideWard(point) `method`
 
@@ -286,6 +420,57 @@ True if WardMeBruh is loaded; otherwise false.
 ##### Parameters
 
 This method has no parameters.
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsProgressionEnabled'></a>
+### IsProgressionEnabled() `method`
+
+##### Summary
+
+Returns whether the Runic Attunement Progression System is currently enabled on the active server or session.
+
+##### Returns
+
+True if progression system is enabled; false if all features are globally unlocked.
+
+##### Parameters
+
+This method has no parameters.
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsRuneAttuned-UnityEngine-Vector3,WardMeBruh-Models-WardRune-'></a>
+### IsRuneAttuned(point,rune) `method`
+
+##### Summary
+
+Checks whether a specific Elder Futhark rune is attuned on the ward covering the specified world coordinates.
+
+##### Returns
+
+True if the covering ward has attuned this rune; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| point | [UnityEngine.Vector3](#T-UnityEngine-Vector3 'UnityEngine.Vector3') | World position to check. |
+| rune | [WardMeBruh.Models.WardRune](#T-WardMeBruh-Models-WardRune 'WardMeBruh.Models.WardRune') | Rune enum value to verify. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-IsRuneAttuned-ZDO,WardMeBruh-Models-WardRune-'></a>
+### IsRuneAttuned(wardZdo,rune) `method`
+
+##### Summary
+
+Checks whether a specific Elder Futhark rune is attuned on the specified ward ZDO.
+
+##### Returns
+
+True if attuned; otherwise false.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| wardZdo | [ZDO](#T-ZDO 'ZDO') | Ward network data object. |
+| rune | [WardMeBruh.Models.WardRune](#T-WardMeBruh-Models-WardRune 'WardMeBruh.Models.WardRune') | Rune enum value to verify. |
 
 <a name='M-WardMeBruh-API-WardMeBruhAPI-IsWardShieldActive-UnityEngine-Vector3-'></a>
 ### IsWardShieldActive(point) `method`
@@ -319,6 +504,25 @@ Registers a custom external role feature permission into the WardMeBruh permissi
 | displayName | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Human-readable label displayed in the Management matrix. |
 | category | [WardMeBruh.Models.WardCapabilityCategory](#T-WardMeBruh-Models-WardCapabilityCategory 'WardMeBruh.Models.WardCapabilityCategory') | Capability category under which the feature is grouped. |
 | description | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Tooltip explanation of what this permission grants. |
+| defaultRole | [WardMeBruh.Models.WardRole](#T-WardMeBruh-Models-WardRole 'WardMeBruh.Models.WardRole') | Default minimum role level required to access this feature. |
+| sortOrder | [System.Int32](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int32 'System.Int32') | Visual sort ordering within the category. |
+
+<a name='M-WardMeBruh-API-WardMeBruhAPI-RegisterRoleFeature-System-String,System-String,WardMeBruh-Models-WardCapabilityCategory,System-String,WardMeBruh-Models-WardRune,WardMeBruh-Models-WardRole,System-Int32-'></a>
+### RegisterRoleFeature(id,displayName,category,description,requiredRune,defaultRole,sortOrder) `method`
+
+##### Summary
+
+Registers a custom external role feature permission into the WardMeBruh permission matrix, gated by a specific Runic Attunement progression tier.
+
+##### Parameters
+
+| Name | Type | Description |
+| ---- | ---- | ----------- |
+| id | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Unique identifier for the permission (e.g. "com.author.mod.feature"). |
+| displayName | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Human-readable label displayed in the Management matrix. |
+| category | [WardMeBruh.Models.WardCapabilityCategory](#T-WardMeBruh-Models-WardCapabilityCategory 'WardMeBruh.Models.WardCapabilityCategory') | Capability category under which the feature is grouped. |
+| description | [System.String](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.String 'System.String') | Tooltip explanation of what this permission grants. |
+| requiredRune | [WardMeBruh.Models.WardRune](#T-WardMeBruh-Models-WardRune 'WardMeBruh.Models.WardRune') | Rune tier required to unlock this feature when progression is active. |
 | defaultRole | [WardMeBruh.Models.WardRole](#T-WardMeBruh-Models-WardRole 'WardMeBruh.Models.WardRole') | Default minimum role level required to access this feature. |
 | sortOrder | [System.Int32](http://msdn.microsoft.com/query/dev14.query?appId=Dev14IDEF1&l=EN-US&k=k:System.Int32 'System.Int32') | Visual sort ordering within the category. |
 
@@ -405,6 +609,13 @@ Clearance to configure individual door permissions, auto-close timers, and custo
 ##### Summary
 
 Clearance to configure portal transit clearances. Default role: Manager.
+
+<a name='F-WardMeBruh-API-WardPermissionIds-CoreAttuneWard'></a>
+### CoreAttuneWard `constants`
+
+##### Summary
+
+Clearance to perform runic attunement ceremonies and upgrade the ward progression rank. Default role: Owner.
 
 <a name='F-WardMeBruh-API-WardPermissionIds-CoreBenefits'></a>
 ### CoreBenefits `constants`

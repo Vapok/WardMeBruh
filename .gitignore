@@ -355,3 +355,8 @@ MigrationBackup/
 # Local / Private Maintainer Instructions
 MAINTAINER.md
 .agents/
+
+# Internal Design & Planning Documents
+Docs/PROGRESSION_DESIGN_SPECIFICATION.md
+Docs/RUNIC_ATTUNEMENT_PLAN.md
+Docs/RUNIC_ATTUNEMENT_TECHNICAL_PLAN.md

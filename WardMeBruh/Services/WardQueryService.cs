@@ -28,11 +28,42 @@ public static class WardQueryService
             if (parentZdo == null || !parentZdo.IsValid())
                 break;
 
-            if (WardRegistryManager.Instance != null && !WardRegistryManager.Instance.IsBaseWardRegistered(parentId))
-                break;
-
             current = parentZdo;
             depth++;
+        }
+
+        if (type == WardType.Extension && current.m_uid == zdo.m_uid && current.GetZDOID(WardZdoKeys.ParentWard) == ZDOID.None)
+        {
+            Vector3 pos = current.GetPosition();
+            float rad = current.GetFloat(WardZdoKeys.Radius, 15f);
+            if (PrivateArea.m_allAreas != null)
+            {
+                for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+                {
+                    PrivateArea area = PrivateArea.m_allAreas[i];
+                    if (area == null || !area.IsEnabled() || area.m_nview == null || !area.m_nview.IsValid())
+                        continue;
+
+                    ZDO aZdo = area.m_nview.GetZDO();
+                    if (aZdo.m_uid == current.m_uid)
+                        continue;
+
+                    WardType aType = (WardType)aZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+                    if (aType != WardType.Main)
+                        continue;
+
+                    float aRadius = WardQueryService.GetWardRadius(area);
+                    if (Utils.DistanceXZ(area.transform.position, pos) <= aRadius + rad)
+                    {
+                        current.Set(WardZdoKeys.ParentWard, aZdo.m_uid);
+                        if (WardRegistryManager.Instance != null)
+                        {
+                            WardRegistryManager.Instance.RegisterOrUpdate(current);
+                        }
+                        return aZdo;
+                    }
+                }
+            }
         }
 
         return current;
@@ -53,9 +84,6 @@ public static class WardQueryService
 
             ZDO parentZdo = (ZDOMan.instance != null) ? ZDOMan.instance.GetZDO(parentId) : null;
             if (parentZdo == null || !parentZdo.IsValid())
-                break;
-
-            if (WardRegistryManager.Instance != null && !WardRegistryManager.Instance.IsBaseWardRegistered(parentId))
                 break;
 
             current = parentZdo;
@@ -129,7 +157,7 @@ public static class WardQueryService
 
             ZDO zdo = area.m_nview.GetZDO();
             ZDO defenseZdo = GetEffectiveDefenseWardZdo(zdo) ?? zdo;
-            if (defenseZdo != null && defenseZdo.GetBool(WardZdoKeys.WaterDrain, false))
+            if (defenseZdo != null && HasFeatureEnabled(defenseZdo, WardZdoKeys.WaterDrain))
             {
                 _hasAnyActiveWaterDrain = true;
                 break;
@@ -159,7 +187,7 @@ public static class WardQueryService
 
             ZDO zdo = area.m_nview.GetZDO();
             ZDO defenseZdo = GetEffectiveDefenseWardZdo(zdo) ?? zdo;
-            if (defenseZdo != null && defenseZdo.GetBool(WardZdoKeys.GhostBase, false))
+            if (defenseZdo != null && HasFeatureEnabled(defenseZdo, WardZdoKeys.GhostBase))
             {
                 _hasAnyActiveGhostBase = true;
                 break;
@@ -235,6 +263,42 @@ public static class WardQueryService
         return _cachedCoveringWard;
     }
 
+    public static PrivateArea GetActiveSubWardCovering(Vector3 pos)
+    {
+        if (PrivateArea.m_allAreas == null || PrivateArea.m_allAreas.Count == 0)
+            return null;
+
+        PrivateArea bestSubWard = null;
+        float bestDist = float.MaxValue;
+
+        for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
+        {
+            PrivateArea area = PrivateArea.m_allAreas[i];
+            if (area == null || area.m_nview == null || !area.m_nview.IsValid())
+                continue;
+
+            if (!area.IsEnabled())
+                continue;
+
+            ZDO zdo = area.m_nview.GetZDO();
+            WardType type = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
+            if (type != WardType.SubWard)
+                continue;
+
+            if (IsInsideWard(area, pos))
+            {
+                float dist = Utils.DistanceXZ(area.transform.position, pos);
+                if (dist < bestDist)
+                {
+                    bestDist = dist;
+                    bestSubWard = area;
+                }
+            }
+        }
+
+        return bestSubWard;
+    }
+
     public static ZDO GetCoveringWardZdo(Vector3 point, float radius = 0f)
     {
         if (Time.frameCount == _lastZdoFrame && _lastZdoPoint == point && Mathf.Approximately(_lastZdoRadius, radius))
@@ -274,7 +338,7 @@ public static class WardQueryService
         WardType type = (WardType)parentWardZdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
         if (type == WardType.SubWard)
         {
-            float subRadius = Mathf.Clamp(parentWardZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 1.0f, 100.0f);
+            float subRadius = Mathf.Clamp(parentWardZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 0.0f, 100.0f);
             return Utils.DistanceXZ(parentWardZdo.GetPosition(), point) <= subRadius;
         }
 
@@ -282,7 +346,7 @@ public static class WardQueryService
         if (effectiveZdo == null || !effectiveZdo.IsValid())
             return false;
 
-        float parentRadius = Mathf.Clamp(effectiveZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 10.0f, 100.0f);
+        float parentRadius = Mathf.Clamp(effectiveZdo.GetFloat(WardZdoKeys.Radius, 30.0f), 0.0f, 100.0f);
         if (Utils.DistanceXZ(effectiveZdo.GetPosition(), point) <= parentRadius)
             return true;
 
@@ -334,7 +398,9 @@ public static class WardQueryService
         if (zdo == null)
             return 32.0f;
 
-        return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, 30.0f), 1.0f, 100.0f);
+        float defaultRadius = (ConfigRegistry.EnableProgressionSystem != null && ConfigRegistry.EnableProgressionSystem.Value) ? WardProgressionService.BaselineRadius : 30.0f;
+        float maxAllowed = WardProgressionService.GetMaxAllowedRadius(zdo);
+        return Mathf.Clamp(zdo.GetFloat(WardZdoKeys.Radius, defaultRadius), 0.0f, maxAllowed);
     }
 
     public static bool GetDefaultFeatureState(int featureKey)
@@ -349,6 +415,35 @@ public static class WardQueryService
         return false;
     }
 
+    public static WardFeature? GetFeatureForZdoKey(int featureKey)
+    {
+        if (featureKey == WardZdoKeys.PushbackForce) return WardFeature.PushbackForce;
+        if (featureKey == WardZdoKeys.ShockCreatureDmg) return WardFeature.CreatureShock;
+        if (featureKey == WardZdoKeys.ShockPlayerDmg) return WardFeature.PlayerShock;
+        if (featureKey == WardZdoKeys.GhostBase) return WardFeature.GhostBase;
+        if (featureKey == WardZdoKeys.RaidSuppress) return WardFeature.RaidSuppression;
+        if (featureKey == WardZdoKeys.SpawnSuppress) return WardFeature.SpawnSuppression;
+        if (featureKey == WardZdoKeys.WeatherRoof) return WardFeature.WeatherRoof;
+        if (featureKey == WardZdoKeys.AshShield) return WardFeature.AshShield;
+        if (featureKey == WardZdoKeys.LavaShield) return WardFeature.LavaShield;
+        if (featureKey == WardZdoKeys.SnowShield) return WardFeature.SnowShield;
+        if (featureKey == WardZdoKeys.WaterDrain) return WardFeature.WaterDrain;
+        if (featureKey == WardZdoKeys.MaxComfort) return WardFeature.MaxComfort;
+        if (featureKey == WardZdoKeys.RegenBoost) return WardFeature.RegenBoost;
+        if (featureKey == WardZdoKeys.DeathSkillShield) return WardFeature.DeathSkillShield;
+        if (featureKey == WardZdoKeys.FoodFreeze) return WardFeature.FoodFreeze;
+        if (featureKey == WardZdoKeys.PortalAccess) return WardFeature.PortalAccess;
+        if (featureKey == WardZdoKeys.RepairEnabled) return WardFeature.AreaRepair;
+        if (featureKey == WardZdoKeys.AutoFuelEnabled) return WardFeature.AutoFuel;
+        if (featureKey == WardZdoKeys.AutoCloseDoors) return WardFeature.AutoCloseDoors;
+        if (featureKey == WardZdoKeys.ProtectTames) return WardFeature.ProtectTames;
+        if (featureKey == WardZdoKeys.ProtectCrops) return WardFeature.ProtectCrops;
+        if (featureKey == WardZdoKeys.ProtectTerrain) return WardFeature.ProtectTerrain;
+        if (featureKey == WardZdoKeys.LockVehicles) return WardFeature.VehicleLocking;
+        if (featureKey == WardZdoKeys.FastTravel) return WardFeature.FastTravel;
+        return null;
+    }
+
     public static bool HasFeatureEnabled(Vector3 point, int featureKey, long playerId = 0L)
     {
         if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
@@ -358,13 +453,36 @@ public static class WardQueryService
         if (wardZdo == null)
             return false;
 
-        ZDO defenseZdo = GetEffectiveDefenseWardZdo(wardZdo);
+        return HasFeatureEnabled(wardZdo, featureKey, playerId);
+    }
+
+    public static bool HasFeatureEnabled(ZDO wardZdo, int featureKey, long playerId = 0L)
+    {
+        if (wardZdo == null)
+            return false;
+
+        if (ConfigRegistry.Enabled != null && !ConfigRegistry.Enabled.Value)
+            return false;
+
+        ZDO defenseZdo = GetEffectiveDefenseWardZdo(wardZdo) ?? wardZdo;
         if (defenseZdo == null || !defenseZdo.GetBool(ZDOVars.s_enabled, true))
             return false;
 
-        bool defaultValue = GetDefaultFeatureState(featureKey);
-        if (!defenseZdo.GetBool(featureKey, defaultValue))
+        WardFeature? feature = GetFeatureForZdoKey(featureKey);
+        if (feature.HasValue && !WardProgressionService.IsFeatureUnlocked(defenseZdo, feature.Value, playerId))
             return false;
+
+        if (featureKey == WardZdoKeys.PushbackForce || featureKey == WardZdoKeys.ShockCreatureDmg || featureKey == WardZdoKeys.ShockPlayerDmg)
+        {
+            if (defenseZdo.GetFloat(featureKey, 0f) <= 0f)
+                return false;
+        }
+        else
+        {
+            bool defaultValue = GetDefaultFeatureState(featureKey);
+            if (!defenseZdo.GetBool(featureKey, defaultValue))
+                return false;
+        }
 
         if (playerId != 0L && !WardPermissions.HasFeatureAccess(defenseZdo, featureKey, playerId))
             return false;

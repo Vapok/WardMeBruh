@@ -22,10 +22,10 @@ public sealed class WardRegistryManager
     {
     }
 
-    public void RegisterOrUpdate(ZDO zdo)
+    public bool RegisterOrUpdate(ZDO zdo)
     {
         if (zdo == null || !zdo.IsValid())
-            return;
+            return false;
 
         ZDOID id = zdo.m_uid;
         string name = zdo.GetString(WardZdoKeys.CustomName, "Ward");
@@ -37,17 +37,70 @@ public sealed class WardRegistryManager
 
         ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
         WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
-        if (parentId != ZDOID.None && wardType == WardType.Extension)
+        if (wardType == WardType.Extension)
         {
-            if (_knownWards.ContainsKey(id))
+            if (parentId == ZDOID.None)
             {
-                _knownWards.Remove(id);
+                List<KnownWard> allBases = GetLivingMainBases();
+                KnownWard covering = FindCoveringMainBase(position, allBases);
+                if (covering == null)
+                {
+                    for (int b = 0; b < allBases.Count; b++)
+                    {
+                        KnownWard baseWard = allBases[b];
+                        if (Utils.DistanceXZ(baseWard.Position, position) <= baseWard.Radius + radius)
+                        {
+                            covering = baseWard;
+                            break;
+                        }
+                    }
+                }
+
+                if (covering != null)
+                {
+                    parentId = covering.Id;
+                    zdo.Set(WardZdoKeys.ParentWard, parentId);
+                }
             }
 
-            KnownExtensionWard ext = new(id, parentId, position, radius, isEnabled);
-            _extensionWards[id] = ext;
-            WardMeBruh.Log.Debug($"[Registry] Registered Extension Ward {id} -> Parent Base: {parentId}. Total Extensions: {_extensionWards.Count}");
-            return;
+            if (parentId != ZDOID.None)
+            {
+                if (_knownWards.ContainsKey(id))
+                {
+                    _knownWards.Remove(id);
+                }
+
+                bool hasExistingExt = _extensionWards.TryGetValue(id, out KnownExtensionWard existingExt);
+                if (hasExistingExt &&
+                    existingExt.ParentId == parentId &&
+                    existingExt.Position == position &&
+                    Mathf.Approximately(existingExt.Radius, radius) &&
+                    existingExt.IsEnabled == isEnabled)
+                {
+                    return false;
+                }
+
+                KnownExtensionWard ext = new(id, parentId, position, radius, isEnabled);
+                _extensionWards[id] = ext;
+
+                if (ZDOMan.instance != null)
+                {
+                    ZDO parentZdo = ZDOMan.instance.GetZDO(parentId);
+                    if (parentZdo != null && parentZdo.IsValid())
+                    {
+                        int parentMask = parentZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+                        int parentProg = parentZdo.GetInt(WardZdoKeys.ProgressionLevel, 0);
+                        if (parentMask != 0 && zdo.GetInt(WardZdoKeys.AttunedRunes, 0) != parentMask)
+                        {
+                            zdo.Set(WardZdoKeys.AttunedRunes, parentMask);
+                            zdo.Set(WardZdoKeys.ProgressionLevel, parentProg);
+                        }
+                    }
+                }
+
+                WardMeBruh.Log.Debug($"[Registry] Registered Extension Ward {id} -> Parent Base: {parentId}. Total Extensions: {_extensionWards.Count}");
+                return true;
+            }
         }
 
         if (_extensionWards.ContainsKey(id))
@@ -55,9 +108,24 @@ public sealed class WardRegistryManager
             _extensionWards.Remove(id);
         }
 
+        bool hasExistingWard = _knownWards.TryGetValue(id, out KnownWard existingWard);
+        if (hasExistingWard &&
+            existingWard.Name == name &&
+            existingWard.Position == position &&
+            existingWard.CreatorId == creatorId &&
+            existingWard.CreatorName == creatorName &&
+            Mathf.Approximately(existingWard.Radius, radius) &&
+            existingWard.IsEnabled == isEnabled &&
+            existingWard.Type == wardType &&
+            existingWard.ParentId == parentId)
+        {
+            return false;
+        }
+
         KnownWard ward = new(id, name, position, creatorId, creatorName, radius, isEnabled, wardType, parentId);
         _knownWards[id] = ward;
         WardMeBruh.Log.Debug($"[Registry] Registered/Updated Ward {id} ('{name}', Type: {wardType}). Total Bases: {_knownWards.Count}");
+        return true;
     }
 
     public void UpdateWardEnabled(ZDOID id, bool isEnabled)
@@ -261,6 +329,48 @@ public sealed class WardRegistryManager
         for (int i = 0; i < knownSnapshot.Count; i++)
         {
             KnownWard ward = knownSnapshot[i];
+            if (ward.Type == WardType.Extension)
+            {
+                allBases ??= GetLivingMainBases();
+                KnownWard covering = FindCoveringMainBase(ward.Position, allBases);
+                if (covering == null)
+                {
+                    for (int b = 0; b < allBases.Count; b++)
+                    {
+                        KnownWard baseWard = allBases[b];
+                        if (Utils.DistanceXZ(baseWard.Position, ward.Position) <= baseWard.Radius + ward.Radius)
+                        {
+                            covering = baseWard;
+                            break;
+                        }
+                    }
+                }
+
+                if (covering != null)
+                {
+                    ward.ParentId = covering.Id;
+                    UpdateZdoParent(ward.Id, covering.Id);
+                    _knownWards.Remove(ward.Id);
+                    KnownExtensionWard ext = new(ward.Id, covering.Id, ward.Position, ward.Radius, ward.IsEnabled);
+                    _extensionWards[ward.Id] = ext;
+
+                    if (ZDOMan.instance != null)
+                    {
+                        ZDO parentZdo = ZDOMan.instance.GetZDO(covering.Id);
+                        ZDO extZdo = ZDOMan.instance.GetZDO(ward.Id);
+                        if (parentZdo != null && parentZdo.IsValid() && extZdo != null && extZdo.IsValid())
+                        {
+                            int parentMask = parentZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+                            int parentProg = parentZdo.GetInt(WardZdoKeys.ProgressionLevel, 0);
+                            extZdo.Set(WardZdoKeys.AttunedRunes, parentMask);
+                            extZdo.Set(WardZdoKeys.ProgressionLevel, parentProg);
+                        }
+                    }
+                    WardMeBruh.Log.Info($"[Registry] Repaired & linked Extension Ward {ward.Id} to Parent Base {covering.Id}");
+                }
+                continue;
+            }
+
             if (ward.Type != WardType.SubWard)
                 continue;
 
@@ -291,6 +401,19 @@ public sealed class WardRegistryManager
             {
                 allBases ??= GetLivingMainBases();
                 KnownWard covering = FindCoveringMainBase(ext.Position, allBases);
+                if (covering == null)
+                {
+                    for (int b = 0; b < allBases.Count; b++)
+                    {
+                        KnownWard baseWard = allBases[b];
+                        if (Utils.DistanceXZ(baseWard.Position, ext.Position) <= baseWard.Radius + ext.Radius)
+                        {
+                            covering = baseWard;
+                            break;
+                        }
+                    }
+                }
+
                 if (covering != null)
                 {
                     ext.ParentId = covering.Id;
@@ -300,6 +423,22 @@ public sealed class WardRegistryManager
                 {
                     ext.ParentId = ZDOID.None;
                     UpdateZdoParent(ext.Id, ZDOID.None);
+                }
+            }
+
+            if (ext.ParentId != ZDOID.None && ZDOMan.instance != null)
+            {
+                ZDO parentZdo = ZDOMan.instance.GetZDO(ext.ParentId);
+                ZDO extZdo = ZDOMan.instance.GetZDO(ext.Id);
+                if (parentZdo != null && parentZdo.IsValid() && extZdo != null && extZdo.IsValid())
+                {
+                    int parentMask = parentZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+                    int parentProg = parentZdo.GetInt(WardZdoKeys.ProgressionLevel, 0);
+                    if (parentMask != 0 && extZdo.GetInt(WardZdoKeys.AttunedRunes, 0) != parentMask)
+                    {
+                        extZdo.Set(WardZdoKeys.AttunedRunes, parentMask);
+                        extZdo.Set(WardZdoKeys.ProgressionLevel, parentProg);
+                    }
                 }
             }
         }
@@ -661,6 +800,39 @@ public sealed class WardRegistryManager
 
         failureReason = string.Empty;
         return true;
+    }
+
+    public float GetMaxAllowableSpatialRadius(Vector3 pos, ZDOID currentWardId, long playerId)
+    {
+        float separationDistance = ConfigRegistry.WardSeparationDistance != null ? ConfigRegistry.WardSeparationDistance.Value : 50.0f;
+        float maxAllowedRadius = ConfigRegistry.MaxWardRadius != null ? ConfigRegistry.MaxWardRadius.Value : 100.0f;
+
+        List<KnownWard> snapshot = new(_knownWards.Values);
+        for (int i = 0; i < snapshot.Count; i++)
+        {
+            KnownWard otherWard = snapshot[i];
+            if (otherWard.Id == currentWardId)
+                continue;
+
+            if (otherWard.CreatorId == playerId)
+                continue;
+
+            if (ZDOMan.instance != null)
+            {
+                ZDO otherZdo = ZDOMan.instance.GetZDO(otherWard.Id);
+                if (otherZdo != null && WardPermissions.CanManageWard(otherZdo, playerId))
+                    continue;
+            }
+
+            float distance = Utils.DistanceXZ(pos, otherWard.Position);
+            float availableForRadius = distance - otherWard.Radius - separationDistance;
+            if (availableForRadius < maxAllowedRadius)
+            {
+                maxAllowedRadius = availableForRadius;
+            }
+        }
+
+        return Mathf.Max(10.0f, maxAllowedRadius);
     }
 
     public ZPackage Pack()

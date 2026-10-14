@@ -2,6 +2,7 @@ using Jotunn.Managers;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using WardMeBruh.Components;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Networking;
@@ -257,6 +258,17 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
         bool parentEnabled = coveringWard.IsEnabled();
         zdo.Set(ZDOVars.s_enabled, parentEnabled);
+
+        int parentMask = rootParentZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+        int parentProg = rootParentZdo.GetInt(WardZdoKeys.ProgressionLevel, 0);
+        zdo.Set(WardZdoKeys.AttunedRunes, parentMask);
+        zdo.Set(WardZdoKeys.ProgressionLevel, parentProg);
+
+        WardAttunementStones stones = pendingWard.GetComponent<WardAttunementStones>();
+        if (stones != null)
+        {
+            stones.UpdateStones(parentMask);
+        }
 
         WardRegistryManager.Instance.RegisterOrUpdate(zdo);
         WardMeBruh.Log.Info($"[Extension Ward] Linked Ward {zdo.m_uid} to Base {rootParentZdo.m_uid} ('{parentName}')");

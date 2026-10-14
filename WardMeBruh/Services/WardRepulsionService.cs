@@ -61,9 +61,12 @@ public class WardRepulsionService : MonoBehaviour
                 if (!defenseZdo.GetBool(ZDOVars.s_enabled, true))
                     continue;
 
-                float push = defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
-                float shockC = defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
-                float shockP = defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
+                bool hasPush = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.PushbackForce);
+                bool hasShockC = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.ShockCreatureDmg);
+                bool hasShockP = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.ShockPlayerDmg);
+                float push = hasPush ? defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f) : 0f;
+                float shockC = hasShockC ? defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f) : 0f;
+                float shockP = hasShockP ? defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f) : 0f;
                 if (push > 0f || shockC > 0f || shockP > 0f)
                 {
                     activeDefenseWards ??= new List<PrivateArea>();
@@ -92,9 +95,12 @@ public class WardRepulsionService : MonoBehaviour
                 if (!defenseZdo.GetBool(ZDOVars.s_enabled, true))
                     continue;
 
-                float pushbackForce = defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f);
-                float shockCreatureDmg = defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f);
-                float shockPlayerDmg = defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f);
+                bool hasPush = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.PushbackForce);
+                bool hasShockC = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.ShockCreatureDmg);
+                bool hasShockP = WardQueryService.HasFeatureEnabled(defenseZdo, WardZdoKeys.ShockPlayerDmg);
+                float pushbackForce = hasPush ? defenseZdo.GetFloat(WardZdoKeys.PushbackForce, 0f) : 0f;
+                float shockCreatureDmg = hasShockC ? defenseZdo.GetFloat(WardZdoKeys.ShockCreatureDmg, 0f) : 0f;
+                float shockPlayerDmg = hasShockP ? defenseZdo.GetFloat(WardZdoKeys.ShockPlayerDmg, 0f) : 0f;
 
                 if (pushbackForce <= 0f && shockCreatureDmg <= 0f && shockPlayerDmg <= 0f)
                     continue;

@@ -306,6 +306,15 @@ public class TabManagement
 
     private void BuildPermissionsView(List<WardRoleDefinition> roles, bool canManageGovernance)
     {
+        if (_ward == null || _ward.m_nview == null || !_ward.m_nview.IsValid())
+            return;
+
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(_ward.m_nview.GetZDO());
+        if (effectiveZdo == null || !effectiveZdo.IsValid())
+            return;
+
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+
         WardRoleDefinition selectedRole = null;
         for (int i = 0; i < roles.Count; i++)
         {
@@ -346,12 +355,25 @@ public class TabManagement
             if (perms.Count == 0)
                 continue;
 
-            Transform card = WardUIFactory.CreateCard(_rightContainer, categoryTitles[cIndex]);
-            _permRows.Add(card.parent.parent.gameObject);
-
+            List<FeaturePermission> unlockedPerms = new();
             for (int pIndex = 0; pIndex < perms.Count; pIndex++)
             {
                 FeaturePermission perm = perms[pIndex];
+                if (WardRoleManager.IsPermissionFeatureUnlocked(effectiveZdo, perm.Id, playerId))
+                {
+                    unlockedPerms.Add(perm);
+                }
+            }
+
+            if (unlockedPerms.Count == 0)
+                continue;
+
+            Transform card = WardUIFactory.CreateCard(_rightContainer, categoryTitles[cIndex]);
+            _permRows.Add(card.parent.parent.gameObject);
+
+            for (int pIndex = 0; pIndex < unlockedPerms.Count; pIndex++)
+            {
+                FeaturePermission perm = unlockedPerms[pIndex];
                 CreatePermissionRow(card, roles, selectedRole, perm, canManageGovernance);
             }
         }

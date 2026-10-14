@@ -30,7 +30,7 @@ internal static class Patch_PrivateArea
             return;
 
         ZDO zdo = __instance.m_nview.GetZDO();
-        WardRegistryManager.Instance.RegisterOrUpdate(zdo);
+        bool changed = WardRegistryManager.Instance.RegisterOrUpdate(zdo);
 
         float customRadius = WardQueryService.GetWardRadius(__instance);
         if (__instance.m_areaMarker != null)
@@ -41,7 +41,7 @@ internal static class Patch_PrivateArea
         string wardName = zdo.GetString(WardZdoKeys.CustomName, __instance.m_name);
         WardMeBruh.Log.Debug($"[Ward Lifecycle] Registered Ward {zdo.m_uid} ('{wardName}') at {__instance.transform.position}, Radius: {customRadius}m");
 
-        if (ZNet.instance != null && !ZNet.instance.IsServer())
+        if (changed && ZNet.instance != null && !ZNet.instance.IsServer())
         {
             WardNetworkRouter.SendRegisterWard(zdo.m_uid);
         }
@@ -51,6 +51,10 @@ internal static class Patch_PrivateArea
             if (__instance.GetComponent<Components.WardForcefieldDome>() == null)
             {
                 __instance.gameObject.AddComponent<Components.WardForcefieldDome>();
+            }
+            if (__instance.GetComponent<Components.WardAttunementStones>() == null)
+            {
+                __instance.gameObject.AddComponent<Components.WardAttunementStones>();
             }
         }
     }
@@ -169,8 +173,7 @@ internal static class Patch_PrivateArea
             }
         }
 
-        WardRegistryManager.Instance.RegisterOrUpdate(zdo);
-        if (ZNet.instance != null && !ZNet.instance.IsServer())
+        if (WardRegistryManager.Instance.RegisterOrUpdate(zdo) && ZNet.instance != null && !ZNet.instance.IsServer())
         {
             WardNetworkRouter.SendRegisterWard(zdo.m_uid);
         }
@@ -649,5 +652,52 @@ internal static class Patch_PrivateArea
 
         __result = Localization.instance.Localize(sb.ToString());
         return false;
+    }
+}
+
+[HarmonyPatch(typeof(Piece), nameof(Piece.DropResources))]
+internal static class Patch_Piece_DropResources
+{
+    [HarmonyPostfix]
+    private static void Postfix(Piece __instance)
+    {
+        if (__instance == null)
+            return;
+
+        PrivateArea privateArea = __instance.GetComponent<PrivateArea>();
+        if (privateArea == null || privateArea.m_nview == null || !privateArea.m_nview.IsValid())
+            return;
+
+        ZDO zdo = privateArea.m_nview.GetZDO();
+        List<string> refundItems = WardProgressionService.GetAttunementRefundItems(zdo);
+        if (refundItems.Count == 0)
+            return;
+
+        for (int i = 0; i < refundItems.Count; i++)
+        {
+            string prefabName = refundItems[i];
+            GameObject prefab = ObjectDB.instance != null ? ObjectDB.instance.GetItemPrefab(prefabName) : null;
+            if (prefab == null && Jotunn.Managers.PrefabManager.Instance != null)
+            {
+                prefab = Jotunn.Managers.PrefabManager.Instance.GetPrefab(prefabName);
+            }
+
+            if (prefab != null)
+            {
+                Vector3 dropPos = __instance.transform.position + Vector3.up * 0.6f + UnityEngine.Random.insideUnitSphere * 0.25f;
+                ItemDrop itemDrop = prefab.GetComponent<ItemDrop>();
+                if (itemDrop != null)
+                {
+                    ItemDrop.DropItem(itemDrop.m_itemData, 1, dropPos, UnityEngine.Random.rotation);
+                }
+                else
+                {
+                    UnityEngine.Object.Instantiate(prefab, dropPos, UnityEngine.Random.rotation);
+                }
+            }
+        }
+
+        zdo.Set(WardZdoKeys.AttunedRunes, 0);
+        zdo.Set(WardZdoKeys.ProgressionLevel, 0);
     }
 }

@@ -8,8 +8,9 @@ public class FeaturePermission
     public string Description { get; }
     public WardRole DefaultRole { get; }
     public int SortOrder { get; }
+    public WardRune RequiredRune { get; }
 
-    public FeaturePermission(string id, string displayName, WardCapabilityCategory category, string description, WardRole defaultRole, int sortOrder = 0)
+    public FeaturePermission(string id, string displayName, WardCapabilityCategory category, string description, WardRole defaultRole, int sortOrder = 0, WardRune requiredRune = WardRune.None)
     {
         Id = id;
         DisplayName = displayName;
@@ -17,5 +18,6 @@ public class FeaturePermission
         Description = description;
         DefaultRole = defaultRole;
         SortOrder = sortOrder;
+        RequiredRune = requiredRune;
     }
 }

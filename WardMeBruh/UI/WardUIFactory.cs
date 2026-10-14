@@ -264,6 +264,13 @@ public static class WardUIFactory
                 if (color.HasValue) existingTmp.color = color.Value;
                 existingTmp.alignment = alignment;
 
+                WardTextElement existingWte = existingTmp.GetComponent<WardTextElement>();
+                if (existingWte == null)
+                {
+                    existingWte = existingTmp.gameObject.AddComponent<WardTextElement>();
+                }
+                existingWte.baseFontSize = Mathf.RoundToInt(fontSize);
+
                 if (autoResizeWidth)
                 {
                     AttachOrUpdateAutoResizer(btnObj, existingTmp);
@@ -512,6 +519,11 @@ public static class WardUIFactory
         float step = 5f,
         bool showTicks = true)
     {
+        if ((max - min) <= 50f)
+        {
+            step = 1f;
+        }
+
         float rowHeight = showTicks ? 48f : 34f;
         CreateSettingRow(parent, labelText, out Transform controlContainer, rowHeight);
 
@@ -536,7 +548,7 @@ public static class WardUIFactory
 
         void RebuildTicks(float tMin, float tMax, float tStep)
         {
-            if (ticksObj == null || tStep <= 0f)
+            if (ticksObj == null)
                 return;
 
             for (int i = ticksObj.transform.childCount - 1; i >= 0; i--)
@@ -544,31 +556,38 @@ public static class WardUIFactory
                 UnityEngine.Object.Destroy(ticksObj.transform.GetChild(i).gameObject);
             }
 
-            int count = Mathf.RoundToInt((tMax - tMin) / tStep);
+            float range = tMax - tMin;
+            if (range <= 0f)
+                return;
+
+            bool isSubFifty = range <= 50f;
+            float effStep = isSubFifty ? 1f : (tStep > 0f ? tStep : 5f);
+            int count = Mathf.RoundToInt(range / effStep);
             if (count <= 0)
                 return;
 
-            bool isSubFifty = tMax < 50f || (tMax - tMin) < 50f;
-            float majorInterval = isSubFifty ? 5f : ((tMax - tMin) <= 35f ? 10f : 25f);
+            float majorInterval = isSubFifty ? 5f : ((range <= 35f) ? 10f : 25f);
 
             for (int i = 0; i <= count; i++)
             {
-                float val = tMin + i * tStep;
+                float val = (i == count) ? tMax : (tMin + i * effStep);
                 float t = (float)i / count;
 
-                bool isMin = Mathf.Approximately(val, tMin);
-                bool isMax = Mathf.Approximately(val, tMax);
-                bool isInterval = Mathf.Approximately(val % majorInterval, 0f) || Mathf.Approximately(Mathf.Abs(val % majorInterval), majorInterval);
+                bool isMin = (i == 0) || Mathf.Approximately(val, tMin);
+                bool isMax = (i == count) || Mathf.Approximately(val, tMax);
+                int roundVal = Mathf.RoundToInt(val);
+                int roundMajor = Mathf.RoundToInt(majorInterval);
+                bool isInterval = (roundMajor > 0) && (roundVal % roundMajor == 0);
 
                 float pixelDistFromMin = t * 230f;
                 float pixelDistFromMax = (1f - t) * 230f;
-                bool collidesWithMin = !isMin && pixelDistFromMin < (isSubFifty ? 16f : 26f);
-                bool collidesWithMax = !isMax && pixelDistFromMax < (isSubFifty ? 16f : 26f);
+                bool collidesWithMin = !isMin && pixelDistFromMin < 18f;
+                bool collidesWithMax = !isMax && pixelDistFromMax < 18f;
 
                 bool isMajor = (isMin || isMax || isInterval) && !collidesWithMin && !collidesWithMax;
-                float tickH = isMajor ? 7f : 4f;
-                float tickW = isMajor ? 2f : 1.2f;
-                Color tickColor = isMajor ? WardColorPalette.GoldAmber : new Color(0.55f, 0.48f, 0.38f, 0.70f);
+                float tickH = isMajor ? 7f : 3.5f;
+                float tickW = isMajor ? 2f : 1f;
+                Color tickColor = isMajor ? WardColorPalette.GoldAmber : new Color(0.60f, 0.52f, 0.40f, 0.55f);
 
                 GameObject tickMark = new GameObject($"Tick_{val}", typeof(RectTransform), typeof(Image));
                 tickMark.transform.SetParent(ticksObj.transform, false);
@@ -642,9 +661,10 @@ public static class WardUIFactory
 
         float SnapValue(float v)
         {
-            if (step > 0f)
+            float activeStep = ((max - min) <= 50f) ? 1f : step;
+            if (activeStep > 0f)
             {
-                float snapped = Mathf.Round((v - min) / step) * step + min;
+                float snapped = Mathf.Round((v - min) / activeStep) * activeStep + min;
                 return Mathf.Clamp(snapped, min, max);
             }
             return Mathf.Clamp(v, min, max);
@@ -700,10 +720,10 @@ public static class WardUIFactory
             {
                 min = newMin;
                 max = newMax;
-                step = newStep;
+                step = ((newMax - newMin) <= 50f) ? 1f : newStep;
                 slider.minValue = newMin;
                 slider.maxValue = newMax;
-                RebuildTicks(newMin, newMax, newStep);
+                RebuildTicks(newMin, newMax, step);
                 float snapped = SnapValue(slider.value);
                 slider.SetValueWithoutNotify(snapped);
                 readoutText.text = FormatValue(snapped);

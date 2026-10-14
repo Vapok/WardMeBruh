@@ -1,11 +1,15 @@
-# 0.0.5 - Performance Optimizations & Custom Role HUD Fixes
-* Fixed chest and door hover text to properly display custom role names and colors instead of numeric role IDs.
+# 0.0.5 - Runic Attunement Progression System & Network Optimizations
+* Added Runic Attunement progression: Wards now start at Rank 0 and unlock features across 8 rune ranks using craftable Runic Keystones.
+* Added physical runestone pedestals that orbit the ward stone in the world and light up as each rune is attuned.
+* Added 8 craftable Runic Keystones with custom models, glow effects, Norse lore stories, and recipe progression from Meadows to Ashlands.
+* Added Adventure Backpacks integration so keystones carried in worn backpacks are detected and used during attunement.
+* Added spawner suppression to stop creature spawns from natural spawners, creature nests, and skeleton piles inside ward boundaries.
+* Updated server admin handling so admins always have Owner authority on all wards while still following ward rank locks.
+* Optimized multiplayer networking to eliminate duplicate sync broadcasts and lower network traffic on busy servers.
+* Cached chest and door hover text to remove micro-stutters and improve framerates in large bases.
+* Fixed chest and door hover text to show custom role names and colors instead of internal numbers.
+* Connected chest and door configuration windows to the font size toggle (Small, Medium, Large).
 * Fixed territory status effect tooltip to show custom role display names.
-* Connected chest and door configuration dialog to the Ward UI font size settings (Small, Medium, Large).
-* Eliminated log spam when looking at chests and doors near overlapping wards.
-* Improved game performance and eliminated frame drops when looking at containers and doors with cached hover text.
-* Optimized role and permission lookups to reduce CPU usage and base stutter.
-* Improved background logging performance and safety across all threads.
 
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * Added Nested Sub-Wards: Place smaller personal or specialized wards inside a larger base territory with independent roles, permissions, and security access.

@@ -102,13 +102,18 @@ public class TabAccess
             }
         }
 
+        bool hasPortalAccess = WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.PortalAccess, playerId);
+
         Transform summaryCard = WardUIFactory.CreateCard(_listContainer, "$wmb_access_card_scanner");
         _entryRows.Add(summaryCard.parent.parent.gameObject);
 
         WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_scanned_radius", $"{Mathf.RoundToInt(radius)}{"$wmb_meters".Localize()}", WardColorPalette.ValheimOrange, out _);
         WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_containers_detected", $"{wardContainers.Count} {"$wmb_access_chests_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
         WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_doors_detected", $"{wardDoors.Count} {"$wmb_access_doors_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
-        WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_portals_detected", $"{wardPortals.Count} {"$wmb_access_portals_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
+        if (hasPortalAccess)
+        {
+            WardUIFactory.CreateBadgeRow(summaryCard, "$wmb_access_portals_detected", $"{wardPortals.Count} {"$wmb_access_portals_unit".Localize()}", WardColorPalette.ValheimBeige, out _);
+        }
 
         Transform containerCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_containers".Localize()} ({wardContainers.Count})");
         _entryRows.Add(containerCard.parent.parent.gameObject);
@@ -140,41 +145,44 @@ public class TabAccess
             }
         }
 
-        Transform portalCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_portals".Localize()} ({wardPortals.Count})");
-        _entryRows.Add(portalCard.parent.parent.gameObject);
-
-        WardUIFactory.CreateToggleRow(
-            portalCard,
-            "$wmb_access_enforce_portal",
-            portalAccessEnabled,
-            val =>
-            {
-                if (canManagePortals && _ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
-                {
-                    _ward.m_nview.ClaimOwnership();
-                    _ward.m_nview.GetZDO().Set(WardZdoKeys.PortalAccess, val);
-                    Refresh();
-                }
-            },
-            out _);
-
-        if (portalAccessEnabled)
+        if (hasPortalAccess)
         {
-            if (wardPortals.Count == 0)
+            Transform portalCard = WardUIFactory.CreateCard(_listContainer, $"{"$wmb_access_card_portals".Localize()} ({wardPortals.Count})");
+            _entryRows.Add(portalCard.parent.parent.gameObject);
+
+            WardUIFactory.CreateToggleRow(
+                portalCard,
+                "$wmb_access_enforce_portal",
+                portalAccessEnabled,
+                val =>
+                {
+                    if (canManagePortals && _ward != null && _ward.m_nview != null && _ward.m_nview.IsValid())
+                    {
+                        _ward.m_nview.ClaimOwnership();
+                        _ward.m_nview.GetZDO().Set(WardZdoKeys.PortalAccess, val);
+                        Refresh();
+                    }
+                },
+                out _);
+
+            if (portalAccessEnabled)
             {
-                WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_no_portals".Localize(), "-", WardColorPalette.TextMuted, out _);
+                if (wardPortals.Count == 0)
+                {
+                    WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_no_portals".Localize(), "-", WardColorPalette.TextMuted, out _);
+                }
+                else
+                {
+                    for (int i = 0; i < wardPortals.Count; i++)
+                    {
+                        CreatePortalRow(portalCard, wardPortals[i], canManagePortals, wardZdo);
+                    }
+                }
             }
             else
             {
-                for (int i = 0; i < wardPortals.Count; i++)
-                {
-                    CreatePortalRow(portalCard, wardPortals[i], canManagePortals, wardZdo);
-                }
+                WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_portal_disabled", "$wmb_access_portal_disabled_desc".Localize(), WardColorPalette.TextMuted, out _);
             }
-        }
-        else
-        {
-            WardUIFactory.CreateBadgeRow(portalCard, "$wmb_access_portal_disabled", "$wmb_access_portal_disabled_desc".Localize(), WardColorPalette.TextMuted, out _);
         }
 
         if (WardMainWindow.Instance != null)

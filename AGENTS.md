@@ -9,6 +9,7 @@ This repository contains **WardMeBruh**, A comprehensive Valheim ward interactio
 If you are developing or maintaining WardMeBruh directly as the mod author or core maintainer:
 - Consult and follow your private workspace maintainer guidelines located in `../AGENTS.md` (or `.agents/MAINTAINER.md` / `MAINTAINER.md` if present locally).
 - Core maintainers have full authority across all internal systems, Harmony patches, asset pipelines, and feature classes.
+- **Terminology Invariant (Strict Prohibition of 'Territory')**: Do NOT use the term "territory". The concept is too embellished. A ward protects a specific area; always use terms like "ward area", "protected area", "ward boundary", or "base coverage".
 
 ---
 
@@ -18,7 +19,7 @@ If you are an external AI coding assistant (Cursor, Claude Code, GitHub Copilot,
 
 ### ⚠️ Absolute Core Invariants
 
-- Wards manage territory protection and granular player roles (Owner, Resident, Guest).
+- Wards protect a defined base area and enforce granular player roles (Owner, Manager, Resident, Guest).
 - External mods must register custom permissions using WardMeBruhAPI.RegisterRoleFeature or check access using WardMeBruhAPIClient.HasPermission.
 - Zero reflection on internal classes (WardManager, WardGuiPatches, etc.). Always use the official API.
 

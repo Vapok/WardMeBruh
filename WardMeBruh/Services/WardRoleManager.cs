@@ -28,6 +28,7 @@ public static class WardRoleManager
     }
 
     private static readonly Dictionary<string, FeaturePermission> _registeredPermissions = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly List<string> _orderedPermissionIds = new();
     private static readonly Dictionary<ZDOID, CachedRoleDefinitions> _cachedDefinitions = new();
     private static readonly Dictionary<ZDOID, CachedRoleAssignments> _cachedAssignments = new();
     private static bool _initialized;
@@ -47,6 +48,10 @@ public static class WardRoleManager
             return;
 
         _registeredPermissions[permission.Id] = permission;
+        if (!_orderedPermissionIds.Contains(permission.Id))
+        {
+            _orderedPermissionIds.Add(permission.Id);
+        }
     }
 
     public static IReadOnlyCollection<FeaturePermission> GetAllPermissions()
@@ -155,12 +160,17 @@ public static class WardRoleManager
         if (_cachedDefinitions.TryGetValue(wardZdo.m_uid, out CachedRoleDefinitions cached) &&
             (ReferenceEquals(cached.RawString, data) || string.Equals(cached.RawString, data, StringComparison.Ordinal)))
         {
+            if (EnsureRoleDefaultsForUnlockedFeatures(wardZdo, cached.Roles))
+            {
+                SaveRoleDefinitions(wardZdo, cached.Roles);
+            }
             return cached.Roles;
         }
 
         if (string.IsNullOrEmpty(data))
         {
             List<WardRoleDefinition> defaultRoles = CreateDefaultRoleDefinitions();
+            EnsureRoleDefaultsForUnlockedFeatures(wardZdo, defaultRoles);
             SaveRoleDefinitions(wardZdo, defaultRoles);
             return defaultRoles;
         }
@@ -291,6 +301,11 @@ public static class WardRoleManager
             }
         }
 
+        if (EnsureRoleDefaultsForUnlockedFeatures(wardZdo, roles))
+        {
+            modified = true;
+        }
+
         roles.Sort((a, b) => a.Level.CompareTo(b.Level));
 
         if (modified)
@@ -307,6 +322,115 @@ public static class WardRoleManager
         }
 
         return roles;
+    }
+
+    public static bool EnsureRoleDefaultsForUnlockedFeatures(ZDO wardZdo, List<WardRoleDefinition> roles)
+    {
+        if (wardZdo == null || roles == null || roles.Count == 0)
+            return false;
+
+        wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (wardZdo == null)
+            return false;
+
+        EnsureInitialized();
+
+        long establishedMask = wardZdo.GetLong(WardZdoKeys.EstablishedRoleDefaults, 0L);
+        long originalMask = establishedMask;
+        bool modified = false;
+
+        WardRoleDefinition guestRole = null;
+        WardRoleDefinition residentRole = null;
+        WardRoleDefinition managerRole = null;
+        WardRoleDefinition ownerRole = null;
+
+        for (int i = 0; i < roles.Count; i++)
+        {
+            if (roles[i].Id == (int)WardRole.Guest)
+                guestRole = roles[i];
+            else if (roles[i].Id == (int)WardRole.Resident)
+                residentRole = roles[i];
+            else if (roles[i].Id == (int)WardRole.Manager)
+                managerRole = roles[i];
+            else if (roles[i].Id == (int)WardRole.Owner)
+                ownerRole = roles[i];
+        }
+
+        bool progressionEnabled = ConfigRegistry.EnableProgressionSystem.Value;
+
+        foreach (KeyValuePair<string, FeaturePermission> kvp in _registeredPermissions)
+        {
+            FeaturePermission perm = kvp.Value;
+            int permIndex = _orderedPermissionIds.IndexOf(perm.Id);
+            long bit = (permIndex >= 0 && permIndex < 64) ? (1L << permIndex) : 0L;
+
+            bool isUnlocked = IsPermissionFeatureUnlocked(wardZdo, perm.Id);
+
+            if (isUnlocked)
+            {
+                if (bit != 0L && (establishedMask & bit) == 0L)
+                {
+                    WardRoleDefinition targetRole = perm.DefaultRole switch
+                    {
+                        WardRole.Guest => guestRole,
+                        WardRole.Resident => residentRole,
+                        WardRole.Manager => managerRole,
+                        WardRole.Owner => ownerRole,
+                        _ => null
+                    };
+
+                    if (targetRole != null && !targetRole.HasExplicitPermission(perm.Id))
+                    {
+                        bool alreadyInherited = false;
+                        for (int j = 0; j < roles.Count; j++)
+                        {
+                            if (roles[j].Level < targetRole.Level && roles[j].HasExplicitPermission(perm.Id))
+                            {
+                                alreadyInherited = true;
+                                break;
+                            }
+                        }
+
+                        if (!alreadyInherited)
+                        {
+                            targetRole.AddPermission(perm.Id);
+                            modified = true;
+                        }
+                    }
+
+                    if (ownerRole != null && !ownerRole.HasExplicitPermission(perm.Id))
+                    {
+                        ownerRole.AddPermission(perm.Id);
+                        modified = true;
+                    }
+
+                    establishedMask |= bit;
+                }
+            }
+            else if (progressionEnabled)
+            {
+                for (int i = 0; i < roles.Count; i++)
+                {
+                    if (roles[i].Id != (int)WardRole.Owner && roles[i].HasExplicitPermission(perm.Id))
+                    {
+                        roles[i].RemovePermission(perm.Id);
+                        modified = true;
+                    }
+                }
+
+                if (bit != 0L && (establishedMask & bit) != 0L)
+                {
+                    establishedMask &= ~bit;
+                }
+            }
+        }
+
+        if (establishedMask != originalMask)
+        {
+            wardZdo.Set(WardZdoKeys.EstablishedRoleDefaults, establishedMask);
+        }
+
+        return modified;
     }
 
     public static void SaveRoleDefinitions(ZDO wardZdo, List<WardRoleDefinition> roles)
@@ -417,6 +541,9 @@ public static class WardRoleManager
         if (wardZdo == null || playerId == 0L)
             return (int)WardRole.Guest;
 
+        if (WardPermissions.IsAdmin(playerId))
+            return (int)WardRole.Owner;
+
         wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
         if (wardZdo == null)
             return (int)WardRole.Guest;
@@ -506,12 +633,15 @@ public static class WardRoleManager
         if (wardZdo == null)
             return false;
 
-        if (WardPermissions.IsAdmin(playerId))
-            return true;
-
         wardZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
         if (wardZdo == null)
             return false;
+
+        if (!IsPermissionFeatureUnlocked(wardZdo, permissionId, playerId))
+            return false;
+
+        if (WardPermissions.IsAdmin(playerId))
+            return true;
 
         int roleId = GetPlayerRoleId(wardZdo, playerId);
         if (roleId == (int)WardRole.Owner)
@@ -535,6 +665,105 @@ public static class WardRoleManager
 
         List<WardRoleDefinition> roles = GetRoleDefinitions(wardZdo);
         return HasPermission(roles, roleId, permissionId);
+    }
+
+    public static bool IsPermissionFeatureUnlocked(ZDO wardZdo, string permissionId, long playerId = 0)
+    {
+        if (!ConfigRegistry.EnableProgressionSystem.Value)
+            return true;
+
+        if (wardZdo == null || !wardZdo.IsValid())
+            return false;
+
+        switch (permissionId)
+        {
+            case WardPermissionIds.CoreDomeAccess:
+            case WardPermissionIds.CoreBuilding:
+            case WardPermissionIds.CoreViewGui:
+            case WardPermissionIds.CorePower:
+            case WardPermissionIds.CoreRename:
+            case WardPermissionIds.AccessDoors:
+            case WardPermissionIds.AccessChests:
+            case WardPermissionIds.CoreExtendWard:
+            case WardPermissionIds.CoreSubWard:
+            case WardPermissionIds.CoreAttuneWard:
+            case WardPermissionIds.PersonnelRoster:
+            case WardPermissionIds.PersonnelGovernance:
+                return true;
+
+            case WardPermissionIds.CoreBenefits:
+                return HasAnyPerkUnlocked(wardZdo, playerId);
+
+            case WardPermissionIds.CoreFarming:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.ProtectCrops, playerId);
+
+            case WardPermissionIds.CoreHarvest:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.PickableHarvestProtection, playerId);
+
+            case WardPermissionIds.AccessPortals:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.PortalAccess, playerId);
+
+            case WardPermissionIds.DefensesDomeSize:
+                return true;
+
+            case WardPermissionIds.DefensesCombat:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.PushbackForce, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.CreatureShock, playerId);
+
+            case WardPermissionIds.DefensesCamouflage:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.GhostBase, playerId);
+
+            case WardPermissionIds.DefensesBiome:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.WeatherRoof, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.SnowShield, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AshShield, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.ArcticHearth, playerId);
+
+            case WardPermissionIds.DefensesTames:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.ProtectTames, playerId);
+
+            case WardPermissionIds.UpkeepRepair:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AreaRepair, playerId);
+
+            case WardPermissionIds.UpkeepAutoFuel:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AutoFuel, playerId);
+
+            case WardPermissionIds.UpkeepAutoDoors:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AutoCloseDoors, playerId);
+
+            case WardPermissionIds.UpkeepPerks:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.FoodFreeze, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.MaxComfort, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.RegenBoost, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.DeathSkillShield, playerId);
+
+            case WardPermissionIds.UpkeepWaterDrain:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.WaterDrain, playerId);
+
+            case WardPermissionIds.UpkeepSecurity:
+                return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.PackIceShield, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.ProtectTerrain, playerId) ||
+                       WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.VehicleLocking, playerId);
+
+            default:
+                return true;
+        }
+    }
+
+    private static bool HasAnyPerkUnlocked(ZDO wardZdo, long playerId)
+    {
+        return WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.WeatherRoof, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.RegenBoost, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.DeathSkillShield, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.FoodFreeze, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.GhostBase, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.RaidSuppression, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.SpawnSuppression, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.ProtectTames, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AreaRepair, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AutoFuel, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.AutoCloseDoors, playerId) ||
+               WardProgressionService.IsFeatureUnlocked(wardZdo, WardFeature.MaxComfort, playerId);
     }
 
     public static List<FeaturePermission> GetGrantedPermissions(ZDO wardZdo, long playerId)
@@ -569,6 +798,9 @@ public static class WardRoleManager
         foreach (KeyValuePair<string, FeaturePermission> kvp in _registeredPermissions)
         {
             FeaturePermission perm = kvp.Value;
+            if (!IsPermissionFeatureUnlocked(wardZdo, perm.Id, playerId))
+                continue;
+
             if (isAdmin || isOwner || HasPermission(roles, roleId, perm.Id))
             {
                 granted.Add(perm);
@@ -762,35 +994,36 @@ public static class WardRoleManager
 
     private static void RegisterDefaultPermissions()
     {
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreDomeAccess, "$wmb_perm_core_dome_access_name", WardCapabilityCategory.Core, "$wmb_perm_core_dome_access_desc", WardRole.Guest, 0));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreBenefits, "$wmb_perm_core_benefits_name", WardCapabilityCategory.Core, "$wmb_perm_core_benefits_desc", WardRole.Resident, 1));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreBuilding, "$wmb_perm_core_building_name", WardCapabilityCategory.Core, "$wmb_perm_core_building_desc", WardRole.Resident, 2));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreFarming, "$wmb_perm_core_farming_name", WardCapabilityCategory.Core, "$wmb_perm_core_farming_desc", WardRole.Resident, 3));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreHarvest, "$wmb_perm_core_harvest_name", WardCapabilityCategory.Core, "$wmb_perm_core_harvest_desc", WardRole.Resident, 4));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreViewGui, "$wmb_perm_core_view_gui_name", WardCapabilityCategory.Core, "$wmb_perm_core_view_gui_desc", WardRole.Resident, 5));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CorePower, "$wmb_perm_core_power_name", WardCapabilityCategory.Core, "$wmb_perm_core_power_desc", WardRole.Manager, 6));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreRename, "$wmb_perm_core_rename_name", WardCapabilityCategory.Core, "$wmb_perm_core_rename_desc", WardRole.Manager, 7));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreExtendWard, "$wmb_perm_core_extend_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_extend_ward_desc", WardRole.Owner, 8));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreSubWard, "$wmb_perm_core_sub_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_sub_ward_desc", WardRole.Manager, 9));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreDomeAccess, "$wmb_perm_core_dome_access_name", WardCapabilityCategory.Core, "$wmb_perm_core_dome_access_desc", WardRole.Guest, 0, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreBenefits, "$wmb_perm_core_benefits_name", WardCapabilityCategory.Core, "$wmb_perm_core_benefits_desc", WardRole.Resident, 1, WardRune.Isa));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreBuilding, "$wmb_perm_core_building_name", WardCapabilityCategory.Core, "$wmb_perm_core_building_desc", WardRole.Resident, 2, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreFarming, "$wmb_perm_core_farming_name", WardCapabilityCategory.Core, "$wmb_perm_core_farming_desc", WardRole.Resident, 3, WardRune.Uruz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreHarvest, "$wmb_perm_core_harvest_name", WardCapabilityCategory.Core, "$wmb_perm_core_harvest_desc", WardRole.Resident, 4, WardRune.Uruz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreViewGui, "$wmb_perm_core_view_gui_name", WardCapabilityCategory.Core, "$wmb_perm_core_view_gui_desc", WardRole.Resident, 5, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CorePower, "$wmb_perm_core_power_name", WardCapabilityCategory.Core, "$wmb_perm_core_power_desc", WardRole.Manager, 6, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreRename, "$wmb_perm_core_rename_name", WardCapabilityCategory.Core, "$wmb_perm_core_rename_desc", WardRole.Manager, 7, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreExtendWard, "$wmb_perm_core_extend_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_extend_ward_desc", WardRole.Owner, 8, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreSubWard, "$wmb_perm_core_sub_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_sub_ward_desc", WardRole.Manager, 9, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.CoreAttuneWard, "$wmb_perm_core_attune_ward_name", WardCapabilityCategory.Core, "$wmb_perm_core_attune_ward_desc", WardRole.Owner, 10, WardRune.None));
 
-        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessDoors, "$wmb_perm_access_doors_name", WardCapabilityCategory.Access, "$wmb_perm_access_doors_desc", WardRole.Manager, 10));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessChests, "$wmb_perm_access_chests_name", WardCapabilityCategory.Access, "$wmb_perm_access_chests_desc", WardRole.Manager, 11));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessPortals, "$wmb_perm_access_portals_name", WardCapabilityCategory.Access, "$wmb_perm_access_portals_desc", WardRole.Manager, 12));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessDoors, "$wmb_perm_access_doors_name", WardCapabilityCategory.Access, "$wmb_perm_access_doors_desc", WardRole.Manager, 10, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessChests, "$wmb_perm_access_chests_name", WardCapabilityCategory.Access, "$wmb_perm_access_chests_desc", WardRole.Manager, 11, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.AccessPortals, "$wmb_perm_access_portals_name", WardCapabilityCategory.Access, "$wmb_perm_access_portals_desc", WardRole.Manager, 12, WardRune.Uruz));
 
-        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesDomeSize, "$wmb_perm_defenses_dome_size_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_dome_size_desc", WardRole.Owner, 19));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesCombat, "$wmb_perm_defenses_combat_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_combat_desc", WardRole.Manager, 20));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesCamouflage, "$wmb_perm_defenses_camouflage_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_camouflage_desc", WardRole.Manager, 21));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesBiome, "$wmb_perm_defenses_biome_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_biome_desc", WardRole.Manager, 22));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesTames, "$wmb_perm_defenses_tames_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_tames_desc", WardRole.Manager, 23));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesDomeSize, "$wmb_perm_defenses_dome_size_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_dome_size_desc", WardRole.Owner, 19, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesCombat, "$wmb_perm_defenses_combat_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_combat_desc", WardRole.Manager, 20, WardRune.Thurisaz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesCamouflage, "$wmb_perm_defenses_camouflage_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_camouflage_desc", WardRole.Manager, 21, WardRune.Sowilo));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesBiome, "$wmb_perm_defenses_biome_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_biome_desc", WardRole.Manager, 22, WardRune.Uruz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.DefensesTames, "$wmb_perm_defenses_tames_name", WardCapabilityCategory.Defenses, "$wmb_perm_defenses_tames_desc", WardRole.Manager, 23, WardRune.Fehu));
 
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepRepair, "$wmb_perm_upkeep_repair_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_repair_desc", WardRole.Manager, 30));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepAutoFuel, "$wmb_perm_upkeep_autofuel_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_autofuel_desc", WardRole.Manager, 31));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepAutoDoors, "$wmb_perm_upkeep_autodoors_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_autodoors_desc", WardRole.Manager, 32));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepPerks, "$wmb_perm_upkeep_perks_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_perks_desc", WardRole.Manager, 33));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepWaterDrain, "$wmb_perm_upkeep_waterdrain_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_waterdrain_desc", WardRole.Manager, 34));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepSecurity, "$wmb_perm_upkeep_security_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_security_desc", WardRole.Manager, 35));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepRepair, "$wmb_perm_upkeep_repair_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_repair_desc", WardRole.Manager, 30, WardRune.Thurisaz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepAutoFuel, "$wmb_perm_upkeep_autofuel_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_autofuel_desc", WardRole.Manager, 31, WardRune.Uruz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepAutoDoors, "$wmb_perm_upkeep_autodoors_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_autodoors_desc", WardRole.Manager, 32, WardRune.Fehu));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepPerks, "$wmb_perm_upkeep_perks_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_perks_desc", WardRole.Manager, 33, WardRune.Isa));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepWaterDrain, "$wmb_perm_upkeep_waterdrain_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_waterdrain_desc", WardRole.Manager, 34, WardRune.Laguz));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.UpkeepSecurity, "$wmb_perm_upkeep_security_name", WardCapabilityCategory.Upkeep, "$wmb_perm_upkeep_security_desc", WardRole.Manager, 35, WardRune.Hagalaz));
 
-        RegisterPermission(new FeaturePermission(WardPermissionIds.PersonnelRoster, "$wmb_perm_personnel_roster_name", WardCapabilityCategory.Personnel, "$wmb_perm_personnel_roster_desc", WardRole.Manager, 40));
-        RegisterPermission(new FeaturePermission(WardPermissionIds.PersonnelGovernance, "$wmb_perm_personnel_governance_name", WardCapabilityCategory.Personnel, "$wmb_perm_personnel_governance_desc", WardRole.Owner, 41));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.PersonnelRoster, "$wmb_perm_personnel_roster_name", WardCapabilityCategory.Personnel, "$wmb_perm_personnel_roster_desc", WardRole.Manager, 40, WardRune.None));
+        RegisterPermission(new FeaturePermission(WardPermissionIds.PersonnelGovernance, "$wmb_perm_personnel_governance_name", WardCapabilityCategory.Personnel, "$wmb_perm_personnel_governance_desc", WardRole.Owner, 41, WardRune.None));
     }
 }

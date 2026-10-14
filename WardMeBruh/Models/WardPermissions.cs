@@ -196,6 +196,9 @@ public static class WardPermissions
         if (wardZdo == null)
             return true;
 
+        if (!WardRoleManager.IsPermissionFeatureUnlocked(wardZdo, WardPermissionIds.CoreFarming, playerId))
+            return CanBuild(wardZdo, playerId);
+
         return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreFarming);
     }
 
@@ -211,6 +214,9 @@ public static class WardPermissions
     {
         if (wardZdo == null)
             return true;
+
+        if (!WardRoleManager.IsPermissionFeatureUnlocked(wardZdo, WardPermissionIds.CoreHarvest, playerId))
+            return CanBuild(wardZdo, playerId);
 
         return WardRoleManager.CanPerform(wardZdo, playerId, WardPermissionIds.CoreHarvest);
     }

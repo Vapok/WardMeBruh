@@ -28,6 +28,58 @@
 
 ## 🛡️ Features
 
+### ᚱ Runic Attunement (Progression)
+WardMeBruh includes an optional **Runic Attunement** progression system that is **enabled by default**. When active, newly placed wards start at Rank 0 as basic boundary markers. Players unlock advanced features, base defenses, automated upkeep, and expanded boundary radii by attuning up to 8 Elder Futhark runes at the ward monument.
+
+> **Optional System**: If you prefer vanilla-style instant access where every ward has all features and maximum radius unlocked from the start, you can disable progression by setting `Enable Runic Attunement Progression = false` in `vapok.mods.wardmebruh.cfg` (or via Configuration Manager). When disabled, the attunement tab and physical pedestals are hidden, and all wards operate with full functionality immediately.
+
+* **Progression Modes** (`Progression Mode` in config):
+  * **Hybrid** (Default): Requires both crafting the physical Keystone and having defeated the corresponding world boss.
+  * **RunicKeystones**: Requires physical craftable keystone items only.
+  * **WorldBossKeys**: Unlocks automatically based on defeated world boss keys without requiring physical keystones.
+* **Physical Pedestals**: Attuning runes spawns stone pedestals in a circle around the ward monument with glowing, floating runestones. Automatically hidden when progression is disabled.
+* **Keystones**: Crafted at designated crafting stations. Each weighs 200 units by default—plan your hauling accordingly (or use an Adventure Backpack, which the attunement interface supports directly).
+
+#### The 8 Runes & Keystone Recipes
+
+| Rune | Symbol | Keystone | Station | Default Recipe | Required Boss | Max Radius |
+| :---: | :---: | :---: | :--- | :--- | :--- | :---: |
+| **Fehu** | `ᚠ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_fehu.png" width="32" height="32" alt="Fehu"/> | Workbench (Lv 2) | 1 Eikthyr Trophy, 20 Flint, 40 Fine Wood | Eikthyr | 25m |
+| **Uruz** | `ᚢ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_uruz.png" width="32" height="32" alt="Uruz"/> | Forge (Lv 1) | 1 Elder Trophy, 20 Bronze, 10 Surtling Core | The Elder | 40m |
+| **Thurisaz** | `ᚦ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_thurisaz.png" width="32" height="32" alt="Thurisaz"/> | Forge (Lv 3) | 1 Bonemass Trophy, 20 Iron, 10 Guck | Bonemass | 55m |
+| **Isa** | `ᛁ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_isa.png" width="32" height="32" alt="Isa"/> | Forge (Lv 4) | 1 Moder Trophy, 20 Silver, 10 Freeze Gland | Moder | 70m |
+| **Sowilo** | `ᛋ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_sowilo.png" width="32" height="32" alt="Sowilo"/> | Forge (Lv 6) | 1 Yagluth Trophy, 20 Black Metal, 20 Tar | Yagluth | 80m |
+| **Laguz** | `ᛚ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_laguz.png" width="32" height="32" alt="Laguz"/> | Galdr Table (Lv 1) | 1 Queen Trophy, 20 Refined Eitr, 20 Black Marble | The Queen | 90m |
+| **Dagaz** | `ᛞ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_dagaz.png" width="32" height="32" alt="Dagaz"/> | Black Forge (Lv 2) | 1 Fader Trophy, 20 Flametal, 20 Blackwood | Fader | 100m |
+| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | Deep North Boss | 120m |
+
+*(Note: Feature unlocks per rune are fully configurable in `vapok.mods.wardmebruh.cfg`. Defaults are left for you to discover in-game).*
+
+#### Ward Features Overview
+
+| In-Game Feature | Category | Description |
+| :--- | :--- | :--- |
+| **Piece Auto-Repair** | Upkeep | Scans and repairs damaged pieces in the ward down to a configurable health threshold (consumes chest resources or free via server config). |
+| **Auto-Fueling** | Upkeep | Pulls wood, coal, resin, and fuels from linked chests to keep fires, kilns, smelters, and torches lit. |
+| **Auto-Closing Doors** | Upkeep | Closes open doors and gates inside the ward after a configurable delay (default 5s). |
+| **Water Drain** | Upkeep | Displaces water inside the shield dome so you can build dry basements below sea level. |
+| **Sanctuary Perks** | Upkeep | Max base comfort under the dome, freezes food timers while resting, and prevents skill loss on death. |
+| **Regen Boost** | Upkeep | +50% regeneration bonus for health, stamina, and eitr while inside active ward coverage. |
+| **Crop Protection** | Defenses | Prevents unauthorized players or wandering mobs from trampling farm crops. |
+| **Pickable Protection** | Defenses | Locks wild pickable resources (berries, mushrooms, flowers) inside the perimeter from unauthorized harvesting. |
+| **Livestock Protection** | Defenses | Shields tamed animals from enemy damage and friendly fire inside the ward area. |
+| **Weather Roof** | Defenses | Prevents rain from decaying exposed wood and structure pieces without requiring a physical roof. |
+| **Pushback Force** | Defenses | Repels intruders backward when they attempt to penetrate the shield dome. |
+| **Creature Shock** | Defenses | Zaps hostile mobs that breach the boundary with electrical lightning damage. |
+| **Player Shock** | Defenses | Electrocutes unauthorized players attempting to enter without clearance. |
+| **Suppress Monster Spawns** | Defenses | Blocks all creature spawning inside the ward boundary, including natural world spawns, greydwarf nests, and draugr piles. |
+| **Suppress Raids** | Defenses | Automatically cancels incoming base raid events targeting the area. |
+| **Ghost Base (Camouflage)** | Defenses | Masks structures so enemy AI does not aggro or target base buildings. |
+| **Environmental Shields** | Defenses | Blocks Ashlands cinder rain, lava fire, and Deep North freezing snow buildup. |
+| **Portal Access Control** | Access | Restricts portal usage by player role, checked at both departure and destination wards. |
+| **Fast Travel** | Access | Teleports players directly between discovered wards from the ward interface. |
+| **Base Extensions & Sub-Wards** | Structure | Compound linking for expanding base coverage or creating nested private rooms with independent access rosters. |
+
 ### Ward Management & Remote Menu
 * **Ward Interface**: Accessed directly at any ward stone (<kbd>E</kbd> or <kbd>G</kbd>). Tabs: Overview, Access, Defenses, Upkeep, Roles, and Management.
 * **Remote Ward Menu**: View and configure all wards you own across the world from one menu. Shows bases in a hierarchy with child extensions and sub-wards grouped underneath.
@@ -48,25 +100,11 @@
 
 ### Roles & Access Control
 * **Role Hierarchy**: Default roles are **Guest**, **Resident**, **Manager**, and **Owner**. Custom roles can be created with custom names and colors.
+* **Server Admins**: Recognized with Owner authority across all wards on the server for administration and moderation.
 * **Granular Permissions**: Controls building, farming, harvesting crops, entering the dome, adjusting ward radius, and managing base settings.
 * **Object Access**: Lock individual doors and chests to specific roles or character names. Rename doors and containers in-world (<kbd>Shift</kbd> + <kbd>E</kbd>).
 * **Portal Gating**: Restrict portal usage by role with checks at both departure and destination wards.
 * **Persistent Roster**: Tracks players who have visited the server so offline players can be assigned roles.
-
-### Defenses & Shield Domes
-* **Adjustable Radius**: Stepped slider from 10m to 100m with live area readout and visual boundary ring.
-* **Intruder Defense**: Configurable knockback impulse and electrical shock damage against hostile creatures.
-* **Mob & Raid Suppression**: Blocks mob spawns within the dome and cancels incoming base raids.
-* **AI Camouflage**: Prevents enemies from targeting structures inside the ward area.
-* **Hazard Shields**: Protects against rain weathering (virtual roof), Ashlands cinders and lava, Deep North snow buildup, and water displacement for dry building.
-* **Power Deactivation**: Toggling a ward off disables shield defenses and perks while keeping access locks, auto-door, auto-fuel, and repair active.
-
-### Base Upkeep & Perks
-* **Area Repair**: Automatically repairs damaged structures within the ward area (free or resource-based).
-* **Auto-Fuel**: Automatically pulls wood, coal, and fuel from designated chests to refill nearby fires, torches, and smelters.
-* **Auto-Closing Doors**: Closes open doors and gates after a configurable delay (5s–30s).
-* **Sanctuary Perks**: Max comfort under active shields, food timer freeze while resting, skill loss protection on death, and increased health/stamina/eitr regeneration.
-* **Livestock Protection**: Prevents damage to tamed animals within the ward area.
 
 ---
 
@@ -86,16 +124,21 @@ Settings are saved to `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 
 ### Server Settings (Synced)
 * `Enable Ward Me Bruh`: Master mod toggle (default: `true`).
+* `Enable Runic Attunement Progression`: Master progression toggle (default: `true`).
+* `Progression Mode`: Criteria for unlocking runes (`Hybrid`, `RunicKeystones`, `WorldBossKeys`).
+* `Enforce Ward Placement Clearance`: Prevents placing a new ward within 15 meters of an existing ward perimeter (default: `true`).
+* `Keystone Weight`: Inventory weight in units for Runic Keystones (default: `200.0`).
 * `Max Ward Radius`: Maximum allowed radius in meters (default: `100.0`).
 * `Ward Separation Distance`: Minimum buffer distance between unowned wards (default: `50.0`).
-* `Default Repair Threshold`: Damage percentage before area repair runs (default: `0.20`).
+* `Default Repair Threshold`: Damage percentage before area repair runs (default: `0.70`).
 * `Default Auto-Close Delay`: Seconds before open doors close (default: `5.0`).
-* `Free Area Repair`: When true, repairs cost no resources (default: `true`).
+* `Free Area Repair`: When true, repairs cost no resources (default: `false`).
 * `Allow Ore Fast-Travel`: Allow raw ores through ward fast travel (default: `false`).
 * `Fast-Travel Combat Lockout`: Seconds out of combat required before fast travel (default: `10.0`).
 
 ### Client Settings
 * `Open Ward Hub Keybind`: Shortcut key to open the interface (default: `<kbd>E</kbd>`).
+* `Show Physical Attunement Stones`: Renders physical glowing pedestal runestones around attuned ward monuments (default: `true`).
 * `Show Splash on Startup`: Shows mod summary window on game launch (default: `true`).
 * `Enable Anonymous Telemetry`: Sends crash and version reports (default: `true`).
 

@@ -28,6 +28,7 @@ public static class WardNetworkRouter
     private const string RpcSyncSinglePlayer = "WMB_SyncSinglePlayer";
     private const string RpcRegisterPlayer = "WMB_RegisterPlayer";
     private const string RpcUnregisterWard = "WMB_UnregisterWard";
+    private const string RpcAttuneKeystone = "WMB_AttuneKeystone";
 
     public static void Register()
     {
@@ -53,6 +54,7 @@ public static class WardNetworkRouter
         ZRoutedRpc.instance.Register(RpcSyncSinglePlayer, new Action<long, ZPackage>(RPC_SyncSinglePlayer));
         ZRoutedRpc.instance.Register(RpcRegisterPlayer, new Action<long, ZPackage>(RPC_RegisterPlayer));
         ZRoutedRpc.instance.Register(RpcUnregisterWard, new Action<long, ZPackage>(RPC_UnregisterWard));
+        ZRoutedRpc.instance.Register(RpcAttuneKeystone, new Action<long, ZPackage>(RPC_AttuneKeystone));
     }
 
     public static void RequestRegistrySync()
@@ -332,6 +334,45 @@ public static class WardNetworkRouter
 
         long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
         ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcSetWardFloat, pkg);
+    }
+
+    public static void SendAttuneKeystone(ZDOID wardId, WardRune rune)
+    {
+        if (ZDOMan.instance != null)
+        {
+            ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+            if (wardZdo != null)
+            {
+                ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+                if (effectiveZdo != null)
+                {
+                    int currentMask = effectiveZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+                    int newMask = currentMask | (1 << (int)rune);
+                    effectiveZdo.Set(WardZdoKeys.AttunedRunes, newMask);
+                    effectiveZdo.Set(WardZdoKeys.ProgressionLevel, (int)rune + 1);
+
+                    WardProgressionService.SyncAttunementToExtensions(effectiveZdo, newMask, (int)rune + 1);
+
+                    List<WardRoleDefinition> roles = WardRoleManager.GetRoleDefinitions(effectiveZdo);
+                    if (WardRoleManager.EnsureRoleDefaultsForUnlockedFeatures(effectiveZdo, roles))
+                    {
+                        WardRoleManager.SaveRoleDefinitions(effectiveZdo, roles);
+                    }
+                }
+            }
+        }
+
+        if (ZRoutedRpc.instance == null)
+            return;
+
+        WardMeBruh.Log.Debug($"[Network] Transmitting keystone attunement: Ward {wardId}, Rune {(int)rune} ({rune})");
+
+        ZPackage pkg = new();
+        pkg.Write(wardId);
+        pkg.Write((int)rune);
+
+        long target = ZNet.instance != null && ZNet.instance.IsServer() ? ZRoutedRpc.Everybody : ZRoutedRpc.instance.GetServerPeerID();
+        ZRoutedRpc.instance.InvokeRoutedRPC(target, RpcAttuneKeystone, pkg);
     }
 
     public static void SendRegisterWard(ZDOID wardId)
@@ -681,6 +722,59 @@ public static class WardNetworkRouter
         }
     }
 
+    private static void RPC_AttuneKeystone(long sender, ZPackage pkg)
+    {
+        if (pkg == null || ZDOMan.instance == null)
+            return;
+
+        ZDOID wardId = pkg.ReadZDOID();
+        int runeInt = pkg.ReadInt();
+        WardRune rune = (WardRune)runeInt;
+
+        WardMeBruh.Log.Debug($"[Network] Received keystone attunement: Ward {wardId}, Rune {rune} from sender {sender}");
+
+        ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
+        if (wardZdo == null)
+            return;
+
+        ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(wardZdo);
+        if (effectiveZdo == null)
+            return;
+
+        int currentMask = effectiveZdo.GetInt(WardZdoKeys.AttunedRunes, 0);
+        int newMask = currentMask | (1 << (int)rune);
+        effectiveZdo.Set(WardZdoKeys.AttunedRunes, newMask);
+        effectiveZdo.Set(WardZdoKeys.ProgressionLevel, (int)rune + 1);
+
+        WardProgressionService.SyncAttunementToExtensions(effectiveZdo, newMask, (int)rune + 1);
+
+        List<WardRoleDefinition> roles = WardRoleManager.GetRoleDefinitions(effectiveZdo);
+        if (WardRoleManager.EnsureRoleDefaultsForUnlockedFeatures(effectiveZdo, roles))
+        {
+            WardRoleManager.SaveRoleDefinitions(effectiveZdo, roles);
+        }
+
+        if (ZNet.instance != null && ZNet.instance.IsServer() && sender != 0 && sender != ZRoutedRpc.instance.GetServerPeerID())
+        {
+            ZPackage broadcastPkg = new();
+            broadcastPkg.Write(effectiveZdo.m_uid);
+            broadcastPkg.Write(runeInt);
+            List<ZNetPeer> peers = ZNet.instance.GetPeers();
+            for (int i = 0; i < peers.Count; i++)
+            {
+                if (peers[i].m_uid != sender)
+                {
+                    ZRoutedRpc.instance.InvokeRoutedRPC(peers[i].m_uid, RpcAttuneKeystone, broadcastPkg);
+                }
+            }
+        }
+
+        if (!Jotunn.Managers.GUIManager.IsHeadless())
+        {
+            UI.Tabs.TabAttunement.TriggerAttunementCeremony(effectiveZdo, rune);
+        }
+    }
+
     private static void RPC_RegisterWard(long sender, ZPackage pkg)
     {
         if (ZNet.instance == null || !ZNet.instance.IsServer() || ZDOMan.instance == null || pkg == null)
@@ -692,8 +786,10 @@ public static class WardNetworkRouter
         ZDO wardZdo = ZDOMan.instance.GetZDO(wardId);
         if (wardZdo != null)
         {
-            WardRegistryManager.Instance.RegisterOrUpdate(wardZdo);
-            BroadcastRegistry();
+            if (WardRegistryManager.Instance.RegisterOrUpdate(wardZdo))
+            {
+                BroadcastRegistry();
+            }
         }
     }
 

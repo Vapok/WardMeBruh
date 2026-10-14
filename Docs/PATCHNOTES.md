@@ -1,26 +1,40 @@
-# 0.0.5 - Performance Optimizations, Custom Role HUD & UI Font Scaling
+# 0.0.5 - Runic Attunement Progression System & Network Optimizations
+* **Runic Attunement Progression Architecture (`WardProgressionService`, `WardRune`, `WardFeature`, `ProgressionMode`)**:
+  * Implemented an 8-rank progression system gated by the Elder Futhark runes (`Fehu`, `Uruz`, `Thurisaz`, `Isa`, `Sowilo`, `Laguz`, `Dagaz`, `Hagalaz`).
+  * Added `ProgressionMode` configuration supporting `None` (all features unlocked), `Linear` (ordered tier progression), and `Custom` (custom rune-feature mapping).
+  * Added `WardProgressionService` managing rank checks, feature unlocks, attunement rituals, and ZDO persistence (`wmb_rank`).
+  * Created `TabAttunement` UI panel displaying active rune glyphs, attunement status, Norse lore chapter modals, and ritual execution controls.
+* **Physical Floating Runestone Pedestals (`WardAttunementStones`, `FloatingRune`, `RuneTextureFactory`)**:
+  * Added dynamic physical runestone pedestals surrounding the ward monument in the 3D game world.
+  * Implemented `RuneTextureFactory` procedurally generating antialiased emissive Elder Futhark rune glyph textures at runtime.
+  * Added `FloatingRune` component controlling hovering animation, gentle floating bob, emissive rune glow, and particle activation upon attunement.
+* **Craftable Runic Keystones (`KeystoneItemFactory`, `SE_KeystoneLore`)**:
+  * Added 8 craftable Runic Keystone items (`wmb_keystone_fehu` through `wmb_keystone_hagalaz`) with custom recolored lightning models, lighting, and embedded 64x64 inventory icons.
+  * Implemented Norse lore story chapters on keystones via custom status effect tooltips (`SE_KeystoneLore`).
+  * Tiered crafting progression spanning Meadow wood, Black Forest bronze/surtling cores, Swamp iron/guik, Mountain silver, Plains black metal, Mistlands black marble/eitr, and Ashlands celestial remnants.
+* **Adventure Backpacks Integration (`ABAPI_Client`)**:
+  * Added reflection-based `ABAPI_Client` detecting and consuming keystones directly from worn backpacks during attunement rituals.
+* **Monster Spawner Suppression (`Patch_SpawnSystem`, `Patch_SpawnArea`, `Patch_CreatureSpawner`, `Patch_RandEventSystem`)**:
+  * Patched `SpawnSystem`, `SpawnArea`, `CreatureSpawner`, and `RandEventSystem` to check `WardFeature.MobSpawnBlock` against ward boundaries.
+  * Blocks creature spawning from natural spawners, nests, skeleton piles, and raid events within active ward coverage when unlocked.
+* **Server Admin Governance & Multiplayer Networking (`WardRoleManager`, `WardNetworkRouter`, `WardRegistryManager`)**:
+  * Server administrators automatically resolve to `Owner` role across all wards in `WardRoleManager.GetPlayerRoleId`, while progression rank locks apply equally to admins and players.
+  * Removed `Patch_ZNetScene.Prefix_Awake` periodic ward scan.
+  * Change-gated `WardRegistryManager.RegisterOrUpdate` and isolated join-sync broadcasts to requesting peers via `WMB_SyncWardsToPeer`, eliminating redundant RPC flood.
 * **Custom Role HUD & Hover Text Resolution (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`, `SE_WardTerritory`)**:
-  * Fixed custom role IDs (e.g. 100+) displaying raw integer values (`[100 Required]`) instead of their assigned display names on container and door hover text.
-  * Updated clearance lookups to call `WardRoleManager.GetRoleDisplayName` and `WardRoleManager.GetRoleColor` across container hover, door hover, ward stone hover HUD, and the territory status effect (`SE_WardTerritory`).
-  * Updated clearance threshold condition to validate all non-Resident role clearances (`minRoleInt != (int)WardRole.Resident`).
+  * Fixed custom role IDs displaying raw integer values instead of assigned display names and colors on hover text.
+  * Updated clearance lookups to call `WardRoleManager.GetRoleDisplayName` and `WardRoleManager.GetRoleColor` across container hover, door hover, ward stone hover HUD, and territory status effect.
 * **Hot-Path Hover Text & Placement Caching (`Patch_Container`, `Patch_Door`, `Patch_PrivateArea`)**:
-  * Implemented zero-allocation single-slot hover text caches for hovered containers (`_cachedContainerId`, `_cachedBaseText`, `_cachedFinalText`) and doors (`_cachedDoorId`, `_cachedDoorBaseText`, `_cachedDoorFinalText`), eliminating per-frame string concatenation, localization lookups, and permission queries during consecutive hover frames.
+  * Implemented zero-allocation single-slot hover text caches for hovered containers and doors, eliminating per-frame string concatenation, localization lookups, and permission queries.
   * Removed per-frame debug logging from `Patch_PrivateArea.HaveLocalAccessPrefix`.
-  * Removed redundant `WardPermissions.GetPlayerRole` evaluation and implemented single-frame caching (`GetCachedIsFarmingAction`) to avoid redundant `GetComponent` lookups across multiple overlapping wards in the same frame.
-* **Role Serialization & Assignment Caching (`WardRoleManager`)**:
-  * Implemented `_cachedDefinitions` and `_cachedAssignments` caching by `ZDOID`, matching against ZDO string reference and ordinal equality to bypass repeated role and roster deserialization on static wards.
-  * Added `InvalidateWard` and `ClearCaches` to ensure cache invalidation on ward modification, unregistration, and game session teardown.
-* **Spatial Query & Memory Allocation Optimizations (`WardRegistryManager`, `WardComfortService`)**:
-  * Refactored `WardRegistryManager.GetWardCoveringPoint` to iterate `_knownWards` and `_extensionWards` directly without allocating temporary `List` snapshots on Mono's GC heap.
-  * Increased `WardComfortService` cache TTL to 5.0 seconds and removed per-scan debug log output.
+  * Single-frame caching for farming actions to bypass repeated component queries across overlapping wards.
+* **Role Serialization & Spatial Query Caching (`WardRoleManager`, `WardRegistryManager`, `WardComfortService`)**:
+  * Added ZDO-level cached role definitions and assignments to bypass repeated JSON deserialization on static wards.
+  * Optimized `WardRegistryManager.GetWardCoveringPoint` to iterate known wards without allocating temporary GC lists.
 * **Entity Configuration UI Font Scaling (`EntityRenameDialog`, `WardMainWindow`)**:
-  * Added dynamic font scaling to `EntityRenameDialog` for chest and door renaming dialogs, respecting `ConfigRegistry.GuiFontSize` (`WardFontSizeMode.Small`, `Medium`, `Large`).
-  * Decoupled dialog font application to read directly from configuration upon opening, preventing cyclic component initialization during `Game.Start`.
-  * Linked font mode updates from `WardMainWindow.ApplyFontSize` to dynamically refresh `EntityRenameDialog` when open.
+  * Added dynamic font scaling to `EntityRenameDialog` for chest and door renaming dialogs, respecting `ConfigRegistry.GuiFontSize`.
 * **Thread-Safe Deduplicating Logger (`DeduplicatingLog`)**:
-  * Replaced `UnityEngine.Time.frameCount` with a 50ms window driven by `Environment.TickCount` to provide thread-safe duplicate log suppression across background threads, dedicated server sockets, and the main Unity engine thread.
-* **Session Teardown (`GamePatches`)**:
-  * Added `Game.OnDestroy` patch hook to flush static role, comfort, and spatial query caches on logout.
+  * Replaced `Time.frameCount` with a 50ms window driven by `Environment.TickCount` for thread-safe log deduplication across background threads and dedicated servers.
 
 # 0.0.4 - Nested Sub-Wards, Base Extensions & Territory Hierarchy
 * **Nested Sub-Ward Architecture (`WardType.SubWard`, `WardPlacementChoiceModal`)**:

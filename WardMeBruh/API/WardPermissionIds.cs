@@ -57,6 +57,11 @@ public static class WardPermissionIds
     public const string CoreSubWard = "core.sub_ward";
 
     /// <summary>
+    /// Clearance to perform runic attunement ceremonies and upgrade the ward progression rank. Default role: Owner.
+    /// </summary>
+    public const string CoreAttuneWard = "core.attune_ward";
+
+    /// <summary>
     /// Clearance to configure individual door permissions, auto-close timers, and custom names. Default role: Manager.
     /// </summary>
     public const string AccessDoors = "access.doors";

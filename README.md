@@ -29,13 +29,14 @@
 ## 🛡️ Features
 
 ### ᚱ Runic Attunement (Progression)
-By default, wards start at Rank 0 as basic boundary stones. You unlock features, defenses, automation, and larger boundary radii by attuning up to 8 Elder Futhark runes at the ward.
+WardMeBruh includes an optional **Runic Attunement** progression system that is **enabled by default**. When active, newly placed wards start at Rank 0 as basic boundary markers. Players unlock advanced features, base defenses, automated upkeep, and expanded boundary radii by attuning up to 8 Elder Futhark runes at the ward monument.
+
+> **Optional System**: If you prefer vanilla-style instant access where every ward has all features and maximum radius unlocked from the start, you can disable progression by setting `Enable Runic Attunement Progression = false` in `vapok.mods.wardmebruh.cfg` (or via Configuration Manager). When disabled, the attunement tab and physical pedestals are hidden, and all wards operate with full functionality immediately.
 
 * **Progression Modes** (`Progression Mode` in config):
-  * **Hybrid** (Default): Requires crafting the physical Keystone and having defeated the required world boss.
-  * **RunicKeystones**: Physical keystone items only.
-  * **WorldBossKeys**: Defeated world boss keys only.
-  * *Disabled*: Set `Enable Runic Attunement Progression = false` to bypass progression entirely. Every ward operates with all features unlocked immediately.
+  * **Hybrid** (Default): Requires both crafting the physical Keystone and having defeated the corresponding world boss.
+  * **RunicKeystones**: Requires physical craftable keystone items only.
+  * **WorldBossKeys**: Unlocks automatically based on defeated world boss keys without requiring physical keystones.
 * **Physical Pedestals**: Attuning runes spawns stone pedestals in a circle around the ward monument with glowing, floating runestones. Automatically hidden when progression is disabled.
 * **Keystones**: Crafted at designated crafting stations. Each weighs 200 units by default—plan your hauling accordingly (or use an Adventure Backpack, which the attunement interface supports directly).
 
@@ -43,14 +44,14 @@ By default, wards start at Rank 0 as basic boundary stones. You unlock features,
 
 | Rune | Symbol | Keystone | Station | Default Recipe | Required Boss | Max Radius |
 | :---: | :---: | :---: | :--- | :--- | :--- | :---: |
-| **Fehu** | `ᚠ` | <img src="images/keystones/keystone_fehu.png" width="32" height="32" alt="Fehu"/> | Workbench (Lv 2) | 1 Eikthyr Trophy, 20 Flint, 40 Fine Wood | Eikthyr | 25m |
-| **Uruz** | `ᚢ` | <img src="images/keystones/keystone_uruz.png" width="32" height="32" alt="Uruz"/> | Forge (Lv 1) | 1 Elder Trophy, 20 Bronze, 10 Surtling Core | The Elder | 40m |
-| **Thurisaz** | `ᚦ` | <img src="images/keystones/keystone_thurisaz.png" width="32" height="32" alt="Thurisaz"/> | Forge (Lv 3) | 1 Bonemass Trophy, 20 Iron, 10 Guck | Bonemass | 55m |
-| **Isa** | `ᛁ` | <img src="images/keystones/keystone_isa.png" width="32" height="32" alt="Isa"/> | Forge (Lv 4) | 1 Moder Trophy, 20 Silver, 10 Freeze Gland | Moder | 70m |
-| **Sowilo** | `ᛋ` | <img src="images/keystones/keystone_sowilo.png" width="32" height="32" alt="Sowilo"/> | Forge (Lv 6) | 1 Yagluth Trophy, 20 Black Metal, 20 Tar | Yagluth | 80m |
-| **Laguz** | `ᛚ` | <img src="images/keystones/keystone_laguz.png" width="32" height="32" alt="Laguz"/> | Galdr Table (Lv 1) | 1 Queen Trophy, 20 Refined Eitr, 20 Black Marble | The Queen | 90m |
-| **Dagaz** | `ᛞ` | <img src="images/keystones/keystone_dagaz.png" width="32" height="32" alt="Dagaz"/> | Black Forge (Lv 2) | 1 Fader Trophy, 20 Flametal, 20 Blackwood | Fader | 100m |
-| **Hagalaz** | `ᚺ` | <img src="images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | Deep North Boss | 120m |
+| **Fehu** | `ᚠ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_fehu.png" width="32" height="32" alt="Fehu"/> | Workbench (Lv 2) | 1 Eikthyr Trophy, 20 Flint, 40 Fine Wood | Eikthyr | 25m |
+| **Uruz** | `ᚢ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_uruz.png" width="32" height="32" alt="Uruz"/> | Forge (Lv 1) | 1 Elder Trophy, 20 Bronze, 10 Surtling Core | The Elder | 40m |
+| **Thurisaz** | `ᚦ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_thurisaz.png" width="32" height="32" alt="Thurisaz"/> | Forge (Lv 3) | 1 Bonemass Trophy, 20 Iron, 10 Guck | Bonemass | 55m |
+| **Isa** | `ᛁ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_isa.png" width="32" height="32" alt="Isa"/> | Forge (Lv 4) | 1 Moder Trophy, 20 Silver, 10 Freeze Gland | Moder | 70m |
+| **Sowilo** | `ᛋ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_sowilo.png" width="32" height="32" alt="Sowilo"/> | Forge (Lv 6) | 1 Yagluth Trophy, 20 Black Metal, 20 Tar | Yagluth | 80m |
+| **Laguz** | `ᛚ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_laguz.png" width="32" height="32" alt="Laguz"/> | Galdr Table (Lv 1) | 1 Queen Trophy, 20 Refined Eitr, 20 Black Marble | The Queen | 90m |
+| **Dagaz** | `ᛞ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_dagaz.png" width="32" height="32" alt="Dagaz"/> | Black Forge (Lv 2) | 1 Fader Trophy, 20 Flametal, 20 Blackwood | Fader | 100m |
+| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | Deep North Boss | 120m |
 
 *(Note: Feature unlocks per rune are fully configurable in `vapok.mods.wardmebruh.cfg`. Defaults are left for you to discover in-game).*
 

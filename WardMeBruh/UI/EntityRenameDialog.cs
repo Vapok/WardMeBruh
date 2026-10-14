@@ -264,7 +264,7 @@ public class EntityRenameDialog : MonoBehaviour
         _coveringWard = WardQueryService.GetCoveringWard(portal.transform.position);
         if (_coveringWard != null && _coveringWard.m_nview != null && _coveringWard.m_nview.IsValid())
         {
-            _canManage = WardPermissions.CanManageWard(_coveringWard.m_nview.GetZDO(), playerId);
+            _canManage = WardPermissions.HasRequiredRole(_coveringWard.m_nview.GetZDO(), playerId, WardRole.Resident);
         }
         else
         {

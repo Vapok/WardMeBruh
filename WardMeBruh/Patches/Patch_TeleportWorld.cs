@@ -23,7 +23,7 @@ internal static class Patch_TeleportWorld
 
     [HarmonyPatch(nameof(TeleportWorld.Interact))]
     [HarmonyPrefix]
-    private static bool InteractPrefix(TeleportWorld __instance, Humanoid character, bool hold, bool alt)
+    private static bool InteractPrefix(TeleportWorld __instance, Humanoid human, bool hold, bool alt)
     {
         if (hold)
             return false;
@@ -43,7 +43,7 @@ internal static class Patch_TeleportWorld
                 return false;
         }
 
-        Player player = character as Player;
+        Player player = human as Player;
         if (player == null)
             return true;
 
@@ -59,7 +59,7 @@ internal static class Patch_TeleportWorld
             if (coveringWard != null && coveringWard.m_nview != null && coveringWard.m_nview.IsValid())
             {
                 ZDO wardZdo = coveringWard.m_nview.GetZDO();
-                canConfigure = WardPermissions.CanManageWard(wardZdo, playerId);
+                canConfigure = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
             }
             else
             {
@@ -115,7 +115,7 @@ internal static class Patch_TeleportWorld
                 string roleDisplayName = WardRoleManager.GetRoleDisplayName(wardZdo, minRoleInt);
                 statusLine = $"<color={colorHex}>[{roleDisplayName} {"$wmb_clearance".Localize()}]</color>";
 
-                canConfigure = WardPermissions.CanManageWard(wardZdo, playerId);
+                canConfigure = WardPermissions.HasRequiredRole(wardZdo, playerId, WardRole.Resident);
             }
         }
         else

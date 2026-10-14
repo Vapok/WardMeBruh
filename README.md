@@ -140,7 +140,8 @@ Settings are saved to `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 * `Open Ward Hub Keybind`: Shortcut key to open the interface (default: `<kbd>E</kbd>`).
 * `Show Physical Attunement Stones`: Renders physical glowing pedestal runestones around attuned ward monuments (default: `true`).
 * `Show Splash on Startup`: Shows mod summary window on game launch (default: `true`).
-* `Enable Anonymous Telemetry`: Sends crash and version reports (default: `true`).
+* `Enable Anonymous Telemetry`: Sends anonymous version adoption and session launch metrics (default: `false`).
+* `Send Error Reports`: Sends sanitized crash and exception reports (default: `true`).
 
 ---
 
@@ -159,14 +160,30 @@ See the [API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Do
 * **BepInEx**: 5.4.2350 or later
 * **Jotunn**: 2.30.2 or later
 * Compatible with singleplayer, local co-op, and dedicated servers.
-* Non-destructive Harmony patches designed to coexist with ValheimPlus, Azu mods, and inventory management mods.
+* Non-destructive Harmony patches designed to coexist with ValheimPlus, remote crafting, and inventory management mods.
+
+### Incompatibilities
+
+Due to the nature of shared features and overlapping territory control, WardMeBruh cannot run concurrently with other total-conversion ward overhauls:
+
+* **WardIsLove (`Azumatt.WardIsLove`)**: Incompatible. Both mods overhaul native `PrivateArea` lifecycle, boundary calculations, and territory permissions. Run one or the other.
+* **ProtectiveWards (`shudnal.ProtectiveWards`)**: Incompatible. Direct conflict due to duplicate ward access and perimeter control implementations.
 
 ---
 
-## 📦 Installation
+## 📦 Installation & Server Setup
 
-* **Mod Manager (Recommended)**: Install via Gale, r2modman, or Thunderstore Mod Manager.
-* **Manual**: Extract the `.zip` archive and move the `WardMeBruh` folder into `Valheim/BepInEx/plugins/`.
+### Mod Manager (Recommended)
+1. Install via **Gale**, **r2modman**, or **Thunderstore Mod Manager**.
+2. Dependencies are resolved and installed automatically: `BepInExPack`, `Jotunn`, and `YamlDotNet`.
+
+### Manual Installation
+* Extract the `.zip` archive and move the `WardMeBruh` folder into your `Valheim/BepInEx/plugins/` directory.
+
+### Dedicated Servers & Multiplayer
+* **Required on Both Client & Server**: WardMeBruh must be installed on both the server and all connecting clients. The mod relies on custom network RPCs and ZDO data synchronization for territory access, role permissions, and runic progression.
+* **ServerSync Configuration**: Synced configuration settings (progression toggles, feature locks, recipes) defined on the dedicated server lock down and synchronize to all connecting clients automatically.
+* **Dedicated Server Deployment**: Extract the mod into the dedicated server's `BepInEx/plugins/` directory. The mod detects headless server execution cleanly and skips all UI registration.
 
 ---
 
@@ -187,3 +204,31 @@ Looking to integrate your mod with WardMeBruh or build compatibility?
 * ⚠️ **Strict Policy**: Do not use reflection or Harmony patches on internal classes; always use the public API.
 * 💡 **Need New API Features?**: Open a [Feature Request](https://github.com/Vapok/WardMeBruh/issues) or discuss it in our [Discord](https://discord.gg/5YAJkRFBXt).
 
+---
+
+## 🔒 Anonymous Telemetry, Error Reporting & Privacy
+
+WardMeBruh includes lightweight, privacy-first telemetry and error reporting to help monitor mod stability, diagnose unhandled bugs, and track active version adoption across game updates.
+
+* **100% Anonymous**: We never collect personal data, Steam IDs, IP addresses, character/world names, or file system paths. Stack traces from errors are automatically sanitized to strip local user directories.
+* **Granular Player Control**:
+  * **Anonymous Telemetry (Opt-In)**: Tracks version adoption and session launches. Defaults to **unchecked / disabled** when first loaded (`Enable Anonymous Telemetry = false`).
+  * **Error Reporting (Opt-Out)**: Captures sanitized mod crash diagnostics to rapidly identify and fix bugs. Defaults to **enabled** (`Send Error Reports = true`) with one-click opt-out.
+  * **Data Disclaimers**: Hover over any toggle in the startup modal for interactive tooltip disclaimers detailing exactly what data is transmitted.
+* **In-Game & Online Privacy Policy**: The full privacy policy can be viewed directly in-game by clicking **`[ PRIVACY POLICY ]`** on the startup splash modal, or online at [vapok.io/privacy-policy](https://vapok.io/privacy-policy/).
+* **Configuration Files**: Settings can be managed in-game via the startup modal, through the BepInEx Configuration Manager, or under `[Local Config]` in `BepInEx/config/vapok.mods.wardmebruh.cfg`.
+
+---
+
+<div align="center">
+
+### 👨‍💻 Created by Vapok Gaming
+
+[![Vapok Gaming](https://avatars.githubusercontent.com/u/1264136?s=120&v=4)](https://github.com/Vapok)
+
+**Author**: [Vapok](https://github.com/Vapok)  
+**Source Code**: [GitHub Repository](https://github.com/Vapok/WardMeBruh)  
+**Community & Support**: [Discord Server](https://discord.gg/5YAJkRFBXt)  
+**Changelog**: [Release Notes](https://github.com/Vapok/WardMeBruh/blob/main/CHANGELOG.md)
+
+</div>

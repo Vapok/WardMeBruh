@@ -27,6 +27,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
     private TextMeshProUGUI _legendText;
     private bool _wasGamepadActive;
     private bool _isInputBlocked;
+    private GameObject _focusReticle;
 
     public static WardPlacementChoiceModal Instance
     {
@@ -80,7 +81,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
         if (!IsOpen)
             return;
 
-        bool isGamepad = ZInput.IsGamepadActive();
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
         if (isGamepad != _wasGamepadActive)
         {
             UpdateKeyhints(isGamepad);
@@ -89,7 +90,8 @@ public class WardPlacementChoiceModal : MonoBehaviour
         bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
             ZInput.GetKeyDown(KeyCode.Escape) ||
             (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
+            WardGamepadNavHelper.IsButtonDownB() ||
+            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyRadialClose")));
 
         if (closeRequested)
         {
@@ -99,7 +101,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
         if (isGamepad)
         {
-            if ((ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory")) && _subwardBtn != null && _subwardBtn.interactable)
+            if (WardGamepadNavHelper.IsButtonDownY() && _subwardBtn != null && _subwardBtn.interactable)
             {
                 OnSubWardClicked();
                 return;
@@ -110,14 +112,16 @@ public class WardPlacementChoiceModal : MonoBehaviour
                 if (navX < 0 && _extendBtn != null)
                 {
                     _extendBtn.Select();
+                    WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _extendBtn);
                 }
                 else if (navX > 0 && _subwardBtn != null && _subwardBtn.interactable)
                 {
                     _subwardBtn.Select();
+                    WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _subwardBtn);
                 }
             }
 
-            if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
+            if (WardGamepadNavHelper.IsButtonDownA())
             {
                 GameObject currentObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
                 if (currentObj != null)
@@ -266,6 +270,8 @@ public class WardPlacementChoiceModal : MonoBehaviour
         _legendText.alignment = TextAlignmentOptions.Center;
         _legendText.color = WardColorPalette.ValheimBeige;
 
+        _focusReticle = WardGamepadNavHelper.CreateFocusReticle(_panel.transform);
+
         _panel.SetActive(false);
     }
 
@@ -289,10 +295,16 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _subwardBtn.interactable = maxSubRadius >= 1.0f;
         }
 
-        UpdateKeyhints(ZInput.IsGamepadActive());
-        if (ZInput.IsGamepadActive() && _extendBtn != null)
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
+        UpdateKeyhints(isGamepad);
+        if (isGamepad && _extendBtn != null)
         {
             _extendBtn.Select();
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _extendBtn);
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
 
         _panel.SetActive(true);
@@ -301,6 +313,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
     public void Close()
     {
+        WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         if (_panel != null)
         {
             _panel.SetActive(false);

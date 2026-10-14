@@ -16,6 +16,7 @@ public class WardDialogGamepadController
     private GameObject _tabBumperRight;
     private GameObject _gamepadLegend;
     private TextMeshProUGUI _legendText;
+    private GameObject _focusReticle;
 
     private Selectable _currentSelected;
     private bool _wasGamepadActive;
@@ -28,6 +29,8 @@ public class WardDialogGamepadController
 
     public void InitializeElements(GameObject tabBar, RectTransform panelRt, TextMeshProUGUI otherWardsText, TextMeshProUGUI closeText)
     {
+        _focusReticle = WardGamepadNavHelper.CreateFocusReticle(_panel.transform);
+
         if (tabBar != null)
         {
             _tabBumperLeft = new GameObject("TabBumperLeft", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
@@ -78,25 +81,34 @@ public class WardDialogGamepadController
         _legendText.alignment = TextAlignmentOptions.Center;
         _legendText.color = WardColorPalette.ValheimBeige;
 
-        UpdateKeyhints(ZInput.IsGamepadActive());
+        UpdateKeyhints(WardGamepadNavHelper.IsGamepadActive());
     }
 
     public void OnWindowOpened()
     {
         _currentSelected = null;
-        UpdateKeyhints(ZInput.IsGamepadActive());
-        if (ZInput.IsGamepadActive())
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
+        UpdateKeyhints(isGamepad);
+        if (isGamepad)
         {
             FocusFirstElement();
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
     }
 
     public void OnTabChanged()
     {
         _currentSelected = null;
-        if (ZInput.IsGamepadActive())
+        if (WardGamepadNavHelper.IsGamepadActive())
         {
             FocusFirstElement();
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
     }
 
@@ -149,7 +161,7 @@ public class WardDialogGamepadController
 
     public void UpdateNavigation()
     {
-        bool isGamepad = ZInput.IsGamepadActive();
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
         if (isGamepad != _wasGamepadActive)
         {
             UpdateKeyhints(isGamepad);
@@ -157,10 +169,14 @@ public class WardDialogGamepadController
         }
 
         if (!isGamepad)
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             return;
+        }
 
         if (_window.IsRemoteSelectorOpen)
         {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             if (_window.RemoteSelector != null)
             {
                 _window.RemoteSelector.UpdateNavigation();
@@ -174,6 +190,7 @@ public class WardDialogGamepadController
             if (eventSelected != null && eventSelected != _currentSelected && !(eventSelected is InputField) && !(eventSelected is TMP_InputField) && !(eventSelected is Scrollbar))
             {
                 _currentSelected = eventSelected;
+                WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _currentSelected);
             }
         }
 
@@ -186,11 +203,11 @@ public class WardDialogGamepadController
 
     private void HandleTabSwitching()
     {
-        if (ZInput.GetButtonDown("JoyLBumper") || ZInput.GetButtonDown("JoyTabLeft"))
+        if (WardGamepadNavHelper.IsButtonDownLB())
         {
             _window.NavigateTabPrevious();
         }
-        else if (ZInput.GetButtonDown("JoyRBumper") || ZInput.GetButtonDown("JoyTabRight"))
+        else if (WardGamepadNavHelper.IsButtonDownRB())
         {
             _window.NavigateTabNext();
         }
@@ -198,7 +215,7 @@ public class WardDialogGamepadController
 
     private void HandleDirectShortcuts()
     {
-        if (ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory"))
+        if (WardGamepadNavHelper.IsButtonDownY())
         {
             bool progressionEnabled = ConfigRegistry.EnableProgressionSystem != null && ConfigRegistry.EnableProgressionSystem.Value;
             if (progressionEnabled)
@@ -206,11 +223,11 @@ public class WardDialogGamepadController
                 _window.OnFooterAttunementClicked();
             }
         }
-        else if (ZInput.GetButtonDown("JoyButtonX"))
+        else if (WardGamepadNavHelper.IsButtonDownX())
         {
             _window.OnOtherWardsClicked();
         }
-        else if (ZInput.GetButtonDown("JoyRStick"))
+        else if (WardGamepadNavHelper.IsButtonDownRS())
         {
             _window.OnCycleFontSizeClicked();
         }
@@ -278,7 +295,7 @@ public class WardDialogGamepadController
 
     private void HandleDirectionalNavigation()
     {
-        if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
+        if (WardGamepadNavHelper.IsButtonDownA())
         {
             SubmitCurrent();
             return;
@@ -353,7 +370,7 @@ public class WardDialogGamepadController
 
     private void HandleRightStickScrolling()
     {
-        float rightStickY = ZInput.GetJoyRightStickY();
+        float rightStickY = WardGamepadNavHelper.GetRightStickScrollDelta();
         if (Mathf.Abs(rightStickY) > 0.15f)
         {
             GameObject activeRoot = _window.GetActiveTabRoot();
@@ -400,15 +417,23 @@ public class WardDialogGamepadController
         {
             SetFocus(selectables[0], scrollRect);
         }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
+        }
     }
 
     private void SetFocus(Selectable selectable, ScrollRect scrollRect)
     {
         if (selectable == null)
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             return;
+        }
 
         _currentSelected = selectable;
         WardGamepadNavHelper.ApplyGamepadColorBlock(selectable);
+        WardGamepadNavHelper.AttachFocusReticle(_focusReticle, selectable);
 
         if (EventSystem.current != null)
         {

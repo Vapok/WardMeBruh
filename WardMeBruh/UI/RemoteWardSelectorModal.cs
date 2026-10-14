@@ -24,6 +24,7 @@ public class RemoteWardSelectorModal
     private GameObject _gamepadLegend;
     private readonly List<Selectable> _selectableButtons = new();
     private Selectable _currentSelected;
+    private GameObject _focusReticle;
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
 
@@ -96,6 +97,8 @@ public class RemoteWardSelectorModal
         legendText.alignment = TextAlignmentOptions.Center;
         legendText.color = WardColorPalette.ValheimBeige;
 
+        _focusReticle = WardGamepadNavHelper.CreateFocusReticle(_panel.transform);
+
         _panel.SetActive(false);
     }
 
@@ -108,11 +111,12 @@ public class RemoteWardSelectorModal
         _physicalWard = physicalWard;
         _panel.SetActive(true);
         Refresh();
-        UpdateKeyhints(ZInput.IsGamepadActive());
+        UpdateKeyhints(WardGamepadNavHelper.IsGamepadActive());
     }
 
     public void Close()
     {
+        WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         if (_panel != null)
         {
             _panel.SetActive(false);
@@ -383,10 +387,15 @@ public class RemoteWardSelectorModal
             WardMainWindow.ApplyFontSizeToHierarchy(_panel, WardMainWindow.Instance.CurrentFontSizeMode);
         }
 
-        if (ZInput.IsGamepadActive() && _selectableButtons.Count > 0)
+        if (WardGamepadNavHelper.IsGamepadActive() && _selectableButtons.Count > 0)
         {
             _currentSelected = _selectableButtons[0];
             _currentSelected.Select();
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _currentSelected);
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
     }
 
@@ -417,13 +426,16 @@ public class RemoteWardSelectorModal
 
     public void UpdateNavigation()
     {
-        bool isGamepad = ZInput.IsGamepadActive();
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
         UpdateKeyhints(isGamepad);
 
         if (!isGamepad || !IsOpen)
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             return;
+        }
 
-        if (ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose"))
+        if (WardGamepadNavHelper.IsButtonDownB())
         {
             Close();
             return;
@@ -437,7 +449,7 @@ public class RemoteWardSelectorModal
             }
         }
 
-        if ((ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use")) && _currentSelected != null)
+        if (WardGamepadNavHelper.IsButtonDownA() && _currentSelected != null)
         {
             if (_currentSelected is Button btn && btn.interactable)
             {
@@ -445,7 +457,7 @@ public class RemoteWardSelectorModal
             }
         }
 
-        float joyY = ZInput.GetJoyRightStickY();
+        float joyY = WardGamepadNavHelper.GetRightStickScrollDelta();
         if (Mathf.Abs(joyY) > 0.1f && _scrollRect != null)
         {
             _scrollRect.verticalNormalizedPosition = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + joyY * 0.05f);
@@ -473,9 +485,12 @@ public class RemoteWardSelectorModal
         {
             _currentSelected = target;
             target.Select();
-            if (_scrollRect != null && target.transform is RectTransform rt)
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _currentSelected);
+
+            RectTransform targetRt = target.transform as RectTransform;
+            if (targetRt != null && _scrollRect != null)
             {
-                WardGamepadNavHelper.EnsureVisible(_scrollRect, rt);
+                WardGamepadNavHelper.EnsureVisible(_scrollRect, targetRt);
             }
         }
     }

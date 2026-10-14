@@ -78,6 +78,63 @@ public static class WardGamepadNavHelper
         return $"<sprite=\"{asset}\" name=\"{spriteName}\">";
     }
 
+    public static GameObject CreateFocusReticle(Transform parent)
+    {
+        GameObject reticle = new("FocusReticle", typeof(RectTransform));
+        reticle.transform.SetParent(parent, false);
+        RectTransform rt = reticle.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(-4f, -4f);
+        rt.offsetMax = new Vector2(4f, 4f);
+
+        Color gold = new(1.15f, 0.85f, 0.25f, 0.95f);
+        float thickness = 2.5f;
+
+        CreateReticleBorder(reticle.transform, "Top", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -thickness), Vector2.zero, gold);
+        CreateReticleBorder(reticle.transform, "Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, thickness), gold);
+        CreateReticleBorder(reticle.transform, "Left", new Vector2(0f, 0f), new Vector2(0f, 1f), Vector2.zero, new Vector2(thickness, 0f), gold);
+        CreateReticleBorder(reticle.transform, "Right", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-thickness, 0f), Vector2.zero, gold);
+
+        reticle.SetActive(false);
+        return reticle;
+    }
+
+    private static void CreateReticleBorder(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax, Color color)
+    {
+        GameObject border = new(name, typeof(RectTransform), typeof(Image));
+        border.transform.SetParent(parent, false);
+        RectTransform rt = border.GetComponent<RectTransform>();
+        rt.anchorMin = anchorMin;
+        rt.anchorMax = anchorMax;
+        rt.offsetMin = offsetMin;
+        rt.offsetMax = offsetMax;
+        Image img = border.GetComponent<Image>();
+        img.color = color;
+        img.raycastTarget = false;
+    }
+
+    public static void AttachFocusReticle(GameObject reticle, Selectable selectable)
+    {
+        if (reticle == null)
+            return;
+
+        if (selectable == null || !selectable.gameObject.activeInHierarchy)
+        {
+            reticle.SetActive(false);
+            return;
+        }
+
+        reticle.transform.SetParent(selectable.transform, false);
+        RectTransform rt = reticle.GetComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = new Vector2(-4f, -4f);
+        rt.offsetMax = new Vector2(4f, 4f);
+        reticle.transform.SetAsLastSibling();
+        reticle.SetActive(true);
+    }
+
     public static void ApplyGamepadColorBlock(Selectable selectable)
     {
         if (selectable == null)
@@ -91,7 +148,7 @@ public static class WardGamepadNavHelper
 
     public static List<Transform> FindCards(Transform listContainer)
     {
-        List<Transform> cards = new List<Transform>();
+        List<Transform> cards = new();
         if (listContainer == null)
             return cards;
 
@@ -109,7 +166,7 @@ public static class WardGamepadNavHelper
 
     public static List<Selectable> FindSelectables(GameObject root)
     {
-        List<Selectable> result = new List<Selectable>();
+        List<Selectable> result = new();
         if (root == null)
             return result;
 
@@ -133,15 +190,66 @@ public static class WardGamepadNavHelper
         return result;
     }
 
+    public static bool IsGamepadActive()
+    {
+        return ZInput.IsGamepadActive() || UnityEngine.InputSystem.Gamepad.current != null;
+    }
+
+    public static bool IsButtonDownA()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonSouth.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownB()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownX()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyButtonX");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonWest.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownY()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonNorth.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownLB()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyLBumper") || ZInput.GetButtonDown("JoyTabLeft");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.leftShoulder.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownRB()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyRBumper") || ZInput.GetButtonDown("JoyTabRight");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.rightShoulder.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
+    public static bool IsButtonDownRS()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyRStick");
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.rightStickButton.wasPressedThisFrame;
+        return zDown || gpDown;
+    }
+
     public static bool GetDirectionInput(out bool up, out bool down, out bool left, out bool right)
     {
         up = false;
         down = false;
         left = false;
         right = false;
-
-        if (!ZInput.IsGamepadActive())
-            return false;
 
         bool dUp = ZInput.GetButtonDown("JoyDPadUp") || ZInput.GetButtonDown("JoyLStickUp");
         bool dDown = ZInput.GetButtonDown("JoyDPadDown") || ZInput.GetButtonDown("JoyLStickDown");
@@ -150,6 +258,18 @@ public static class WardGamepadNavHelper
 
         float stickX = ZInput.GetJoyLeftStickX();
         float stickY = ZInput.GetJoyLeftStickY();
+
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            dUp |= UnityEngine.InputSystem.Gamepad.current.dpad.up.wasPressedThisFrame;
+            dDown |= UnityEngine.InputSystem.Gamepad.current.dpad.down.wasPressedThisFrame;
+            dLeft |= UnityEngine.InputSystem.Gamepad.current.dpad.left.wasPressedThisFrame;
+            dRight |= UnityEngine.InputSystem.Gamepad.current.dpad.right.wasPressedThisFrame;
+
+            Vector2 s = UnityEngine.InputSystem.Gamepad.current.leftStick.ReadValue();
+            if (Mathf.Abs(s.x) > Mathf.Abs(stickX)) stickX = s.x;
+            if (Mathf.Abs(s.y) > Mathf.Abs(stickY)) stickY = -s.y;
+        }
 
         bool sUp = stickY < -0.45f;
         bool sDown = stickY > 0.45f;
@@ -191,18 +311,54 @@ public static class WardGamepadNavHelper
         return false;
     }
 
+    private static bool _lastLtPressed;
+    private static bool _lastRtPressed;
+
     public static bool GetTriggerInput(out bool leftTrigger, out bool rightTrigger)
     {
         leftTrigger = false;
         rightTrigger = false;
 
-        if (!ZInput.IsGamepadActive())
-            return false;
+        bool zLt = ZInput.GetButtonDown("JoyLTrigger") || ZInput.GetButtonDown("JoyAltKeys");
+        bool zRt = ZInput.GetButtonDown("JoyRTrigger");
 
-        leftTrigger = ZInput.GetButtonDown("JoyLTrigger") || ZInput.GetButtonDown("JoyAltKeys");
-        rightTrigger = ZInput.GetButtonDown("JoyRTrigger");
+        bool gpLt = false;
+        bool gpRt = false;
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            bool currLt = UnityEngine.InputSystem.Gamepad.current.leftTrigger.ReadValue() > 0.4f;
+            if (currLt && !_lastLtPressed)
+            {
+                gpLt = true;
+            }
+            _lastLtPressed = currLt;
+
+            bool currRt = UnityEngine.InputSystem.Gamepad.current.rightTrigger.ReadValue() > 0.4f;
+            if (currRt && !_lastRtPressed)
+            {
+                gpRt = true;
+            }
+            _lastRtPressed = currRt;
+        }
+
+        leftTrigger = zLt || gpLt;
+        rightTrigger = zRt || gpRt;
 
         return leftTrigger || rightTrigger;
+    }
+
+    public static float GetRightStickScrollDelta()
+    {
+        float joyY = ZInput.GetJoyRightStickY();
+        if (UnityEngine.InputSystem.Gamepad.current != null)
+        {
+            float gpY = UnityEngine.InputSystem.Gamepad.current.rightStick.ReadValue().y;
+            if (Mathf.Abs(gpY) > Mathf.Abs(joyY))
+            {
+                joyY = gpY;
+            }
+        }
+        return joyY;
     }
 
     public static void EnsureVisible(ScrollRect scrollRect, RectTransform target)

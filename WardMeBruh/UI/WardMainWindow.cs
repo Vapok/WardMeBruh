@@ -145,7 +145,8 @@ public class WardMainWindow : MonoBehaviour
             bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
                 ZInput.GetKeyDown(KeyCode.Escape) ||
                 (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
+                WardGamepadNavHelper.IsButtonDownB() ||
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyRadialClose")));
 
             if (isInputFieldFocused && closeRequested)
             {

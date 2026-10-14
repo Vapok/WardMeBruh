@@ -27,6 +27,7 @@ public class EntityRenameDialog : MonoBehaviour
     private TextMeshProUGUI _saveBtnTxt;
     private TextMeshProUGUI _cancelBtnTxt;
     private GameObject _gamepadLegend;
+    private GameObject _focusReticle;
 
     private enum ConfigEntityType
     {
@@ -92,7 +93,8 @@ public class EntityRenameDialog : MonoBehaviour
             bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
                 ZInput.GetKeyDown(KeyCode.Escape) ||
                 (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose")));
+                WardGamepadNavHelper.IsButtonDownB() ||
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyRadialClose")));
 
             if (closeRequested)
             {
@@ -100,9 +102,9 @@ public class EntityRenameDialog : MonoBehaviour
                 return;
             }
 
-            if (ZInput.IsGamepadActive())
+            if (WardGamepadNavHelper.IsGamepadActive())
             {
-                if (ZInput.GetButtonDown("JoyButtonX"))
+                if (WardGamepadNavHelper.IsButtonDownX())
                 {
                     OnSaveClicked();
                     return;
@@ -110,12 +112,16 @@ public class EntityRenameDialog : MonoBehaviour
 
                 HandleGamepadNavigation();
             }
+            else
+            {
+                WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
+            }
         }
     }
 
     private void HandleGamepadNavigation()
     {
-        List<Selectable> selectables = new List<Selectable>();
+        List<Selectable> selectables = new();
         if (_nameInput != null && _nameInput.gameObject.activeInHierarchy) selectables.Add(_nameInput);
         if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy) selectables.Add(_roleBtn);
         if (_depotBtn != null && _depotBtn.gameObject.activeInHierarchy) selectables.Add(_depotBtn);
@@ -127,7 +133,7 @@ public class EntityRenameDialog : MonoBehaviour
             WardGamepadNavHelper.ApplyGamepadColorBlock(selectables[i]);
         }
 
-        if (ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use"))
+        if (WardGamepadNavHelper.IsButtonDownA())
         {
             GameObject curGo = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
             if (curGo != null)
@@ -136,6 +142,13 @@ public class EntityRenameDialog : MonoBehaviour
                 if (curBtn != null && curBtn.interactable)
                 {
                     curBtn.onClick?.Invoke();
+                    return;
+                }
+
+                InputField curInput = curGo.GetComponent<InputField>();
+                if (curInput != null && curInput.interactable)
+                {
+                    curInput.ActivateInputField();
                     return;
                 }
             }
@@ -160,9 +173,14 @@ public class EntityRenameDialog : MonoBehaviour
             nextIdx = curIdx < 0 ? selectables.Count - 1 : (curIdx - 1 + selectables.Count) % selectables.Count;
         }
 
-        if (nextIdx >= 0 && nextIdx < selectables.Count && EventSystem.current != null)
+        if (nextIdx >= 0 && nextIdx < selectables.Count)
         {
-            EventSystem.current.SetSelectedGameObject(selectables[nextIdx].gameObject);
+            Selectable target = selectables[nextIdx];
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(target.gameObject);
+            }
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, target);
         }
     }
 
@@ -314,6 +332,8 @@ public class EntityRenameDialog : MonoBehaviour
         glText.alignment = TextAlignmentOptions.Center;
         glText.color = WardColorPalette.ValheimBeige;
 
+        _focusReticle = WardGamepadNavHelper.CreateFocusReticle(_panel.transform);
+
         _panel.SetActive(false);
     }
 
@@ -363,16 +383,21 @@ public class EntityRenameDialog : MonoBehaviour
 
         _panel.SetActive(true);
         RefreshKeyhints();
-        if (ZInput.IsGamepadActive())
+        if (WardGamepadNavHelper.IsGamepadActive())
         {
-            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy)
             {
-                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                }
                 WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+                WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _roleBtn);
             }
         }
         else
         {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             _nameInput.ActivateInputField();
             _nameInput.Select();
         }
@@ -419,13 +444,21 @@ public class EntityRenameDialog : MonoBehaviour
 
         _panel.SetActive(true);
         RefreshKeyhints();
-        if (ZInput.IsGamepadActive())
+        if (WardGamepadNavHelper.IsGamepadActive())
         {
-            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy)
             {
-                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                }
                 WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+                WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _roleBtn);
             }
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
         SetInputBlocked(true);
     }
@@ -483,16 +516,21 @@ public class EntityRenameDialog : MonoBehaviour
 
         _panel.SetActive(true);
         RefreshKeyhints();
-        if (ZInput.IsGamepadActive())
+        if (WardGamepadNavHelper.IsGamepadActive())
         {
-            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy && EventSystem.current != null)
+            if (_roleBtn != null && _roleBtn.gameObject.activeInHierarchy)
             {
-                EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                if (EventSystem.current != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(_roleBtn.gameObject);
+                }
                 WardGamepadNavHelper.ApplyGamepadColorBlock(_roleBtn);
+                WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _roleBtn);
             }
         }
         else
         {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
             _nameInput.ActivateInputField();
             _nameInput.Select();
         }
@@ -619,6 +657,7 @@ public class EntityRenameDialog : MonoBehaviour
     public void Close()
     {
         LastClosedFrame = Time.frameCount;
+        WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         if (_panel != null)
         {
             _panel.SetActive(false);

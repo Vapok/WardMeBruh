@@ -223,6 +223,7 @@
 
   "wmb_configure_door": "Configure Door",
   "wmb_configure_chest": "Configure Chest",
+  "wmb_configure_portal": "Configure Portal",
   "wmb_open_ward_hub": "Open Ward Settings",
   "wmb_base_extension": "(Extended)",
   "wmb_msg_portal_blocked_local": "Portal blocked: Higher role required",

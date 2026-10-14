@@ -22,8 +22,15 @@ public class EntityRenameDialog : MonoBehaviour
     private Button _depotBtn;
     private TextMeshProUGUI _depotTxt;
 
+    private enum ConfigEntityType
+    {
+        Door,
+        Container,
+        Portal
+    }
+
     private ZDOID _activeEntityId;
-    private bool _isDoor;
+    private ConfigEntityType _entityType;
     private bool _isInputBlocked;
     private PrivateArea _coveringWard;
     private bool _canManage;
@@ -196,7 +203,7 @@ public class EntityRenameDialog : MonoBehaviour
             return;
 
         _activeEntityId = door.m_nview.GetZDO().m_uid;
-        _isDoor = true;
+        _entityType = ConfigEntityType.Door;
         _headerText.text = "$wmb_configure_door".Localize().ToUpperInvariant();
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
@@ -219,6 +226,7 @@ public class EntityRenameDialog : MonoBehaviour
 
         ZDO zdo = door.m_nview.GetZDO();
         string customDoorName = zdo.GetString(WardZdoKeys.DoorName, string.Empty);
+        _nameInput.gameObject.SetActive(true);
         _nameInput.text = (!string.IsNullOrEmpty(customDoorName) && !customDoorName.Equals("Door", System.StringComparison.OrdinalIgnoreCase))
             ? customDoorName
             : defaultDoorName;
@@ -239,13 +247,55 @@ public class EntityRenameDialog : MonoBehaviour
         SetInputBlocked(true);
     }
 
+    public void OpenForPortal(TeleportWorld portal)
+    {
+        if (portal == null || portal.m_nview == null || !portal.m_nview.IsValid())
+            return;
+
+        _activeEntityId = portal.m_nview.GetZDO().m_uid;
+        _entityType = ConfigEntityType.Portal;
+
+        string tag = portal.GetText();
+        _headerText.text = !string.IsNullOrEmpty(tag)
+            ? $"{"$wmb_configure_portal".Localize().ToUpperInvariant()}: \"{tag}\""
+            : "$wmb_configure_portal".Localize().ToUpperInvariant();
+
+        long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
+        _coveringWard = WardQueryService.GetCoveringWard(portal.transform.position);
+        if (_coveringWard != null && _coveringWard.m_nview != null && _coveringWard.m_nview.IsValid())
+        {
+            _canManage = WardPermissions.CanManageWard(_coveringWard.m_nview.GetZDO(), playerId);
+        }
+        else
+        {
+            Piece piece = portal.GetComponent<Piece>();
+            _canManage = piece != null && (piece.IsCreator() || piece.GetCreator() == playerId || piece.GetCreator() == 0L);
+        }
+
+        _nameInput.gameObject.SetActive(false);
+        _depotBtn.gameObject.SetActive(false);
+
+        RectTransform roleRt = _roleBtn.GetComponent<RectTransform>();
+        roleRt.anchoredPosition = new Vector2(0f, 15f);
+        roleRt.sizeDelta = new Vector2(200f, 38f);
+
+        ZDO zdo = portal.m_nview.GetZDO();
+        int role = zdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident);
+        UpdateRoleButton(role);
+
+        ApplyCurrentFontSize();
+
+        _panel.SetActive(true);
+        SetInputBlocked(true);
+    }
+
     public void OpenForContainer(Container container)
     {
         if (container == null || container.m_nview == null || !container.m_nview.IsValid())
             return;
 
         _activeEntityId = container.m_nview.GetZDO().m_uid;
-        _isDoor = false;
+        _entityType = ConfigEntityType.Container;
         _headerText.text = "$wmb_configure_chest".Localize().ToUpperInvariant();
 
         long playerId = Player.m_localPlayer != null ? Player.m_localPlayer.GetPlayerID() : 0L;
@@ -268,6 +318,7 @@ public class EntityRenameDialog : MonoBehaviour
 
         ZDO zdo = container.m_nview.GetZDO();
         string customContainerName = zdo.GetString(WardZdoKeys.ContainerName, string.Empty);
+        _nameInput.gameObject.SetActive(true);
         _nameInput.text = (!string.IsNullOrEmpty(customContainerName) && !customContainerName.Equals("Container", System.StringComparison.OrdinalIgnoreCase))
             ? customContainerName
             : defaultContainerName;
@@ -349,9 +400,13 @@ public class EntityRenameDialog : MonoBehaviour
             ? _coveringWard.m_nview.GetZDO()
             : null;
 
-        int currentRoleInt = _isDoor
-            ? zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest)
-            : zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident);
+        int currentRoleInt = _entityType switch
+        {
+            ConfigEntityType.Door => zdo.GetInt(WardZdoKeys.DoorMinRole, (int)WardRole.Guest),
+            ConfigEntityType.Container => zdo.GetInt(WardZdoKeys.ContainerMinRole, (int)WardRole.Resident),
+            ConfigEntityType.Portal => zdo.GetInt(WardZdoKeys.PortalMinRole, (int)WardRole.Resident),
+            _ => (int)WardRole.Resident
+        };
 
         int nextRole = WardRoleManager.GetNextRoleId(wardZdo, currentRoleInt);
 
@@ -360,19 +415,28 @@ public class EntityRenameDialog : MonoBehaviour
             zdo.SetOwner(ZDOMan.GetSessionID());
         }
 
-        if (_isDoor)
+        if (_entityType == ConfigEntityType.Door)
         {
             zdo.Set(WardZdoKeys.DoorMinRole, nextRole);
             WardNetworkRouter.SendSetRoleLock(_activeEntityId, (WardRole)nextRole, true);
         }
-        else
+        else if (_entityType == ConfigEntityType.Container)
         {
             zdo.Set(WardZdoKeys.ContainerMinRole, nextRole);
             WardNetworkRouter.SendSetRoleLock(_activeEntityId, (WardRole)nextRole, false);
         }
+        else if (_entityType == ConfigEntityType.Portal)
+        {
+            zdo.Set(WardZdoKeys.PortalMinRole, nextRole);
+            if (ZDOMan.instance != null)
+            {
+                ZDOMan.instance.SetDirtyPortals();
+            }
+            WardNetworkRouter.SendPortalRole(_activeEntityId, nextRole);
+        }
 
         UpdateRoleButton(nextRole);
-        WardMeBruh.Log.Debug($"[Dialog] Set clearance role for {(_isDoor ? "Door" : "Chest")} {_activeEntityId} to {nextRole}");
+        WardMeBruh.Log.Debug($"[Dialog] Set clearance role for {_entityType} {_activeEntityId} to {nextRole}");
     }
 
     private void OnDepotClicked()
@@ -426,16 +490,19 @@ public class EntityRenameDialog : MonoBehaviour
 
     private void OnSaveClicked()
     {
-        string newName = _nameInput.text.Trim();
-        if (!string.IsNullOrEmpty(newName))
+        if (_entityType != ConfigEntityType.Portal)
         {
-            if (_isDoor)
+            string newName = _nameInput.text.Trim();
+            if (!string.IsNullOrEmpty(newName))
             {
-                WardNetworkRouter.SendRenameDoor(_activeEntityId, newName);
-            }
-            else
-            {
-                WardNetworkRouter.SendRenameContainer(_activeEntityId, newName);
+                if (_entityType == ConfigEntityType.Door)
+                {
+                    WardNetworkRouter.SendRenameDoor(_activeEntityId, newName);
+                }
+                else
+                {
+                    WardNetworkRouter.SendRenameContainer(_activeEntityId, newName);
+                }
             }
         }
         Close();

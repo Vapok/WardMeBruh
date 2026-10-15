@@ -28,6 +28,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
     private bool _wasGamepadActive;
     private bool _isInputBlocked;
     private GameObject _focusReticle;
+    private int _lastSubmitFrame = -1;
 
     public static WardPlacementChoiceModal Instance
     {
@@ -44,6 +45,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
     }
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
+    public static bool HasInstanceAndOpen => _instance != null && _instance.IsOpen;
 
     private void Awake()
     {
@@ -121,8 +123,9 @@ public class WardPlacementChoiceModal : MonoBehaviour
                 }
             }
 
-            if (WardGamepadNavHelper.IsButtonDownA())
+            if (WardGamepadNavHelper.IsButtonDownA() && Time.frameCount != _lastSubmitFrame)
             {
+                _lastSubmitFrame = Time.frameCount;
                 GameObject currentObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
                 if (currentObj != null)
                 {
@@ -259,9 +262,9 @@ public class WardPlacementChoiceModal : MonoBehaviour
         RectTransform legendRt = _gamepadLegend.GetComponent<RectTransform>();
         legendRt.anchorMin = new Vector2(0f, 0f);
         legendRt.anchorMax = new Vector2(1f, 0f);
-        legendRt.pivot = new Vector2(0.5f, 0f);
-        legendRt.offsetMin = new Vector2(20f, 8f);
-        legendRt.offsetMax = new Vector2(-20f, 26f);
+        legendRt.pivot = new Vector2(0.5f, 1f);
+        legendRt.offsetMin = new Vector2(20f, -26f);
+        legendRt.offsetMax = new Vector2(-20f, -6f);
 
         _legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         _legendText.font = UIFonts.GetPrimaryFont();

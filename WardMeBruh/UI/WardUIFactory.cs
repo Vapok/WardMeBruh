@@ -28,7 +28,7 @@ public static class WardUIFactory
         vpRt.anchorMin = Vector2.zero;
         vpRt.anchorMax = Vector2.one;
         vpRt.offsetMin = Vector2.zero;
-        vpRt.offsetMax = new Vector2(-22f, 0f);
+        vpRt.offsetMax = new Vector2(-12f, 0f);
 
         GameObject listObj = new GameObject("List", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         listObj.transform.SetParent(viewport.transform, false);
@@ -56,11 +56,11 @@ public static class WardUIFactory
         sbRt.anchorMin = new Vector2(1f, 0f);
         sbRt.anchorMax = new Vector2(1f, 1f);
         sbRt.pivot = new Vector2(1f, 0.5f);
-        sbRt.sizeDelta = new Vector2(16f, 0f);
+        sbRt.sizeDelta = new Vector2(8f, 0f);
         sbRt.anchoredPosition = Vector2.zero;
 
         Image sbImg = scrollbarObj.GetComponent<Image>();
-        sbImg.color = new Color(0.04f, 0.03f, 0.02f, 0.85f);
+        sbImg.color = new Color(0.04f, 0.03f, 0.02f, 0.45f);
         sbImg.raycastTarget = true;
 
         GameObject slidingArea = new GameObject("SlidingArea", typeof(RectTransform));
@@ -80,7 +80,7 @@ public static class WardUIFactory
         handleRt.offsetMax = Vector2.zero;
 
         Image handleImg = handleObj.GetComponent<Image>();
-        handleImg.color = WardColorPalette.GoldAmber;
+        handleImg.color = new Color(0.85f, 0.65f, 0.25f, 0.45f);
         handleImg.raycastTarget = true;
 
         Scrollbar scrollbar = scrollbarObj.GetComponent<Scrollbar>();
@@ -98,7 +98,7 @@ public static class WardUIFactory
         scrollRect.decelerationRate = 0.5f;
         scrollRect.movementType = ScrollRect.MovementType.Clamped;
         scrollRect.verticalScrollbar = scrollbar;
-        scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
+        scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
 
         listContainer = listObj.transform;
         return scrollObj;

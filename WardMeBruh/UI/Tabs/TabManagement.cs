@@ -25,6 +25,7 @@ public class TabManagement
     private TextMeshProUGUI _tooltipTitle;
     private TextMeshProUGUI _tooltipDesc;
     private RectTransform _tooltipRt;
+    private RectTransform _lastTargetRow;
 
     public GameObject Root => _root;
 
@@ -59,6 +60,17 @@ public class TabManagement
         rightRt.offsetMax = new Vector2(0f, 0f);
 
         WardUIFactory.CreateScrollArea(rightPanel.transform, out _rightContainer);
+        ScrollRect rightSr = rightPanel.GetComponentInChildren<ScrollRect>(true);
+        if (rightSr != null)
+        {
+            rightSr.onValueChanged.AddListener(_ =>
+            {
+                if (_hoverTooltip != null && _hoverTooltip.activeSelf && _lastTargetRow != null)
+                {
+                    UpdateHoverTooltipPosition(_lastTargetRow);
+                }
+            });
+        }
     }
 
     public void Bind(PrivateArea ward)
@@ -464,7 +476,11 @@ public class TabManagement
                 btnTxt.color = new Color(0.85f, 0.75f, 0.45f);
             }
             btnImg.color = new Color(0.20f, 0.18f, 0.14f);
-            btn.interactable = false;
+            btn.interactable = true;
+            btn.onClick.AddListener(() =>
+            {
+                Player.m_localPlayer?.Message(MessageHud.MessageType.Center, "$wmb_mgmt_owner_authority".Localize());
+            });
         }
         else if (isInherited)
         {
@@ -474,7 +490,12 @@ public class TabManagement
                 btnTxt.color = new Color(0.65f, 0.72f, 0.80f);
             }
             btnImg.color = new Color(0.18f, 0.22f, 0.28f);
-            btn.interactable = false;
+            btn.interactable = true;
+            btn.onClick.AddListener(() =>
+            {
+                string msg = string.Format("$wmb_mgmt_inherited".Localize() + " ({0})", inheritedFrom.Localize());
+                Player.m_localPlayer?.Message(MessageHud.MessageType.Center, msg);
+            });
         }
         else if (hasExplicit)
         {
@@ -512,13 +533,14 @@ public class TabManagement
         }
     }
 
-    public void ShowHoverTooltip(FeaturePermission perm, Vector2 screenPos)
+    public void ShowHoverTooltip(FeaturePermission perm, RectTransform rowRt)
     {
-        if (perm == null)
+        if (perm == null || rowRt == null)
             return;
 
         EnsureHoverTooltip();
 
+        _lastTargetRow = rowRt;
         _tooltipTitle.text = perm.DisplayName.Localize();
         _tooltipDesc.text = perm.Description.Localize();
 
@@ -527,24 +549,89 @@ public class TabManagement
             WardMainWindow.ApplyFontSizeToHierarchy(_hoverTooltip, WardMainWindow.Instance.CurrentFontSizeMode);
         }
 
-        UpdateHoverTooltipPosition(screenPos);
+        UpdateHoverTooltipPosition(rowRt);
 
         _hoverTooltip.SetActive(true);
         _hoverTooltip.transform.SetAsLastSibling();
     }
 
-    public void UpdateHoverTooltipPosition(Vector2 screenPos)
+    public void UpdateHoverTooltipPosition(RectTransform rowRt = null)
     {
-        if (_hoverTooltip == null || _tooltipRt == null)
+        if (rowRt == null)
+        {
+            rowRt = _lastTargetRow;
+        }
+
+        if (_hoverTooltip == null || _tooltipRt == null || rowRt == null)
             return;
 
-        _tooltipRt.pivot = new Vector2(0f, 1f);
-        _hoverTooltip.transform.position = new Vector3(screenPos.x + 16f, screenPos.y - 12f, 0f);
+        ScrollRect rightSr = _rightContainer != null ? _rightContainer.GetComponentInParent<ScrollRect>() : null;
+        if (rightSr != null && rightSr.viewport != null)
+        {
+            Vector3[] vpCorners = new Vector3[4];
+            rightSr.viewport.GetWorldCorners(vpCorners);
+            Vector3[] rCorners = new Vector3[4];
+            rowRt.GetWorldCorners(rCorners);
+
+            if (rCorners[1].y < vpCorners[0].y || rCorners[0].y > vpCorners[1].y)
+            {
+                _hoverTooltip.SetActive(false);
+                return;
+            }
+        }
+
+        RectTransform panelRt = null;
+        if (WardMainWindow.Instance != null && WardMainWindow.Instance.Panel != null)
+        {
+            panelRt = WardMainWindow.Instance.Panel.GetComponent<RectTransform>();
+        }
+
+        Vector3[] rowCorners = new Vector3[4];
+        rowRt.GetWorldCorners(rowCorners);
+        float rowTopY = rowCorners[1].y;
+
+        float targetX;
+        float targetY = rowTopY;
+
+        float tooltipWidth = _tooltipRt.sizeDelta.x > 0f ? _tooltipRt.sizeDelta.x : 320f;
+
+        if (panelRt != null)
+        {
+            Vector3[] panelCorners = new Vector3[4];
+            panelRt.GetWorldCorners(panelCorners);
+
+            float rightEdgeX = panelCorners[2].x;
+            float leftEdgeX = panelCorners[0].x;
+
+            if (rightEdgeX + 12f + tooltipWidth <= Screen.width - 8f)
+            {
+                _tooltipRt.pivot = new Vector2(0f, 1f);
+                targetX = rightEdgeX + 12f;
+            }
+            else if (leftEdgeX - 12f - tooltipWidth >= 8f)
+            {
+                _tooltipRt.pivot = new Vector2(1f, 1f);
+                targetX = leftEdgeX - 12f;
+            }
+            else
+            {
+                _tooltipRt.pivot = new Vector2(0f, 1f);
+                targetX = rightEdgeX + 12f;
+            }
+        }
+        else
+        {
+            _tooltipRt.pivot = new Vector2(0f, 1f);
+            targetX = rowCorners[2].x + 12f;
+        }
+
+        _hoverTooltip.transform.position = new Vector3(targetX, targetY, 0f);
         Utils.ClampUIToScreen(_tooltipRt);
     }
 
     public void HideHoverTooltip()
     {
+        _lastTargetRow = null;
         if (_hoverTooltip != null)
         {
             _hoverTooltip.SetActive(false);

@@ -83,13 +83,13 @@ public static class WardGamepadNavHelper
         GameObject reticle = new("FocusReticle", typeof(RectTransform));
         reticle.transform.SetParent(parent, false);
         RectTransform rt = reticle.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = new Vector2(-4f, -4f);
-        rt.offsetMax = new Vector2(4f, 4f);
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.sizeDelta = Vector2.zero;
 
-        Color gold = new(1.15f, 0.85f, 0.25f, 0.95f);
-        float thickness = 2.5f;
+        Color gold = new(1f, 0.82f, 0.2f, 1f);
+        float thickness = 3.5f;
 
         CreateReticleBorder(reticle.transform, "Top", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -thickness), Vector2.zero, gold);
         CreateReticleBorder(reticle.transform, "Bottom", new Vector2(0f, 0f), new Vector2(1f, 0f), Vector2.zero, new Vector2(0f, thickness), gold);
@@ -125,12 +125,63 @@ public static class WardGamepadNavHelper
             return;
         }
 
-        reticle.transform.SetParent(selectable.transform, false);
-        RectTransform rt = reticle.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = new Vector2(-4f, -4f);
-        rt.offsetMax = new Vector2(4f, 4f);
+        RectTransform selRt = selectable.transform as RectTransform;
+        RectTransform reticleRt = reticle.GetComponent<RectTransform>();
+        if (selRt == null || reticleRt == null)
+        {
+            reticle.SetActive(false);
+            return;
+        }
+
+        RectTransform parentRt = reticle.transform.parent as RectTransform;
+        if (parentRt == null)
+        {
+            reticle.SetActive(false);
+            return;
+        }
+
+        Vector3[] corners = new Vector3[4];
+        selRt.GetWorldCorners(corners);
+
+        float minX = corners[0].x;
+        float maxX = corners[2].x;
+        float minY = corners[0].y;
+        float maxY = corners[2].y;
+
+        ScrollRect sr = selectable.GetComponentInParent<ScrollRect>();
+        if (sr != null)
+        {
+            RectTransform vp = sr.viewport != null ? sr.viewport : (RectTransform)sr.transform;
+            Vector3[] vpCorners = new Vector3[4];
+            vp.GetWorldCorners(vpCorners);
+
+            if (maxY <= vpCorners[0].y + 2f || minY >= vpCorners[2].y - 2f || maxX <= vpCorners[0].x || minX >= vpCorners[2].x)
+            {
+                reticle.SetActive(false);
+                return;
+            }
+
+            minY = Mathf.Max(minY, vpCorners[0].y);
+            maxY = Mathf.Min(maxY, vpCorners[2].y);
+        }
+
+        Vector3 worldMin = new Vector3(minX, minY, corners[0].z);
+        Vector3 worldMax = new Vector3(maxX, maxY, corners[2].z);
+
+        Vector3 localMin = parentRt.InverseTransformPoint(worldMin);
+        Vector3 localMax = parentRt.InverseTransformPoint(worldMax);
+
+        if (localMax.y <= parentRt.rect.yMin || localMin.y >= parentRt.rect.yMax)
+        {
+            reticle.SetActive(false);
+            return;
+        }
+
+        reticleRt.anchorMin = new Vector2(0.5f, 0.5f);
+        reticleRt.anchorMax = new Vector2(0.5f, 0.5f);
+        reticleRt.pivot = new Vector2(0.5f, 0.5f);
+        reticleRt.anchoredPosition = (localMin + localMax) * 0.5f;
+        reticleRt.sizeDelta = new Vector2(Mathf.Abs(localMax.x - localMin.x) + 8f, Mathf.Abs(localMax.y - localMin.y) + 8f);
         reticle.transform.SetAsLastSibling();
         reticle.SetActive(true);
     }
@@ -177,7 +228,7 @@ public static class WardGamepadNavHelper
             if (s == null || !s.gameObject.activeInHierarchy || !s.interactable)
                 continue;
 
-            if (s is Scrollbar || s is InputField || s is TMP_InputField)
+            if (s is Scrollbar)
                 continue;
 
             Navigation nav = s.navigation;
@@ -192,56 +243,71 @@ public static class WardGamepadNavHelper
 
     public static bool IsGamepadActive()
     {
-        return ZInput.IsGamepadActive() || UnityEngine.InputSystem.Gamepad.current != null;
+        return ZInput.IsGamepadActive();
     }
 
     public static bool IsButtonDownA()
     {
-        bool zDown = ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse") || ZInput.GetButtonDown("Use");
+        bool zDown = ZInput.GetButtonDown("JoyButtonA") || ZInput.GetButtonDown("JoyUse");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton0);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonSouth.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownB()
     {
         bool zDown = ZInput.GetButtonDown("JoyButtonB") || ZInput.GetButtonDown("JoyRadialClose");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton1);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownX()
     {
         bool zDown = ZInput.GetButtonDown("JoyButtonX");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton2);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonWest.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownY()
     {
         bool zDown = ZInput.GetButtonDown("JoyButtonY") || ZInput.GetButtonDown("JoyInventory");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton3);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonNorth.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownLB()
     {
         bool zDown = ZInput.GetButtonDown("JoyLBumper") || ZInput.GetButtonDown("JoyTabLeft");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton4);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.leftShoulder.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownRB()
     {
         bool zDown = ZInput.GetButtonDown("JoyRBumper") || ZInput.GetButtonDown("JoyTabRight");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton5);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.rightShoulder.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
     }
 
     public static bool IsButtonDownRS()
     {
         bool zDown = ZInput.GetButtonDown("JoyRStick");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton9);
         bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.rightStickButton.wasPressedThisFrame;
-        return zDown || gpDown;
+        return zDown || key || gpDown;
+    }
+
+    public static bool IsButtonDownLS()
+    {
+        bool zDown = ZInput.GetButtonDown("JoyLStick");
+        bool key = Input.GetKeyDown(KeyCode.JoystickButton8);
+        bool gpDown = UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.leftStickButton.wasPressedThisFrame;
+        return zDown || key || gpDown;
     }
 
     public static bool GetDirectionInput(out bool up, out bool down, out bool left, out bool right)
@@ -349,16 +415,25 @@ public static class WardGamepadNavHelper
 
     public static float GetRightStickScrollDelta()
     {
-        float joyY = ZInput.GetJoyRightStickY();
         if (UnityEngine.InputSystem.Gamepad.current != null)
         {
-            float gpY = UnityEngine.InputSystem.Gamepad.current.rightStick.ReadValue().y;
-            if (Mathf.Abs(gpY) > Mathf.Abs(joyY))
+            Vector2 stick = UnityEngine.InputSystem.Gamepad.current.rightStick.ReadValue();
+            if (Mathf.Abs(stick.y) > 0.15f)
             {
-                joyY = gpY;
+                return stick.y;
             }
         }
-        return joyY;
+
+        if (ZInput.instance != null)
+        {
+            Vector2 joyStick = ZInput.GetJoyRightStick();
+            if (Mathf.Abs(joyStick.y) > 0.15f)
+            {
+                return joyStick.y;
+            }
+        }
+
+        return 0f;
     }
 
     public static void EnsureVisible(ScrollRect scrollRect, RectTransform target)
@@ -370,13 +445,11 @@ public static class WardGamepadNavHelper
         Vector3[] targetCorners = new Vector3[4];
         target.GetWorldCorners(targetCorners);
 
-        Vector3[] viewportCorners = new Vector3[4];
-        viewport.GetWorldCorners(viewportCorners);
+        Vector3 localTargetMin = viewport.InverseTransformPoint(targetCorners[0]);
+        Vector3 localTargetMax = viewport.InverseTransformPoint(targetCorners[1]);
 
-        float targetMinY = targetCorners[0].y;
-        float targetMaxY = targetCorners[1].y;
-        float vpMinY = viewportCorners[0].y;
-        float vpMaxY = viewportCorners[1].y;
+        float vpMinY = viewport.rect.yMin;
+        float vpMaxY = viewport.rect.yMax;
 
         float contentHeight = scrollRect.content.rect.height;
         float vpHeight = viewport.rect.height;
@@ -387,15 +460,15 @@ public static class WardGamepadNavHelper
         if (scrollableRange <= 0.01f)
             return;
 
-        if (targetMinY < vpMinY)
+        if (localTargetMin.y < vpMinY)
         {
-            float diff = (vpMinY - targetMinY) + 24f;
+            float diff = (vpMinY - localTargetMin.y) + 16f;
             float normDiff = diff / scrollableRange;
             scrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollRect.verticalNormalizedPosition - normDiff);
         }
-        else if (targetMaxY > vpMaxY)
+        else if (localTargetMax.y > vpMaxY)
         {
-            float diff = (targetMaxY - vpMaxY) + 24f;
+            float diff = (localTargetMax.y - vpMaxY) + 16f;
             float normDiff = diff / scrollableRange;
             scrollRect.verticalNormalizedPosition = Mathf.Clamp01(scrollRect.verticalNormalizedPosition + normDiff);
         }

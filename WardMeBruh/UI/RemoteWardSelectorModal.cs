@@ -25,7 +25,9 @@ public class RemoteWardSelectorModal
     private readonly List<Selectable> _selectableButtons = new();
     private Selectable _currentSelected;
     private GameObject _focusReticle;
+    private int _lastSubmitFrame = -1;
 
+    public static int LastClosedFrame { get; private set; } = -1;
     public bool IsOpen => _panel != null && _panel.activeSelf;
 
     public void Build(Transform parent, Action<KnownWard> onWardSelected)
@@ -67,10 +69,10 @@ public class RemoteWardSelectorModal
             _panel.transform, 
             new Vector2(1f, 1f), 
             new Vector2(1f, 1f), 
-            new Vector2(-30f, -32f), 
-            54f, 
+            new Vector2(-48f, -34f), 
+            38f, 
             32f);
-        _closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(54f, 32f);
+        _closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(38f, 32f);
         WardUIFactory.SetupButtonText(_closeBtn, "X", 14f, WardColorPalette.DangerRed);
         _closeBtnText = _closeBtn.GetComponentInChildren<TextMeshProUGUI>();
         _closeBtn.GetComponent<Button>().onClick.AddListener(Close);
@@ -86,9 +88,9 @@ public class RemoteWardSelectorModal
         RectTransform legendRt = _gamepadLegend.GetComponent<RectTransform>();
         legendRt.anchorMin = new Vector2(0f, 0f);
         legendRt.anchorMax = new Vector2(1f, 0f);
-        legendRt.pivot = new Vector2(0.5f, 0f);
-        legendRt.offsetMin = new Vector2(30f, 4f);
-        legendRt.offsetMax = new Vector2(-30f, 20f);
+        legendRt.pivot = new Vector2(0.5f, 1f);
+        legendRt.offsetMin = new Vector2(30f, -26f);
+        legendRt.offsetMax = new Vector2(-30f, -6f);
 
         TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         legendText.font = UIFonts.GetPrimaryFont();
@@ -116,6 +118,7 @@ public class RemoteWardSelectorModal
 
     public void Close()
     {
+        LastClosedFrame = Time.frameCount;
         WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         if (_panel != null)
         {
@@ -403,8 +406,8 @@ public class RemoteWardSelectorModal
     {
         if (_closeBtnText != null)
         {
-            string bGlyph = WardGamepadNavHelper.GetGamepadGlyph("B");
-            _closeBtnText.text = isGamepad ? $"{bGlyph} X" : "X";
+            string xGlyph = WardGamepadNavHelper.GetGamepadGlyph("X");
+            _closeBtnText.text = isGamepad ? xGlyph : "X";
         }
         if (_gamepadLegend != null)
         {
@@ -416,9 +419,9 @@ public class RemoteWardSelectorModal
                 {
                     string dpad = WardGamepadNavHelper.GetGamepadGlyph("DPad");
                     string a = WardGamepadNavHelper.GetGamepadGlyph("A");
-                    string b = WardGamepadNavHelper.GetGamepadGlyph("B");
-                    string rs = WardGamepadNavHelper.GetGamepadGlyph("RS");
-                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select Ward   {b} Back   {rs} Scroll</color>";
+                    string x = WardGamepadNavHelper.GetGamepadGlyph("X");
+                    string rstick = WardGamepadNavHelper.GetGamepadGlyph("RStick");
+                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select Ward   {x} Close   {rstick} Scroll</color>";
                 }
             }
         }
@@ -435,9 +438,13 @@ public class RemoteWardSelectorModal
             return;
         }
 
-        if (WardGamepadNavHelper.IsButtonDownB())
+        if (WardGamepadNavHelper.IsButtonDownB() || WardGamepadNavHelper.IsButtonDownX() || Input.GetKeyDown(KeyCode.Escape))
         {
             Close();
+            if (WardMainWindow.Instance != null && WardMainWindow.Instance.GamepadController != null)
+            {
+                WardMainWindow.Instance.GamepadController.RestoreFocusOrSelectFirst();
+            }
             return;
         }
 
@@ -449,18 +456,29 @@ public class RemoteWardSelectorModal
             }
         }
 
-        if (WardGamepadNavHelper.IsButtonDownA() && _currentSelected != null)
+        if (WardGamepadNavHelper.IsButtonDownA() && _currentSelected != null && Time.frameCount != _lastSubmitFrame)
         {
             if (_currentSelected is Button btn && btn.interactable)
             {
+                _lastSubmitFrame = Time.frameCount;
                 btn.onClick.Invoke();
             }
         }
 
         float joyY = WardGamepadNavHelper.GetRightStickScrollDelta();
-        if (Mathf.Abs(joyY) > 0.1f && _scrollRect != null)
+        if (Mathf.Abs(joyY) > 0.15f && _scrollRect != null)
         {
-            _scrollRect.verticalNormalizedPosition = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + joyY * 0.05f);
+            float scrollDelta = joyY * 2.5f * Time.unscaledDeltaTime;
+            _scrollRect.verticalNormalizedPosition = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + scrollDelta);
+        }
+
+        if (_currentSelected != null && _currentSelected.gameObject.activeInHierarchy)
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _currentSelected);
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         }
     }
 

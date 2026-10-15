@@ -133,7 +133,7 @@ WardMeBruh includes native gamepad support across all interfaces, configuration 
 | **Select / Toggle** | <kbd>A</kbd> | Activates the focused button or toggles a checkbox. |
 | **Adjust Sliders** | <kbd>D-Pad Left</kbd> / <kbd>Right</kbd> | Steps slider values (e.g. ward radius, repair threshold). |
 | **Runic Attunement** | <kbd>Y</kbd> | Direct shortcut to open the Runic Attunement progression menu. |
-| **Other Wards** | <kbd>X</kbd> | Direct shortcut to open the Remote Ward territory registry. |
+| **Other Wards** | <kbd>X</kbd> | Direct shortcut to open the Remote Ward network registry. |
 | **Cycle Font Size** | <kbd>R3</kbd> (Right Stick Click) | Cycles UI text scaling between Small, Medium, and Large. |
 | **Scroll Viewport** | Right Stick (Up / Down) | Smoothly scrolls the active tab or modal content. |
 | **Close / Back** | <kbd>B</kbd> | Closes the open modal or exits the Ward Hub. |
@@ -186,9 +186,9 @@ See the [API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Do
 
 ### Incompatibilities
 
-Due to the nature of shared features and overlapping territory control, WardMeBruh cannot run concurrently with other total-conversion ward overhauls:
+Due to the nature of shared features and overlapping ward area management, WardMeBruh cannot run concurrently with other total-conversion ward overhauls:
 
-* **WardIsLove (`Azumatt.WardIsLove`)**: Incompatible. Both mods overhaul native `PrivateArea` lifecycle, boundary calculations, and territory permissions. Run one or the other.
+* **WardIsLove (`Azumatt.WardIsLove`)**: Incompatible. Both mods overhaul native `PrivateArea` lifecycle, boundary calculations, and ward permissions. Run one or the other.
 * **ProtectiveWards (`shudnal.ProtectiveWards`)**: Incompatible. Direct conflict due to duplicate ward access and perimeter control implementations.
 
 ---
@@ -203,7 +203,7 @@ Due to the nature of shared features and overlapping territory control, WardMeBr
 * Extract the `.zip` archive and move the `WardMeBruh` folder into your `Valheim/BepInEx/plugins/` directory.
 
 ### Dedicated Servers & Multiplayer
-* **Required on Both Client & Server**: WardMeBruh must be installed on both the server and all connecting clients. The mod relies on custom network RPCs and ZDO data synchronization for territory access, role permissions, and runic progression.
+* **Required on Both Client & Server**: WardMeBruh must be installed on both the server and all connecting clients. The mod relies on custom network RPCs and ZDO data synchronization for ward area access, role permissions, and runic progression.
 * **ServerSync Configuration**: Synced configuration settings (progression toggles, feature locks, recipes) defined on the dedicated server lock down and synchronize to all connecting clients automatically.
 * **Dedicated Server Deployment**: Extract the mod into the dedicated server's `BepInEx/plugins/` directory. The mod detects headless server execution cleanly and skips all UI registration.
 

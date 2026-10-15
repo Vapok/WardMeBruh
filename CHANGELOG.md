@@ -1,3 +1,7 @@
+# 1.0.1 - Controller Improvements & Dependency Updates
+* **Controller Support**: Improved controller navigation, responsiveness, and interaction across ward interfaces.
+* **Compatibility**: Updated internal dependencies for stability and Valheim 1.0.20 compatibility.
+
 # 1.0.0 - Initial Release
 * **Interactive Ward Hub**: Centralized management window at the ward stone featuring Overview, Defenses, Upkeep, Access, Roster, and Attunement tabs.
 * **Base Extensions**: Place additional ward stones inside active boundaries to link them to the main base, sharing power, roles, and settings while expanding total coverage.

@@ -1,3 +1,10 @@
+# 1.0.1 - Controller Improvements & Dependency Updates
+* **Controller Navigation & UI Refinements**:
+  * Refined management role readability, slider stepping, and modal escape navigation.
+* **Dependency & Engine Alignment**:
+  * Updated internalized dependency `Vapok.Valheim.Common` to 3.1020.1.
+  * Aligned game assembly references to Valheim 1.0.20.
+
 # 1.0.0 - Initial Release
 
 ### Architecture & Core Systems

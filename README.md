@@ -84,6 +84,7 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 * **Ward Interface**: Accessed directly at any ward stone (<kbd>E</kbd> or <kbd>G</kbd>). Tabs: Overview, Access, Defenses, Upkeep, Roles, and Management.
 * **Remote Ward Menu**: View and configure all wards you own across the world from one menu. Shows bases in a hierarchy with child extensions and sub-wards grouped underneath.
 * **Font Scaling**: Toggle between Small, Medium, and Large text sizes directly in the window header.
+* **Full Controller Support**: Complete gamepad navigation across the Ward Hub, entity configuration dialogs, and modals with contextual on-screen keyhints.
 
 ### Base Extensions & Sub-Wards
 * **Placement Prompt**: Placing a new ward stone inside an active ward prompts you to choose between an **Extension Ward** or a **Sub-Ward**.
@@ -109,6 +110,8 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 ---
 
 ## 🕹️ Controls
+
+WardMeBruh includes native gamepad support across all interfaces, configuration dialogs, and in-world interactions. Controls and button hints dynamically switch between keyboard/mouse and controller layouts based on active input.
 
 ### In-World Controls
 

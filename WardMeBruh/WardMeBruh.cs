@@ -28,7 +28,8 @@ public class WardMeBruh : BaseUnityPlugin, IPluginInfo
 {
     private const string _pluginId = "vapok.mods.wardmebruh";
     private const string _displayName = "WardMeBruh";
-    private const string _version = "0.0.6";
+    private const string _version = "1.0.0";
+    public const int NexusId = 4434;
     public static bool ValheimAwake;
     public static Waiting Waiter;
 

@@ -82,6 +82,12 @@ internal static class Patch_PlayerInput
             return false;
         }
 
+        if (WardPlacementChoiceModal.Instance != null && WardPlacementChoiceModal.Instance.IsOpen)
+        {
+            __result = false;
+            return false;
+        }
+
         return true;
     }
 }

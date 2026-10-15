@@ -6,6 +6,7 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/Vapok/WardMeBruh?include_prereleases&logo=github&style=for-the-badge)](https://github.com/Vapok/WardMeBruh/releases)
 [![Thunderstore Version](https://img.shields.io/thunderstore/v/Vapok/WardMeBruh?logo=thunderstore&style=for-the-badge)](https://thunderstore.io/c/valheim/p/Vapok/WardMeBruh/)
+[![Nexus Mods](https://img.shields.io/badge/Nexus_Mods-Available-da8e35?logo=nexusmods&style=for-the-badge)](https://www.nexusmods.com/valheim/mods/4434)
 <br>
 [![Discord](https://img.shields.io/badge/Discord-Join%20Community-7289da?logo=discord&logoColor=white&style=for-the-badge)](https://discord.gg/5YAJkRFBXt)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
@@ -51,7 +52,7 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 | **Sowilo** | `ᛋ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_sowilo.png" width="32" height="32" alt="Sowilo"/> | Forge (Lv 6) | 1 Yagluth Trophy, 20 Black Metal, 20 Tar | Yagluth | 80m |
 | **Laguz** | `ᛚ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_laguz.png" width="32" height="32" alt="Laguz"/> | Galdr Table (Lv 1) | 1 Queen Trophy, 20 Refined Eitr, 20 Black Marble | The Queen | 90m |
 | **Dagaz** | `ᛞ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_dagaz.png" width="32" height="32" alt="Dagaz"/> | Black Forge (Lv 2) | 1 Fader Trophy, 20 Flametal, 20 Blackwood | Fader | 100m |
-| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | Deep North Boss | 120m |
+| **Hagalaz** | `ᚺ` | <img src="https://raw.githubusercontent.com/Vapok/WardMeBruh/main/images/keystones/keystone_hagalaz.png" width="32" height="32" alt="Hagalaz"/> | Black Forge (Lv 3) | 1 Frozen King Drop, 10 Frost Core, 20 Frostwood, 20 Gold Ore | The Frozen King | 120m |
 
 *(Note: Feature unlocks per rune are fully configurable in `vapok.mods.wardmebruh.cfg`. Defaults are left for you to discover in-game).*
 
@@ -84,6 +85,7 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 * **Ward Interface**: Accessed directly at any ward stone (<kbd>E</kbd> or <kbd>G</kbd>). Tabs: Overview, Access, Defenses, Upkeep, Roles, and Management.
 * **Remote Ward Menu**: View and configure all wards you own across the world from one menu. Shows bases in a hierarchy with child extensions and sub-wards grouped underneath.
 * **Font Scaling**: Toggle between Small, Medium, and Large text sizes directly in the window header.
+* **Full Controller Support**: Complete gamepad navigation across the Ward Hub, entity configuration dialogs, and modals with contextual on-screen keyhints.
 
 ### Base Extensions & Sub-Wards
 * **Placement Prompt**: Placing a new ward stone inside an active ward prompts you to choose between an **Extension Ward** or a **Sub-Ward**.
@@ -110,11 +112,32 @@ WardMeBruh includes an optional **Runic Attunement** progression system that is 
 
 ## 🕹️ Controls
 
-| Action | Control | Description |
+WardMeBruh includes native gamepad support across all interfaces, configuration dialogs, and in-world interactions. Controls and button hints dynamically switch between keyboard/mouse and controller layouts based on active input.
+
+### In-World Controls
+
+| Action | Keyboard / Mouse | Gamepad | Description |
+| :--- | :--- | :--- | :--- |
+| **Open Ward Hub** | <kbd>E</kbd> or <kbd>G</kbd> | <kbd>A</kbd> | Opens the ward management interface at a ward monument. |
+| **Toggle Ward Power** | — | <kbd>LT</kbd> + <kbd>A</kbd> | Toggles ward activation directly in-world without opening the menu. |
+| **Configure Door / Chest** | <kbd>Shift</kbd> + <kbd>E</kbd> | <kbd>LT</kbd> + <kbd>A</kbd> | Opens the role access and renaming configuration dialog. |
+| **Configure Portal** | <kbd>Shift</kbd> + <kbd>E</kbd> | <kbd>LT</kbd> + <kbd>A</kbd> | Opens the portal role access configuration dialog. |
+| **Standard Interact** | <kbd>E</kbd> | <kbd>A</kbd> | Standard door/chest/portal interaction (checked against role clearance). |
+
+### Ward Hub Dialog Navigation (Gamepad)
+
+| Action | Gamepad Control | Description |
 | :--- | :--- | :--- |
-| **Open Ward Menu** | <kbd>E</kbd> or <kbd>G</kbd> | Opens the ward interface at a ward stone. |
-| **Quick-Name Entity** | <kbd>Shift</kbd> + <kbd>E</kbd> | Renames targeted door or chest in-world. |
-| **Interact** | <kbd>E</kbd> | Standard door/chest/portal interaction (checked against role clearance). |
+| **Switch Tabs** | <kbd>LB</kbd> / <kbd>RB</kbd> | Cycles forward and backward through Ward Hub tabs. |
+| **Jump Sections** | <kbd>LT</kbd> / <kbd>RT</kbd> | Jumps the cursor to the previous or next card/section. |
+| **Navigate Elements** | <kbd>D-Pad</kbd> or Left Stick | Moves focus between buttons, toggles, and sliders. |
+| **Select / Toggle** | <kbd>A</kbd> | Activates the focused button or toggles a checkbox. |
+| **Adjust Sliders** | <kbd>D-Pad Left</kbd> / <kbd>Right</kbd> | Steps slider values (e.g. ward radius, repair threshold). |
+| **Runic Attunement** | <kbd>Y</kbd> | Direct shortcut to open the Runic Attunement progression menu. |
+| **Other Wards** | <kbd>X</kbd> | Direct shortcut to open the Remote Ward network registry. |
+| **Cycle Font Size** | <kbd>R3</kbd> (Right Stick Click) | Cycles UI text scaling between Small, Medium, and Large. |
+| **Scroll Viewport** | Right Stick (Up / Down) | Smoothly scrolls the active tab or modal content. |
+| **Close / Back** | <kbd>B</kbd> | Closes the open modal or exits the Ward Hub. |
 
 ---
 
@@ -140,7 +163,8 @@ Settings are saved to `BepInEx/config/vapok.mods.wardmebruh.cfg`.
 * `Open Ward Hub Keybind`: Shortcut key to open the interface (default: `<kbd>E</kbd>`).
 * `Show Physical Attunement Stones`: Renders physical glowing pedestal runestones around attuned ward monuments (default: `true`).
 * `Show Splash on Startup`: Shows mod summary window on game launch (default: `true`).
-* `Enable Anonymous Telemetry`: Sends crash and version reports (default: `true`).
+* `Enable Anonymous Telemetry`: Sends anonymous version adoption and session launch metrics (default: `false`).
+* `Send Error Reports`: Sends sanitized crash and exception reports (default: `true`).
 
 ---
 
@@ -159,14 +183,30 @@ See the [API Integration Guide](https://github.com/Vapok/WardMeBruh/blob/main/Do
 * **BepInEx**: 5.4.2350 or later
 * **Jotunn**: 2.30.2 or later
 * Compatible with singleplayer, local co-op, and dedicated servers.
-* Non-destructive Harmony patches designed to coexist with ValheimPlus, Azu mods, and inventory management mods.
+* Non-destructive Harmony patches designed to coexist with ValheimPlus, remote crafting, and inventory management mods.
+
+### Incompatibilities
+
+Due to the nature of shared features and overlapping ward area management, WardMeBruh cannot run concurrently with other total-conversion ward overhauls:
+
+* **WardIsLove (`Azumatt.WardIsLove`)**: Incompatible. Both mods overhaul native `PrivateArea` lifecycle, boundary calculations, and ward permissions. Run one or the other.
+* **ProtectiveWards (`shudnal.ProtectiveWards`)**: Incompatible. Direct conflict due to duplicate ward access and perimeter control implementations.
 
 ---
 
-## 📦 Installation
+## 📦 Installation & Server Setup
 
-* **Mod Manager (Recommended)**: Install via Gale, r2modman, or Thunderstore Mod Manager.
-* **Manual**: Extract the `.zip` archive and move the `WardMeBruh` folder into `Valheim/BepInEx/plugins/`.
+### Mod Manager (Recommended)
+1. Install via **Gale**, **r2modman**, or **Thunderstore Mod Manager**.
+2. Dependencies are resolved and installed automatically: `BepInExPack`, `Jotunn`, and `YamlDotNet`.
+
+### Manual Installation
+* Extract the `.zip` archive and move the `WardMeBruh` folder into your `Valheim/BepInEx/plugins/` directory.
+
+### Dedicated Servers & Multiplayer
+* **Required on Both Client & Server**: WardMeBruh must be installed on both the server and all connecting clients. The mod relies on custom network RPCs and ZDO data synchronization for ward area access, role permissions, and runic progression.
+* **ServerSync Configuration**: Synced configuration settings (progression toggles, feature locks, recipes) defined on the dedicated server lock down and synchronize to all connecting clients automatically.
+* **Dedicated Server Deployment**: Extract the mod into the dedicated server's `BepInEx/plugins/` directory. The mod detects headless server execution cleanly and skips all UI registration.
 
 ---
 
@@ -187,3 +227,31 @@ Looking to integrate your mod with WardMeBruh or build compatibility?
 * ⚠️ **Strict Policy**: Do not use reflection or Harmony patches on internal classes; always use the public API.
 * 💡 **Need New API Features?**: Open a [Feature Request](https://github.com/Vapok/WardMeBruh/issues) or discuss it in our [Discord](https://discord.gg/5YAJkRFBXt).
 
+---
+
+## 🔒 Anonymous Telemetry, Error Reporting & Privacy
+
+WardMeBruh includes lightweight, privacy-first telemetry and error reporting to help monitor mod stability, diagnose unhandled bugs, and track active version adoption across game updates.
+
+* **100% Anonymous**: We never collect personal data, Steam IDs, IP addresses, character/world names, or file system paths. Stack traces from errors are automatically sanitized to strip local user directories.
+* **Granular Player Control**:
+  * **Anonymous Telemetry (Opt-In)**: Tracks version adoption and session launches. Defaults to **unchecked / disabled** when first loaded (`Enable Anonymous Telemetry = false`).
+  * **Error Reporting (Opt-Out)**: Captures sanitized mod crash diagnostics to rapidly identify and fix bugs. Defaults to **enabled** (`Send Error Reports = true`) with one-click opt-out.
+  * **Data Disclaimers**: Hover over any toggle in the startup modal for interactive tooltip disclaimers detailing exactly what data is transmitted.
+* **In-Game & Online Privacy Policy**: The full privacy policy can be viewed directly in-game by clicking **`[ PRIVACY POLICY ]`** on the startup splash modal, or online at [vapok.io/privacy-policy](https://vapok.io/privacy-policy/).
+* **Configuration Files**: Settings can be managed in-game via the startup modal, through the BepInEx Configuration Manager, or under `[Local Config]` in `BepInEx/config/vapok.mods.wardmebruh.cfg`.
+
+---
+
+<div align="center">
+
+### 👨‍💻 Created by Vapok Gaming
+
+[![Vapok Gaming](https://avatars.githubusercontent.com/u/1264136?s=120&v=4)](https://github.com/Vapok)
+
+**Author**: [Vapok](https://github.com/Vapok)  
+**Source Code**: [GitHub Repository](https://github.com/Vapok/WardMeBruh)  
+**Community & Support**: [Discord Server](https://discord.gg/5YAJkRFBXt)  
+**Changelog**: [Release Notes](https://github.com/Vapok/WardMeBruh/blob/main/CHANGELOG.md)
+
+</div>

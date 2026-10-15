@@ -549,9 +549,12 @@ internal static class Patch_PrivateArea
         ZDO effectiveZdo = WardQueryService.GetEffectiveWardZdo(zdo);
         PrivateArea effectiveWard = WardQueryService.GetEffectiveWard(__instance);
 
-        bool isMoving = player.IsRunning() || player.m_run || Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.D);
-        bool hasUseInput = ZInput.GetButton("Use") || ZInput.GetButtonDown("Use") || ZInput.GetButton("JoyUse") || ZInput.GetButtonDown("JoyUse");
-        bool isAlt = hasUseInput && ((alt && !isMoving) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+        bool hasUseInput = ZInput.GetButton("Use") || ZInput.GetButtonDown("Use") || ZInput.GetButton("JoyUse") || ZInput.GetButtonDown("JoyUse")
+            || (UnityEngine.InputSystem.Gamepad.current != null && UnityEngine.InputSystem.Gamepad.current.buttonSouth.wasPressedThisFrame);
+        bool gamepadAlt = ZInput.GetButton("JoyAltKeys") || ZInput.GetButton("JoyLTrigger") || ZInput.GetButton("JoyAltPlace")
+            || (UnityEngine.InputSystem.Gamepad.current != null && (UnityEngine.InputSystem.Gamepad.current.leftTrigger.isPressed || UnityEngine.InputSystem.Gamepad.current.leftShoulder.isPressed));
+        bool keyboardAlt = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift) || Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
+        bool isAlt = hasUseInput && (alt || gamepadAlt || keyboardAlt);
 
         if (isAlt)
         {
@@ -638,16 +641,20 @@ internal static class Patch_PrivateArea
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.view_gui"))
         {
-            string hubKey = (ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
-                ? ConfigRegistry.OpenWardHubKey.Value.ToString()
-                : "E";
+            string hubKey = ZInput.IsGamepadActive()
+                ? "$KEY_Use"
+                : ((ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.MainKey != KeyCode.None)
+                    ? ConfigRegistry.OpenWardHubKey.Value.ToString()
+                    : "E");
             sb.Append($"\n[<color=yellow><b>{hubKey}</b></color>] {"$wmb_open_ward_hub".Localize()}");
         }
 
         if (WardRoleManager.CanPerform(effectiveZdo, playerId, "core.power"))
         {
             string toggleAction = isEnabled ? "$piece_guardstone_deactivate" : "$piece_guardstone_activate";
-            sb.Append($"\n[<color=yellow><b>LeftShift + E</b></color>] {toggleAction}");
+            string modKey = ZInput.IsGamepadActive() ? WardGamepadNavHelper.GetGamepadGlyph("LT") : "$KEY_AltPlace";
+            string useKey = ZInput.IsGamepadActive() ? WardGamepadNavHelper.GetGamepadGlyph("A") : "$KEY_Use";
+            sb.Append($"\n[<color=yellow><b>{modKey} + {useKey}</b></color>] {toggleAction.Localize()}");
         }
 
         __result = Localization.instance.Localize(sb.ToString());

@@ -41,6 +41,9 @@ public class WardMainWindow : MonoBehaviour
     private Button _footerAttunementBtn;
     private TextMeshProUGUI _footerAttunementBtnText;
     private bool _isAttunementViewOpen;
+    private TextMeshProUGUI _otherWardsBtnText;
+    private TextMeshProUGUI _closeBtnText;
+    private WardDialogGamepadController _gamepadController;
 
     public static WardMainWindow Instance
     {
@@ -57,6 +60,7 @@ public class WardMainWindow : MonoBehaviour
     }
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
+    public static bool HasInstanceAndOpen => _instance != null && _instance.IsOpen;
     public static int LastClosedFrame { get; private set; } = -1;
     public WardFontSizeMode CurrentFontSizeMode => _currentFontSizeMode;
     public ZDOID ActiveWardId => (_activeWard != null && _activeWard.m_nview != null && _activeWard.m_nview.IsValid()) ? _activeWard.m_nview.GetZDO().m_uid : ZDOID.None;
@@ -129,20 +133,44 @@ public class WardMainWindow : MonoBehaviour
     {
         if (IsOpen)
         {
-            if (TextInput.IsVisible())
+            if (TextInput.instance != null && TextInput.instance.m_panel != null && TextInput.instance.m_panel.activeSelf)
             {
                 return;
             }
 
-            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
-                ZInput.GetKeyDown(KeyCode.Escape) ||
-                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+            if (_remoteSelector != null && _remoteSelector.IsOpen)
+            {
+                _gamepadController?.UpdateNavigation();
+                return;
+            }
+
+            if (Time.frameCount - RemoteWardSelectorModal.LastClosedFrame <= 1)
+            {
+                return;
+            }
+
+            if (_gamepadController != null && _gamepadController.IsDropdownOpen())
+            {
+                _gamepadController.UpdateNavigation();
+                return;
+            }
 
             bool isInputFieldFocused = EventSystem.current != null && 
                 EventSystem.current.currentSelectedGameObject != null && 
                 (EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null ||
                  EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null);
+
+            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
+                ZInput.GetKeyDown(KeyCode.Escape) ||
+                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
+                WardGamepadNavHelper.IsButtonDownB() ||
+                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyRadialClose")));
+
+            if (isInputFieldFocused && closeRequested)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+                return;
+            }
 
             if (!closeRequested && !isInputFieldFocused && Time.frameCount != _openedFrame && ConfigRegistry.OpenWardHubKey != null && ConfigRegistry.OpenWardHubKey.Value.IsDown())
             {
@@ -152,7 +180,10 @@ public class WardMainWindow : MonoBehaviour
             if (closeRequested)
             {
                 HandleEscapeKey();
+                return;
             }
+
+            _gamepadController?.UpdateNavigation();
         }
     }
 
@@ -199,7 +230,11 @@ public class WardMainWindow : MonoBehaviour
             34f);
         fontBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(125f, 34f);
         _fontSizeBtnText = WardUIFactory.SetupButtonText(fontBtn, "$wmb_font_small".Localize(), 13f);
-        fontBtn.GetComponent<Button>().onClick.AddListener(OnCycleFontSizeClicked);
+        Button fontB = fontBtn.GetComponent<Button>();
+        Navigation fontNav = fontB.navigation;
+        fontNav.mode = Navigation.Mode.None;
+        fontB.navigation = fontNav;
+        fontB.onClick.AddListener(OnCycleFontSizeClicked);
 
         GameObject remoteBtn = GUIManager.Instance.CreateButton(
             "$wmb_other_wards".Localize(), 
@@ -210,8 +245,12 @@ public class WardMainWindow : MonoBehaviour
             175f, 
             34f);
         remoteBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(175f, 34f);
-        WardUIFactory.SetupButtonText(remoteBtn, "$wmb_other_wards".Localize(), 13f);
-        remoteBtn.GetComponent<Button>().onClick.AddListener(OnOtherWardsClicked);
+        _otherWardsBtnText = WardUIFactory.SetupButtonText(remoteBtn, "$wmb_other_wards".Localize(), 13f);
+        Button remoteB = remoteBtn.GetComponent<Button>();
+        Navigation remoteNav = remoteB.navigation;
+        remoteNav.mode = Navigation.Mode.None;
+        remoteB.navigation = remoteNav;
+        remoteB.onClick.AddListener(OnOtherWardsClicked);
 
         GameObject closeBtn = GUIManager.Instance.CreateButton(
             "X", 
@@ -222,8 +261,12 @@ public class WardMainWindow : MonoBehaviour
             36f, 
             34f);
         closeBtn.GetComponent<RectTransform>().sizeDelta = new Vector2(36f, 34f);
-        WardUIFactory.SetupButtonText(closeBtn, "X", 14f, WardColorPalette.DangerRed);
-        closeBtn.GetComponent<Button>().onClick.AddListener(Close);
+        _closeBtnText = WardUIFactory.SetupButtonText(closeBtn, "X", 14f, WardColorPalette.DangerRed);
+        Button closeB = closeBtn.GetComponent<Button>();
+        Navigation closeNav = closeB.navigation;
+        closeNav.mode = Navigation.Mode.None;
+        closeB.navigation = closeNav;
+        closeB.onClick.AddListener(Close);
 
         _tabBar = new GameObject("TabBar");
         _tabBar.transform.SetParent(_panel.transform, false);
@@ -231,8 +274,8 @@ public class WardMainWindow : MonoBehaviour
         tabRt.anchorMin = new Vector2(0f, 1f);
         tabRt.anchorMax = new Vector2(1f, 1f);
         tabRt.pivot = new Vector2(0.5f, 1f);
-        tabRt.offsetMin = new Vector2(24f, -96f);
-        tabRt.offsetMax = new Vector2(-24f, -60f);
+        tabRt.offsetMin = new Vector2(30f, -96f);
+        tabRt.offsetMax = new Vector2(-30f, -60f);
 
         HorizontalLayoutGroup hlg = _tabBar.AddComponent<HorizontalLayoutGroup>();
         hlg.childControlWidth = true;
@@ -246,7 +289,7 @@ public class WardMainWindow : MonoBehaviour
         {
             int index = i;
             GameObject btnObj = GUIManager.Instance.CreateButton(tabTokens[i].Localize(), _tabBar.transform, Vector2.zero, Vector2.zero, Vector2.zero, 130f, 36f);
-            WardUIFactory.SetupButtonText(btnObj, tabTokens[i].Localize(), 13f, null, TextAlignmentOptions.Center);
+            WardUIFactory.SetupButtonText(btnObj, tabTokens[i].Localize(), 13f, null, TextAlignmentOptions.Center, autoResizeWidth: false);
 
             LayoutElement le = btnObj.AddComponent<LayoutElement>();
             le.minHeight = 36f;
@@ -334,6 +377,9 @@ public class WardMainWindow : MonoBehaviour
         _remoteSelector = new RemoteWardSelectorModal();
         _remoteSelector.Build(_panel.transform, OnRemoteWardSelected);
 
+        _gamepadController = new WardDialogGamepadController(this, _panel);
+        _gamepadController.InitializeElements(_tabBar, _panel.GetComponent<RectTransform>(), _otherWardsBtnText, _closeBtnText);
+
         SwitchTab(0);
         _currentFontSizeMode = ConfigRegistry.GuiFontSize != null ? ConfigRegistry.GuiFontSize.Value : WardFontSizeMode.Small;
         ApplyFontSize(_currentFontSizeMode);
@@ -358,6 +404,15 @@ public class WardMainWindow : MonoBehaviour
         _openedFrame = Time.frameCount;
         _activeWard = ward;
         _panel.SetActive(true);
+        Canvas.ForceUpdateCanvases();
+        if (_panel != null)
+        {
+            RectTransform pRt = _panel.GetComponent<RectTransform>();
+            if (pRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(pRt);
+            }
+        }
         SetInputBlocked(true);
 
         WardRole role = WardPermissions.GetPlayerRole(zdo, playerId);
@@ -389,6 +444,16 @@ public class WardMainWindow : MonoBehaviour
         _isAttunementViewOpen = false;
         SwitchTab(_currentTabIndex);
         ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
+        _gamepadController?.OnWindowOpened();
+        UpdateTabButtonDimensions();
+        RefreshCurrentKeyhints();
+        StartCoroutine(DeferredTabRebuild());
+    }
+
+    private System.Collections.IEnumerator DeferredTabRebuild()
+    {
+        yield return null;
+        UpdateTabButtonDimensions();
     }
 
     private void UpdateTabButtonVisibility(ZDO zdo, long playerId)
@@ -487,7 +552,7 @@ public class WardMainWindow : MonoBehaviour
         }
     }
 
-    private void OnFooterAttunementClicked()
+    public void OnFooterAttunementClicked()
     {
         if (_isAttunementViewOpen)
         {
@@ -499,7 +564,7 @@ public class WardMainWindow : MonoBehaviour
         }
     }
 
-    private void OpenAttunementView()
+    public void OpenAttunementView()
     {
         _isAttunementViewOpen = true;
 
@@ -536,9 +601,10 @@ public class WardMainWindow : MonoBehaviour
 
         UpdateAttunementFooter();
         ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
+        _gamepadController?.OnTabChanged();
     }
 
-    private void SwitchTab(int tabIndex)
+    public void SwitchTab(int tabIndex)
     {
         _isAttunementViewOpen = false;
         _currentTabIndex = tabIndex;
@@ -581,6 +647,7 @@ public class WardMainWindow : MonoBehaviour
 
         UpdateAttunementFooter();
         ApplyFontSizeToHierarchy(_panel, _currentFontSizeMode);
+        _gamepadController?.OnTabChanged();
     }
 
     private static readonly string[] RomanRanks = { "0", "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
@@ -637,9 +704,12 @@ public class WardMainWindow : MonoBehaviour
                 _footerAttunementBtn.gameObject.SetActive(true);
                 if (_footerAttunementBtnText != null)
                 {
+                    bool isGamepad = ZInput.IsGamepadActive();
+                    string yGlyph = WardGamepadNavHelper.GetGamepadGlyph("Y");
                     if (_isAttunementViewOpen)
                     {
-                        _footerAttunementBtnText.text = "$wmb_btn_return_to_base_settings".Localize();
+                        string retText = "$wmb_btn_return_to_base_settings".Localize();
+                        _footerAttunementBtnText.text = isGamepad ? $"{yGlyph} {retText}" : retText;
                         _footerAttunementBtnText.color = WardColorPalette.ValheimBeige;
                     }
                     else
@@ -652,7 +722,8 @@ public class WardMainWindow : MonoBehaviour
                             isReady = WardProgressionService.CanAttuneRune(effectiveZdo, nextRune, Player.m_localPlayer, out _);
                         }
 
-                        _footerAttunementBtnText.text = "$wmb_btn_ward_attunement".Localize();
+                        string attuneText = "$wmb_btn_ward_attunement".Localize();
+                        _footerAttunementBtnText.text = isGamepad ? $"{yGlyph} {attuneText}" : attuneText;
                         if (isReady)
                         {
                             _footerAttunementBtnText.color = WardColorPalette.GoldAmber;
@@ -681,7 +752,7 @@ public class WardMainWindow : MonoBehaviour
         }
     }
 
-    private void OnOtherWardsClicked()
+    public void OnOtherWardsClicked()
     {
         _remoteSelector.Open(_activeWard, _physicalWard);
     }
@@ -719,7 +790,7 @@ public class WardMainWindow : MonoBehaviour
         }
     }
 
-    private void OnCycleFontSizeClicked()
+    public void OnCycleFontSizeClicked()
     {
         WardFontSizeMode nextMode = _currentFontSizeMode switch
         {
@@ -741,12 +812,15 @@ public class WardMainWindow : MonoBehaviour
 
         if (_fontSizeBtnText != null)
         {
-            _fontSizeBtnText.text = mode switch
+            bool isGamepad = ZInput.IsGamepadActive();
+            string fontText = mode switch
             {
                 WardFontSizeMode.Medium => "$wmb_font_medium".Localize(),
                 WardFontSizeMode.Large => "$wmb_font_large".Localize(),
                 _ => "$wmb_font_small".Localize()
             };
+            string lsGlyph = WardGamepadNavHelper.GetGamepadGlyph("LS");
+            _fontSizeBtnText.text = isGamepad ? $"{lsGlyph} {fontText}" : fontText;
         }
 
         ApplyFontSizeToHierarchy(_panel, mode);
@@ -763,13 +837,120 @@ public class WardMainWindow : MonoBehaviour
         }
     }
 
-    private void UpdateTabButtonDimensions()
+    public bool IsAttunementViewOpen => _isAttunementViewOpen;
+    public bool IsRemoteSelectorOpen => _remoteSelector != null && _remoteSelector.IsOpen;
+    public RemoteWardSelectorModal RemoteSelector => _remoteSelector;
+    public WardDialogGamepadController GamepadController => _gamepadController;
+    public GameObject TabBar => _tabBar;
+    public Button[] TabButtons => _tabButtons;
+    public Button FooterAttunementBtn => _footerAttunementBtn;
+    public int CurrentTabIndex => _currentTabIndex;
+    public GameObject Panel => _panel;
+    public TabManagement TabManagement => _tabManagement;
+
+    public GameObject GetActiveTabRoot()
     {
+        if (_isAttunementViewOpen)
+            return _tabAttunement != null ? _tabAttunement.Root : null;
+
+        return _currentTabIndex switch
+        {
+            0 => _tabOverview != null ? _tabOverview.Root : null,
+            1 => _tabDefenses != null ? _tabDefenses.Root : null,
+            2 => _tabUpkeep != null ? _tabUpkeep.Root : null,
+            3 => _tabAccess != null ? _tabAccess.Root : null,
+            4 => _tabRoles != null ? _tabRoles.Root : null,
+            5 => _tabManagement != null ? _tabManagement.Root : null,
+            _ => null
+        };
+    }
+
+    public void NavigateTabNext()
+    {
+        if (_isAttunementViewOpen)
+        {
+            SwitchTab(_currentTabIndex);
+            return;
+        }
+
+        for (int offset = 1; offset <= 5; offset++)
+        {
+            int target = (_currentTabIndex + offset) % 6;
+            if (_tabButtons[target] != null && _tabButtons[target].gameObject.activeSelf)
+            {
+                SwitchTab(target);
+                return;
+            }
+        }
+    }
+
+    public void NavigateTabPrevious()
+    {
+        if (_isAttunementViewOpen)
+        {
+            SwitchTab(_currentTabIndex);
+            return;
+        }
+
+        for (int offset = 1; offset <= 5; offset++)
+        {
+            int target = (_currentTabIndex - offset + 6) % 6;
+            if (_tabButtons[target] != null && _tabButtons[target].gameObject.activeSelf)
+            {
+                SwitchTab(target);
+                return;
+            }
+        }
+    }
+
+    public void RefreshCurrentKeyhints()
+    {
+        bool isGamepad = ZInput.IsGamepadActive();
+
+        if (_otherWardsBtnText != null)
+        {
+            string baseOtherWards = "$wmb_other_wards".Localize();
+            string xGlyph = WardGamepadNavHelper.GetGamepadGlyph("X");
+            _otherWardsBtnText.text = isGamepad ? $"{xGlyph} {baseOtherWards}" : baseOtherWards;
+        }
+
+        if (_closeBtnText != null)
+        {
+            string bGlyph = WardGamepadNavHelper.GetGamepadGlyph("B");
+            _closeBtnText.text = isGamepad ? $"{bGlyph} X" : "X";
+        }
+
+        if (_fontSizeBtnText != null)
+        {
+            string baseFont = _currentFontSizeMode switch
+            {
+                WardFontSizeMode.Medium => "$wmb_font_medium".Localize(),
+                WardFontSizeMode.Large => "$wmb_font_large".Localize(),
+                _ => "$wmb_font_small".Localize()
+            };
+            string lsGlyph = WardGamepadNavHelper.GetGamepadGlyph("LS");
+            _fontSizeBtnText.text = isGamepad ? $"{lsGlyph} {baseFont}" : baseFont;
+        }
+
+        UpdateAttunementFooter();
+    }
+
+    public void UpdateTabButtonDimensions()
+    {
+        if (_tabBar == null)
+            return;
+
         for (int i = 0; i < _tabButtons.Length; i++)
         {
             Button btn = _tabButtons[i];
             if (btn == null)
                 continue;
+
+            WardButtonAutoResizer resizer = btn.GetComponent<WardButtonAutoResizer>();
+            if (resizer != null)
+            {
+                UnityEngine.Object.Destroy(resizer);
+            }
 
             LayoutElement le = btn.GetComponent<LayoutElement>();
             if (le == null)
@@ -778,13 +959,35 @@ public class WardMainWindow : MonoBehaviour
             TextMeshProUGUI txt = btn.GetComponentInChildren<TextMeshProUGUI>();
             if (txt != null)
             {
+                txt.ForceMeshUpdate();
                 float textWidth = txt.preferredWidth;
-                le.minWidth = textWidth + 24f;
-                le.preferredWidth = textWidth + 34f;
+                le.minWidth = Mathf.Min(textWidth + 16f, 105f);
+                le.preferredWidth = textWidth + 24f;
                 le.minHeight = 36f;
                 le.preferredHeight = 36f;
                 le.flexibleWidth = 1f;
+
+                RectTransform btnRt = btn.GetComponent<RectTransform>();
+                if (btnRt != null)
+                {
+                    btnRt.sizeDelta = new Vector2(le.preferredWidth, 36f);
+                }
             }
+        }
+
+        if (_panel != null)
+        {
+            RectTransform panelRt = _panel.GetComponent<RectTransform>();
+            if (panelRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(panelRt);
+            }
+        }
+
+        RectTransform tabRt = _tabBar.GetComponent<RectTransform>();
+        if (tabRt != null)
+        {
+            LayoutRebuilder.ForceRebuildLayoutImmediate(tabRt);
         }
     }
 

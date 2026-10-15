@@ -164,10 +164,10 @@ public static class WardUIExtensions
                 if (toggle != null)
                 {
                     ColorBlock tcb = toggle.colors;
-                    tcb.normalColor = WardColorPalette.RowEven;
-                    tcb.highlightedColor = WardColorPalette.RowHover;
-                    tcb.pressedColor = WardColorPalette.RowOdd;
-                    tcb.selectedColor = WardColorPalette.RowHover;
+                    tcb.normalColor = new Color(0.12f, 0.10f, 0.08f, 0.85f);
+                    tcb.highlightedColor = new Color(0.22f, 0.18f, 0.12f, 0.90f);
+                    tcb.pressedColor = new Color(0.55f, 0.42f, 0.14f, 1.0f);
+                    tcb.selectedColor = new Color(0.45f, 0.34f, 0.12f, 0.95f);
                     toggle.colors = tcb;
                 }
 
@@ -177,7 +177,7 @@ public static class WardUIExtensions
                     Image ibImg = itemBg.GetComponent<Image>();
                     if (ibImg != null)
                     {
-                        ibImg.color = WardColorPalette.RowEven;
+                        ibImg.color = Color.white;
                     }
                 }
 

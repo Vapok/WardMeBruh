@@ -12,22 +12,31 @@ public class RowHoverTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPoin
 
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (ZInput.IsGamepadActive())
+            return;
+
         if (Tab != null && Permission != null)
         {
-            Tab.ShowHoverTooltip(Permission, eventData.position);
+            Tab.ShowHoverTooltip(Permission, GetComponent<RectTransform>());
         }
     }
 
     public void OnPointerMove(PointerEventData eventData)
     {
+        if (ZInput.IsGamepadActive())
+            return;
+
         if (Tab != null && Permission != null)
         {
-            Tab.UpdateHoverTooltipPosition(eventData.position);
+            Tab.UpdateHoverTooltipPosition(GetComponent<RectTransform>());
         }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (ZInput.IsGamepadActive())
+            return;
+
         if (Tab != null)
         {
             Tab.HideHoverTooltip();

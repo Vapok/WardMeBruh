@@ -1,6 +1,7 @@
 using Jotunn.Managers;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using WardMeBruh.Components;
 using WardMeBruh.Configuration;
@@ -20,7 +21,14 @@ public class WardPlacementChoiceModal : MonoBehaviour
     private PrivateArea _coveringWard;
     private Button _extendBtn;
     private Button _subwardBtn;
+    private TextMeshProUGUI _extendBtnText;
+    private TextMeshProUGUI _subwardBtnText;
+    private GameObject _gamepadLegend;
+    private TextMeshProUGUI _legendText;
+    private bool _wasGamepadActive;
     private bool _isInputBlocked;
+    private GameObject _focusReticle;
+    private int _lastSubmitFrame = -1;
 
     public static WardPlacementChoiceModal Instance
     {
@@ -37,6 +45,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
     }
 
     public bool IsOpen => _panel != null && _panel.activeSelf;
+    public static bool HasInstanceAndOpen => _instance != null && _instance.IsOpen;
 
     private void Awake()
     {
@@ -71,16 +80,97 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
     private void Update()
     {
-        if (IsOpen)
-        {
-            bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
-                ZInput.GetKeyDown(KeyCode.Escape) ||
-                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
-                (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyButtonB")));
+        if (!IsOpen)
+            return;
 
-            if (closeRequested)
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
+        if (isGamepad != _wasGamepadActive)
+        {
+            UpdateKeyhints(isGamepad);
+        }
+
+        bool closeRequested = Input.GetKeyDown(KeyCode.Escape) ||
+            ZInput.GetKeyDown(KeyCode.Escape) ||
+            (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame) ||
+            WardGamepadNavHelper.IsButtonDownB() ||
+            (ZInput.instance != null && (ZInput.GetButtonDown("JoyMenu") || ZInput.GetButtonDown("JoyRadialClose")));
+
+        if (closeRequested)
+        {
+            OnSubWardClicked();
+            return;
+        }
+
+        if (isGamepad)
+        {
+            if (WardGamepadNavHelper.IsButtonDownY() && _subwardBtn != null && _subwardBtn.interactable)
             {
                 OnSubWardClicked();
+                return;
+            }
+
+            if (WardGamepadNavHelper.GetDirectionInput(out int navX, out int navY))
+            {
+                if (navX < 0 && _extendBtn != null)
+                {
+                    _extendBtn.Select();
+                    WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _extendBtn);
+                }
+                else if (navX > 0 && _subwardBtn != null && _subwardBtn.interactable)
+                {
+                    _subwardBtn.Select();
+                    WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _subwardBtn);
+                }
+            }
+
+            if (WardGamepadNavHelper.IsButtonDownA() && Time.frameCount != _lastSubmitFrame)
+            {
+                _lastSubmitFrame = Time.frameCount;
+                GameObject currentObj = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+                if (currentObj != null)
+                {
+                    Button btn = currentObj.GetComponent<Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick.Invoke();
+                        return;
+                    }
+                }
+                OnExtendClicked();
+            }
+        }
+    }
+
+    public void UpdateKeyhints(bool isGamepad)
+    {
+        _wasGamepadActive = isGamepad;
+        if (_extendBtnText != null)
+        {
+            string aGlyph = WardGamepadNavHelper.GetGamepadGlyph("A");
+            _extendBtnText.text = isGamepad 
+                ? $"{aGlyph} " + "$wmb_placement_btn_extend".Localize() 
+                : "$wmb_placement_btn_extend".Localize();
+        }
+        if (_subwardBtnText != null)
+        {
+            string yGlyph = WardGamepadNavHelper.GetGamepadGlyph("Y");
+            _subwardBtnText.text = isGamepad 
+                ? $"{yGlyph} " + "$wmb_placement_btn_subward".Localize() 
+                : "$wmb_placement_btn_subward".Localize();
+        }
+        if (_gamepadLegend != null)
+        {
+            _gamepadLegend.SetActive(isGamepad);
+            if (isGamepad)
+            {
+                TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+                if (legendText != null)
+                {
+                    string a = WardGamepadNavHelper.GetGamepadGlyph("A");
+                    string y = WardGamepadNavHelper.GetGamepadGlyph("Y");
+                    string b = WardGamepadNavHelper.GetGamepadGlyph("B");
+                    legendText.text = $"<color=#e2d6b5>{a} Extend   {y} Sub-Ward   {b} Cancel</color>";
+                }
             }
         }
     }
@@ -142,12 +232,14 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _panel.transform,
             new Vector2(0.5f, 0f),
             new Vector2(0.5f, 0f),
-            new Vector2(-110f, 45f),
+            new Vector2(-110f, 48f),
             200f,
             44f);
         extendBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 44f);
         WardUIFactory.SetupButtonText(extendBtnObj, "$wmb_placement_btn_extend".Localize(), 15f, WardColorPalette.GoldAmber);
         _extendBtn = extendBtnObj.GetComponent<Button>();
+        _extendBtnText = extendBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+        WardGamepadNavHelper.ApplyGamepadColorBlock(_extendBtn);
         _extendBtn.onClick.AddListener(OnExtendClicked);
 
         GameObject subwardBtnObj = GUIManager.Instance.CreateButton(
@@ -155,13 +247,33 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _panel.transform,
             new Vector2(0.5f, 0f),
             new Vector2(0.5f, 0f),
-            new Vector2(110f, 45f),
+            new Vector2(110f, 48f),
             200f,
             44f);
         subwardBtnObj.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 44f);
         WardUIFactory.SetupButtonText(subwardBtnObj, "$wmb_placement_btn_subward".Localize(), 15f, WardColorPalette.IceBlue);
         _subwardBtn = subwardBtnObj.GetComponent<Button>();
+        _subwardBtnText = subwardBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+        WardGamepadNavHelper.ApplyGamepadColorBlock(_subwardBtn);
         _subwardBtn.onClick.AddListener(OnSubWardClicked);
+
+        _gamepadLegend = new GameObject("GamepadLegend", typeof(RectTransform), typeof(TextMeshProUGUI));
+        _gamepadLegend.transform.SetParent(_panel.transform, false);
+        RectTransform legendRt = _gamepadLegend.GetComponent<RectTransform>();
+        legendRt.anchorMin = new Vector2(0f, 0f);
+        legendRt.anchorMax = new Vector2(1f, 0f);
+        legendRt.pivot = new Vector2(0.5f, 1f);
+        legendRt.offsetMin = new Vector2(20f, -26f);
+        legendRt.offsetMax = new Vector2(-20f, -6f);
+
+        _legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
+        _legendText.font = UIFonts.GetPrimaryFont();
+        _legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Extend   <b>[Y]</b> Sub-Ward   <b>[B]</b> Cancel</color>";
+        _legendText.fontSize = 12f;
+        _legendText.alignment = TextAlignmentOptions.Center;
+        _legendText.color = WardColorPalette.ValheimBeige;
+
+        _focusReticle = WardGamepadNavHelper.CreateFocusReticle(_panel.transform);
 
         _panel.SetActive(false);
     }
@@ -186,12 +298,25 @@ public class WardPlacementChoiceModal : MonoBehaviour
             _subwardBtn.interactable = maxSubRadius >= 1.0f;
         }
 
+        bool isGamepad = WardGamepadNavHelper.IsGamepadActive();
+        UpdateKeyhints(isGamepad);
+        if (isGamepad && _extendBtn != null)
+        {
+            _extendBtn.Select();
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, _extendBtn);
+        }
+        else
+        {
+            WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
+        }
+
         _panel.SetActive(true);
         SetInputBlocked(true);
     }
 
     public void Close()
     {
+        WardGamepadNavHelper.AttachFocusReticle(_focusReticle, null);
         if (_panel != null)
         {
             _panel.SetActive(false);

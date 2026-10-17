@@ -258,7 +258,7 @@ public class TabRoles
         }
         if (currentRole == null)
         {
-            currentRole = new WardRoleDefinition(entry.RoleId, $"Role {entry.RoleId}", 1, WardColorPalette.ColorHex(WardColorPalette.IceBlue));
+            currentRole = new WardRoleDefinition(entry.RoleId, $"{"$wmb_role".Localize()} {entry.RoleId}", 1, WardColorPalette.ColorHex(WardColorPalette.IceBlue));
         }
 
         List<WardRoleDefinition> assignableRoles = new();

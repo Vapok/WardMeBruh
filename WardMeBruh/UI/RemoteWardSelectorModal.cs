@@ -94,7 +94,7 @@ public class RemoteWardSelectorModal
 
         TextMeshProUGUI legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         legendText.font = UIFonts.GetPrimaryFont();
-        legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Select Ward   <b>[B]</b> Back   <b>[R-Stick]</b> Scroll</color>";
+        legendText.text = $"<color=#e2d6b5><b>[D-Pad]</b> {"$wmb_legend_navigate".Localize()}   <b>[A]</b> {"$wmb_legend_select_ward".Localize()}   <b>[B]</b> {"$wmb_legend_back".Localize()}   <b>[R-Stick]</b> {"$wmb_legend_scroll".Localize()}</color>";
         legendText.fontSize = 11f;
         legendText.alignment = TextAlignmentOptions.Center;
         legendText.color = WardColorPalette.ValheimBeige;
@@ -291,8 +291,8 @@ public class RemoteWardSelectorModal
             }
 
             string typeBadge = ward.Type == WardType.SubWard 
-                ? "<color=#93c5fd><b>[Sub-Ward]</b></color> " 
-                : (ward.Type == WardType.Extension ? "<color=#fcd34d><b>[Extension]</b></color> " : string.Empty);
+                ? $"<color=#93c5fd><b>[{"$wmb_ward_type_subward".Localize()}]</b></color> " 
+                : (ward.Type == WardType.Extension ? $"<color=#fcd34d><b>[{"$wmb_ward_type_extension".Localize()}]</b></color> " : string.Empty);
 
             string labelText = $"{typeBadge}<b>{ward.CustomName}</b>  <color=#fcd34d>[r: {Mathf.RoundToInt(ward.Radius)}{"$wmb_meters".Localize()}]</color>\n<size={subSize}><color=#9ca3af>{"$wmb_owner_label".Localize()} {ward.CreatorName}  •  {distStr}</color></size>";
 
@@ -421,7 +421,7 @@ public class RemoteWardSelectorModal
                     string a = WardGamepadNavHelper.GetGamepadGlyph("A");
                     string x = WardGamepadNavHelper.GetGamepadGlyph("X");
                     string rstick = WardGamepadNavHelper.GetGamepadGlyph("RStick");
-                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select Ward   {x} Close   {rstick} Scroll</color>";
+                    legendText.text = $"<color=#e2d6b5>{dpad} {"$wmb_legend_navigate".Localize()}   {a} {"$wmb_legend_select_ward".Localize()}   {x} {"$wmb_legend_close".Localize()}   {rstick} {"$wmb_legend_scroll".Localize()}</color>";
                 }
             }
         }

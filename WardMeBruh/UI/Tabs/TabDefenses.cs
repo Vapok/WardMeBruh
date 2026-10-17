@@ -288,7 +288,7 @@ public class TabDefenses
             v => SetZdoBool(WardZdoKeys.ShowPerimeterRing, v, "defenses.combat"),
             out _setShowRingToggle);
 
-        _domeColorRowObj = WardUIFactory.CreateSettingRow(card4, "$wmb_defenses_dome_color".Localize(), out Transform colorCtrlContainer, 34f);
+        _domeColorRowObj = WardUIFactory.CreateSettingRow(card4, "$wmb_defenses_dome_color", out Transform colorCtrlContainer, 34f);
 
         GameObject swatchBorder = new("SwatchBorder", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
         swatchBorder.transform.SetParent(colorCtrlContainer, false);
@@ -392,15 +392,18 @@ public class TabDefenses
         brightHlg.childControlWidth = false;
         brightHlg.childControlHeight = true;
 
-        GameObject brightLbl = new("BrightLbl", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+        GameObject brightLbl = new("BrightLbl", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement), typeof(WardTextElement));
         brightLbl.transform.SetParent(brightRow.transform, false);
         brightLbl.SetLayoutDimensions(80f, 24f);
         TextMeshProUGUI bLblTmp = brightLbl.GetComponent<TextMeshProUGUI>();
-        bLblTmp.text = "Brightness:";
+        bLblTmp.text = "$wmb_defenses_brightness".Localize();
         bLblTmp.font = UIFonts.GetPrimaryFont();
         bLblTmp.fontSize = 11f;
         bLblTmp.color = WardColorPalette.ValheimBeige;
         bLblTmp.alignment = TextAlignmentOptions.MidlineLeft;
+        WardTextElement bWte = brightLbl.GetComponent<WardTextElement>();
+        bWte.baseFontSize = 11;
+        bWte.localizationKey = "$wmb_defenses_brightness";
 
         GameObject sliderObj = WardUIExtensions.CreateValheimSlider(brightRow.transform, 0.2f, 1.0f, 1.0f, false, 120f, 18f);
         sliderObj.SetLayoutDimensions(120f, 18f);
@@ -524,7 +527,8 @@ public class TabDefenses
         sliderStep = (sliderMax - sliderMin) <= 50f ? 1f : 5f;
 
         ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
-        string parentName = "Parent Ward";
+        string defaultParentName = "$wmb_parent_ward_default".Localize();
+        string parentName = defaultParentName;
         if (parentId != ZDOID.None)
         {
             if (ZDOMan.instance != null)
@@ -532,11 +536,11 @@ public class TabDefenses
                 ZDO parentZdo = ZDOMan.instance.GetZDO(parentId);
                 if (parentZdo != null)
                 {
-                    parentName = parentZdo.GetString(WardZdoKeys.CustomName, "Parent Ward");
+                    parentName = parentZdo.GetString(WardZdoKeys.CustomName, defaultParentName);
                 }
             }
 
-            if (parentName == "Parent Ward")
+            if (parentName == defaultParentName)
             {
                 KnownWard parentKnown = WardRegistryManager.Instance.GetKnownWard(parentId);
                 if (parentKnown != null && !string.IsNullOrEmpty(parentKnown.CustomName))
@@ -545,7 +549,7 @@ public class TabDefenses
                 }
             }
 
-            if (parentName == "Parent Ward" && PrivateArea.m_allAreas != null)
+            if (parentName == defaultParentName && PrivateArea.m_allAreas != null)
             {
                 for (int i = 0; i < PrivateArea.m_allAreas.Count; i++)
                 {

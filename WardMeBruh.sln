@@ -12,6 +12,43 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Module Files", "Module File
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Translations", "Translations", "{453B1EE0-9980-4B66-93B3-2DDBD21FEE03}"
+	ProjectSection(SolutionItems) = preProject
+		Translations\WardMeBruh.Abenaki.json = Translations\WardMeBruh.Abenaki.json
+		Translations\WardMeBruh.Bulgarian.json = Translations\WardMeBruh.Bulgarian.json
+		Translations\WardMeBruh.Chinese.json = Translations\WardMeBruh.Chinese.json
+		Translations\WardMeBruh.Chinese_Trad.json = Translations\WardMeBruh.Chinese_Trad.json
+		Translations\WardMeBruh.Croatian.json = Translations\WardMeBruh.Croatian.json
+		Translations\WardMeBruh.Czech.json = Translations\WardMeBruh.Czech.json
+		Translations\WardMeBruh.Danish.json = Translations\WardMeBruh.Danish.json
+		Translations\WardMeBruh.Dutch.json = Translations\WardMeBruh.Dutch.json
+		Translations\WardMeBruh.English.json = Translations\WardMeBruh.English.json
+		Translations\WardMeBruh.Finnish.json = Translations\WardMeBruh.Finnish.json
+		Translations\WardMeBruh.French.json = Translations\WardMeBruh.French.json
+		Translations\WardMeBruh.Georgian.json = Translations\WardMeBruh.Georgian.json
+		Translations\WardMeBruh.German.json = Translations\WardMeBruh.German.json
+		Translations\WardMeBruh.Greek.json = Translations\WardMeBruh.Greek.json
+		Translations\WardMeBruh.Hindi.json = Translations\WardMeBruh.Hindi.json
+		Translations\WardMeBruh.Hungarian.json = Translations\WardMeBruh.Hungarian.json
+		Translations\WardMeBruh.Icelandic.json = Translations\WardMeBruh.Icelandic.json
+		Translations\WardMeBruh.Italian.json = Translations\WardMeBruh.Italian.json
+		Translations\WardMeBruh.Japanese.json = Translations\WardMeBruh.Japanese.json
+		Translations\WardMeBruh.Korean.json = Translations\WardMeBruh.Korean.json
+		Translations\WardMeBruh.Lithuanian.json = Translations\WardMeBruh.Lithuanian.json
+		Translations\WardMeBruh.Macedonian.json = Translations\WardMeBruh.Macedonian.json
+		Translations\WardMeBruh.Norwegian.json = Translations\WardMeBruh.Norwegian.json
+		Translations\WardMeBruh.Polish.json = Translations\WardMeBruh.Polish.json
+		Translations\WardMeBruh.Portuguese_Brazilian.json = Translations\WardMeBruh.Portuguese_Brazilian.json
+		Translations\WardMeBruh.Portuguese_European.json = Translations\WardMeBruh.Portuguese_European.json
+		Translations\WardMeBruh.Romanian.json = Translations\WardMeBruh.Romanian.json
+		Translations\WardMeBruh.Russian.json = Translations\WardMeBruh.Russian.json
+		Translations\WardMeBruh.Serbian.json = Translations\WardMeBruh.Serbian.json
+		Translations\WardMeBruh.Slovak.json = Translations\WardMeBruh.Slovak.json
+		Translations\WardMeBruh.Spanish.json = Translations\WardMeBruh.Spanish.json
+		Translations\WardMeBruh.Swedish.json = Translations\WardMeBruh.Swedish.json
+		Translations\WardMeBruh.Thai.json = Translations\WardMeBruh.Thai.json
+		Translations\WardMeBruh.Turkish.json = Translations\WardMeBruh.Turkish.json
+		Translations\WardMeBruh.Ukrainian.json = Translations\WardMeBruh.Ukrainian.json
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Documentation", "Documentation", "{647E219A-684F-488C-B6B7-D5C1D2F07994}"
 	ProjectSection(SolutionItems) = preProject

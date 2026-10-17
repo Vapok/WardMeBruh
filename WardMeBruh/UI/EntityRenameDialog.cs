@@ -288,7 +288,7 @@ public class EntityRenameDialog : MonoBehaviour
                     string a = WardGamepadNavHelper.GetGamepadGlyph("A");
                     string x = WardGamepadNavHelper.GetGamepadGlyph("X");
                     string b = WardGamepadNavHelper.GetGamepadGlyph("B");
-                    legendText.text = $"<color=#e2d6b5>{dpad} Navigate   {a} Select/Toggle   {x} Save   {b} Cancel</color>";
+                    legendText.text = $"<color=#e2d6b5>{dpad} {"$wmb_legend_navigate".Localize()}   {a} {"$wmb_legend_toggle".Localize()}   {x} {"$wmb_legend_save".Localize()}   {b} {"$wmb_legend_cancel".Localize()}</color>";
                 }
             }
         }
@@ -411,7 +411,7 @@ public class EntityRenameDialog : MonoBehaviour
 
         TextMeshProUGUI glText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         glText.font = UIFonts.GetPrimaryFont();
-        glText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Toggle   <b>[X]</b> Save   <b>[B]</b> Cancel</color>";
+        glText.text = $"<color=#e2d6b5><b>[D-Pad]</b> {"$wmb_legend_navigate".Localize()}   <b>[A]</b> {"$wmb_legend_toggle".Localize()}   <b>[X]</b> {"$wmb_legend_save".Localize()}   <b>[B]</b> {"$wmb_legend_cancel".Localize()}</color>";
         glText.fontSize = 11f;
         glText.alignment = TextAlignmentOptions.Center;
         glText.color = WardColorPalette.ValheimBeige;

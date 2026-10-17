@@ -25,7 +25,6 @@
   "wmb_chest": "Chest",
   "wmb_portal": "Portal",
   "wmb_ward": "Ward",
-
   "wmb_window_title": "WARD SETTINGS",
   "wmb_font_small": "FONT: SMALL",
   "wmb_font_medium": "FONT: MEDIUM",
@@ -37,19 +36,16 @@
   "wmb_tab_access": "ACCESS",
   "wmb_tab_roster": "ROSTER",
   "wmb_tab_management": "MANAGEMENT",
-
   "wmb_role_guest": "Everyone",
   "wmb_role_resident": "Resident",
   "wmb_role_manager": "Manager",
   "wmb_role_owner": "Owner",
-
   "wmb_cat_core": "Core Permissions",
   "wmb_cat_access": "Access Control",
   "wmb_cat_defenses": "Ward Defenses",
   "wmb_cat_upkeep": "Upkeep & Sanctuary",
   "wmb_cat_personnel": "Roster & Roles",
   "wmb_cat_external": "Mod Integrations",
-
   "wmb_perm_core_dome_access_name": "Enter Shield",
   "wmb_perm_core_dome_access_desc": "Pass through the shield dome without pushback or shock.",
   "wmb_perm_core_benefits_name": "Ward Perks",
@@ -104,7 +100,6 @@
   "wmb_perm_personnel_roster_desc": "Add, remove, promote, and demote players.",
   "wmb_perm_personnel_governance_name": "Manage Roles",
   "wmb_perm_personnel_governance_desc": "Create custom roles and set role permissions.",
-
   "wmb_mgmt_card_hierarchy": "Role Hierarchy",
   "wmb_mgmt_card_actions": "Role Actions",
   "wmb_mgmt_add_role": "+ Add Custom Role",
@@ -119,7 +114,6 @@
   "wmb_mgmt_rename_prompt": "Set Custom Role Name",
   "wmb_mgmt_custom_rank": "Custom Rank",
   "wmb_mgmt_tier_label": "Tier",
-
   "wmb_overview_card_identity": "Ward Info",
   "wmb_overview_designation": "Ward Name",
   "wmb_overview_owner": "Ward Creator",
@@ -130,7 +124,6 @@
   "wmb_overview_badge_portal": "Portal Access Control",
   "wmb_overview_lvl": "LVL",
   "wmb_overview_no_attunements": "No Runic Protections Attuned",
-
   "wmb_defenses_card_domain": "Perimeter & Range",
   "wmb_defenses_radius": "Shield Radius",
   "wmb_defenses_land_coverage": "Coverage Area",
@@ -152,7 +145,6 @@
   "wmb_defenses_show_ring": "Show Perimeter Ring",
   "wmb_defenses_dome_color": "Dome Color",
   "wmb_defenses_color_reset": "Reset Default",
-
   "wmb_upkeep_card_repair": "Maintenance & Repairs",
   "wmb_upkeep_repair": "Auto-Repair Pieces",
   "wmb_upkeep_repair_threshold": "Repair Threshold",
@@ -173,7 +165,6 @@
   "wmb_upkeep_lava_shield": "Lava Shield",
   "wmb_upkeep_snow_shield": "Blizzard Shield",
   "wmb_upkeep_water_drain": "Water Drain (Dry Basements)",
-
   "wmb_access_card_scanner": "Objects in Ward Range",
   "wmb_access_scanned_radius": "Scan Radius",
   "wmb_access_containers_detected": "Chests Detected",
@@ -193,7 +184,6 @@
   "wmb_access_portal_disabled_desc": "Anyone can use portals",
   "wmb_access_fuel_depot": "🔥 FUEL",
   "wmb_access_no_depot": "NO SUPPLY",
-
   "wmb_roles_card_enroll": "Add Player to Ward",
   "wmb_roles_known_characters": "Known Players",
   "wmb_roles_add": "+ ADD",
@@ -209,7 +199,6 @@
   "wmb_roles_promote": "Promote",
   "wmb_roles_demote": "Demote",
   "wmb_roles_remove": "Remove",
-
   "wmb_modal_territory_registry": "KNOWN WARDS",
   "wmb_modal_registered_territories": "Wards",
   "wmb_modal_no_owned_wards": "No owned wards found in this world",
@@ -220,7 +209,6 @@
   "wmb_enter_custom_name": "Enter custom name...",
   "wmb_depot_yes": "✔ 🔥 Fuel Supply",
   "wmb_depot_no": "✖ No Supply",
-
   "wmb_configure_door": "Configure Door",
   "wmb_configure_chest": "Configure Chest",
   "wmb_configure_portal": "Configure Portal",
@@ -248,7 +236,6 @@
   "wmb_msg_subward_placement_denied": "Missing permission to place wards inside this ward area.",
   "wmb_upkeep_no_unlocked_title": "Upkeep Automations",
   "wmb_upkeep_no_unlocked_desc": "No upkeep automations currently unlocked. Attune Runic Keystones to unlock Auto-Repair, Auto-Fueling, and Automatic Doors.",
-
   "wmb_tab_attunement": "ATTUNEMENT",
   "wmb_btn_ward_attunement": "⚡ ATTUNE WARD",
   "wmb_btn_return_to_base_settings": "↩ RETURN TO BASE SETTINGS",
@@ -286,14 +273,12 @@
   "wmb_feature_ash_shield": "Ashlands Heat Shield",
   "wmb_feature_lava_shield": "Lava Shield",
   "wmb_feature_deep_north_shield": "Deep North Blizzard Shield",
-
   "wmb_attuning_keystone": "Attuning",
   "wmb_feature_vehicle_locking": "Vehicle Locking",
   "wmb_feature_fast_travel": "Ward Fast-Travel Network",
   "wmb_feature_protect_terrain": "Terrain Griefing Protection",
   "wmb_feature_pack_ice_shield": "Pack-Ice Hull Shield",
   "wmb_feature_protect_crops": "Crop Protection",
-
   "wmb_rune_fehu_name": "Runic Keystone: Fehu",
   "wmb_rune_fehu_desc": "A humble spark ignited upon the tranquil meadows, marking the first ground claimed in the Allfather's realm.",
   "wmb_rune_uruz_name": "Runic Keystone: Uruz",
@@ -309,5 +294,26 @@
   "wmb_rune_dagaz_name": "Runic Keystone: Dagaz",
   "wmb_rune_dagaz_desc": "Emerging through ash and boiling seas, the guardian arose renewed by the dawn of sacred fire.",
   "wmb_rune_hagalaz_name": "Runic Keystone: Hagalaz",
-  "wmb_rune_hagalaz_desc": "At the world's frozen end amidst the eternal tempest, the ward of the ancients is fulfilled for all time."
+  "wmb_rune_hagalaz_desc": "At the world's frozen end amidst the eternal tempest, the ward of the ancients is fulfilled for all time.",
+  "wmb_status_label": "Status:",
+  "wmb_defenses_brightness": "Brightness:",
+  "wmb_attunement_rank_title": "Rank {0}: {1}",
+  "wmb_parent_ward_default": "Parent Ward",
+  "wmb_creator_unknown": "Unknown",
+  "wmb_unnamed_ward": "Unnamed Ward",
+  "wmb_role_server_admin": "Server Admin",
+  "wmb_legend_navigate": "Navigate",
+  "wmb_legend_select_ward": "Select Ward",
+  "wmb_legend_scroll": "Scroll",
+  "wmb_legend_toggle": "Toggle",
+  "wmb_legend_extend": "Extend",
+  "wmb_legend_subward": "Sub-Ward",
+  "wmb_legend_back": "Back",
+  "wmb_legend_close": "Close",
+  "wmb_legend_save": "Save",
+  "wmb_legend_cancel": "Cancel",
+  "wmb_footer_attunement_label": "⚡ ATTUNEMENT:",
+  "wmb_attunement_none": "None",
+  "wmb_boss_defeated": "{0} Defeated",
+  "wmb_boss_defeat_req": "Defeat {0}"
 }

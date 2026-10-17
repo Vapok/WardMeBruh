@@ -69,7 +69,7 @@ public class TabUpkeep
             v => SetZdoFloat(WardZdoKeys.RepairThreshold, v / 100f, "upkeep.repair"), 
             out _setRepairThresholdSlider);
 
-        WardUIFactory.CreateBadgeRow(card1, "$wmb_upkeep_repair_cost", "$wmb_upkeep_repair_cost_val".Localize(), WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(card1, "$wmb_upkeep_repair_cost", "$wmb_upkeep_repair_cost_val", WardColorPalette.ValheimBeige, out _);
 
         Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_fuel");
         _cardFuelObj = card2.parent.parent.gameObject;
@@ -81,8 +81,8 @@ public class TabUpkeep
             v => SetZdoBool(WardZdoKeys.AutoFuelEnabled, v, "upkeep.autofuel"), 
             out _setAutoFuel);
 
-        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_fuel_source", "$wmb_upkeep_fuel_source_val".Localize(), WardColorPalette.GoldAmber, out _);
-        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_appliances", "$wmb_upkeep_appliances_val".Localize(), WardColorPalette.ValheimBeige, out _);
+        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_fuel_source", "$wmb_upkeep_fuel_source_val", WardColorPalette.GoldAmber, out _);
+        WardUIFactory.CreateBadgeRow(card2, "$wmb_upkeep_appliances", "$wmb_upkeep_appliances_val", WardColorPalette.ValheimBeige, out _);
 
         Transform card3 = WardUIFactory.CreateCard(listContainer, "$wmb_upkeep_card_doors");
         _cardDoorsObj = card3.parent.parent.gameObject;
@@ -122,13 +122,14 @@ public class TabUpkeep
 
         WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
         ZDOID parentId = zdo.GetZDOID(WardZdoKeys.ParentWard);
-        string parentName = "Parent Ward";
+        string defaultParentName = "$wmb_parent_ward_default".Localize();
+        string parentName = defaultParentName;
         if (parentId != ZDOID.None && ZDOMan.instance != null)
         {
             ZDO parentZdo = ZDOMan.instance.GetZDO(parentId);
             if (parentZdo != null)
             {
-                parentName = parentZdo.GetString(WardZdoKeys.CustomName, "Parent Ward");
+                parentName = parentZdo.GetString(WardZdoKeys.CustomName, defaultParentName);
             }
         }
 

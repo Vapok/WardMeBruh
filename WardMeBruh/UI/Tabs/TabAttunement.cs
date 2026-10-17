@@ -21,6 +21,7 @@ public class TabAttunement
     {
         public WardRune Rune;
         public GameObject CardRoot;
+        public TextMeshProUGUI CardTitleTmp;
         public Action<string, Color> SetStatusBadge;
         public Action<string, Color> SetRadiusBadge;
         public GameObject FeaturesPanelObj;
@@ -87,7 +88,7 @@ public class TabAttunement
         string runeNameKey = WardProgressionService.GetRuneNameLocalizationKey(rune);
         string[] romanRanks = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
         int rankIndex = Mathf.Clamp((int)rune, 0, 7);
-        string cardTitle = $"Rank {romanRanks[rankIndex]}: {runeNameKey.Localize()}";
+        string cardTitle = string.Format("$wmb_attunement_rank_title".Localize(), romanRanks[rankIndex], runeNameKey.Localize());
 
         Transform cardContent = WardUIFactory.CreateCard(container, cardTitle);
         GameObject cardRoot = cardContent.parent.parent.gameObject;
@@ -95,7 +96,8 @@ public class TabAttunement
         RuneCardUi ui = new RuneCardUi
         {
             Rune = rune,
-            CardRoot = cardRoot
+            CardRoot = cardRoot,
+            CardTitleTmp = cardContent.parent.Find("CardHeader/HeaderText")?.GetComponent<TextMeshProUGUI>()
         };
 
         WardUIFactory.CreateBadgeRow(cardContent, "$wmb_attunement_status", "...", WardColorPalette.TextMuted, out ui.SetStatusBadge);
@@ -534,6 +536,15 @@ public class TabAttunement
 
                 float maxRadius = def.MaxRadiusConfig.Value;
                 ui.SetRadiusBadge?.Invoke($"{maxRadius:F0}m", WardColorPalette.ValheimBeige);
+
+                string runeNameKey = WardProgressionService.GetRuneNameLocalizationKey(rune);
+                string[] romanRanks = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
+                int rankIndex = Mathf.Clamp((int)rune, 0, 7);
+                if (ui.CardTitleTmp != null)
+                {
+                    ui.CardTitleTmp.text = string.Format("$wmb_attunement_rank_title".Localize(), romanRanks[rankIndex], runeNameKey.Localize()).ToUpperInvariant();
+                }
+
                 RebuildFeaturesList(ui);
 
                 bool isAttuned = WardProgressionService.IsRuneAttuned(effectiveZdo, rune);
@@ -576,7 +587,6 @@ public class TabAttunement
                         hasPrev = WardProgressionService.IsRuneAttuned(effectiveZdo, prevRune);
                         if (!hasPrev)
                         {
-                            string[] romanRanks = { "I", "II", "III", "IV", "V", "VI", "VII", "VIII" };
                             string prevRank = romanRanks[(int)prevRune];
                             string prevRuneName = WardProgressionService.GetRuneNameLocalizationKey(prevRune).Localize();
                             reqRankText = string.Format("$wmb_attunement_requires_rank".Localize(), prevRank, prevRuneName);
@@ -609,12 +619,14 @@ public class TabAttunement
                                 if (bossDefeated)
                                 {
                                     ui.BossIcon.color = Color.white;
-                                    ui.BossText.text = $"<color=#{greenHex}>✓ {bossName} Defeated</color>";
+                                    string defStr = string.Format("$wmb_boss_defeated".Localize(), bossName);
+                                    ui.BossText.text = $"<color=#{greenHex}>✓ {defStr}</color>";
                                 }
                                 else
                                 {
                                     ui.BossIcon.color = new Color(0.35f, 0.35f, 0.35f, 0.45f);
-                                    ui.BossText.text = $"<color=#{redHex}>✖ Defeat {bossName}</color>";
+                                    string defReqStr = string.Format("$wmb_boss_defeat_req".Localize(), bossName);
+                                    ui.BossText.text = $"<color=#{redHex}>✖ {defReqStr}</color>";
                                 }
                             }
                             else

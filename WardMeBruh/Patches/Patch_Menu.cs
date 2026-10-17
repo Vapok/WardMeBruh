@@ -21,7 +21,7 @@ internal static class Patch_Menu
             return true;
         }
 
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
         {
             bool escapePressed = Input.GetKeyDown(KeyCode.Escape) ||
                                  ZInput.GetKeyDown(KeyCode.Escape) ||
@@ -41,7 +41,7 @@ internal static class Patch_Menu
             return false;
         }
 
-        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        if (EntityRenameDialog.HasInstanceAndOpen)
         {
             bool escapePressed = Input.GetKeyDown(KeyCode.Escape) ||
                                  ZInput.GetKeyDown(KeyCode.Escape) ||

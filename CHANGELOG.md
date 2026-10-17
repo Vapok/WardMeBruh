@@ -1,3 +1,9 @@
+# 1.0.2 - Localization Support & UI Fixes
+* **35 Language Support**: Added complete localization support across all 35 languages supported by Valheim.
+* **In-Game Translation Fixes**: Fixed an issue where static menu headers, tab buttons, and row labels remained in English when playing in other languages.
+* **Role Names**: Default role names now translate properly into your selected language.
+* **Interface Improvements**: Resolved premature window loading on the main menu.
+
 # 1.0.1 - Controller Improvements & Dependency Updates
 * **Controller Support**: Improved controller navigation, responsiveness, and interaction across ward interfaces.
 * **Compatibility**: Updated internal dependencies for stability and Valheim 1.0.20 compatibility.

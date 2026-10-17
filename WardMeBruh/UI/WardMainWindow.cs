@@ -430,6 +430,13 @@ public class WardMainWindow : MonoBehaviour
         }
         _titleText.text = $"{customName.Localize()}{typeSuffix}".ToUpperInvariant();
 
+        LocalizeHierarchy(_panel);
+        UpdateTabButtonLabels();
+        if (_otherWardsBtnText != null)
+        {
+            _otherWardsBtnText.text = "$wmb_other_wards".Localize();
+        }
+
         UpdateTabButtonVisibility(zdo, playerId);
 
         _tabOverview.Bind(_activeWard);
@@ -683,10 +690,10 @@ public class WardMainWindow : MonoBehaviour
                 : string.Empty;
 
             string rankStr = highestAttuned < 0
-                ? $"<color=#{grayHex}>None</color>"
-                : $"<color=#{greenHex}>Rank {RomanRanks[highestAttuned + 1]} ({keystoneName})</color>";
+                ? $"<color=#{grayHex}>{"$wmb_attunement_none".Localize()}</color>"
+                : $"<color=#{greenHex}>{string.Format("$wmb_attunement_rank_title".Localize(), RomanRanks[highestAttuned + 1], keystoneName)}</color>";
 
-            _footerStatusText.text = $"<color=#{orangeHex}>⚡ ATTUNEMENT:</color> {rankStr}";
+            _footerStatusText.text = $"<color=#{orangeHex}>{"$wmb_footer_attunement_label".Localize()}</color> {rankStr}";
         }
 
         if (_footerAttunementBtn != null)
@@ -1035,6 +1042,37 @@ public class WardMainWindow : MonoBehaviour
             }
 
             txt.fontSize = el.baseFontSize + offset;
+        }
+    }
+
+    public static void LocalizeHierarchy(GameObject root)
+    {
+        if (root == null)
+            return;
+
+        WardTextElement[] elements = root.GetComponentsInChildren<WardTextElement>(true);
+        for (int i = 0; i < elements.Length; i++)
+        {
+            if (elements[i] != null)
+            {
+                elements[i].UpdateLocalization();
+            }
+        }
+    }
+
+    private void UpdateTabButtonLabels()
+    {
+        string[] tabTokens = { "$wmb_tab_overview", "$wmb_tab_defenses", "$wmb_tab_upkeep", "$wmb_tab_access", "$wmb_tab_roster", "$wmb_tab_management" };
+        for (int i = 0; i < tabTokens.Length; i++)
+        {
+            if (_tabButtons[i] != null)
+            {
+                TextMeshProUGUI tmp = _tabButtons[i].GetComponentInChildren<TextMeshProUGUI>();
+                if (tmp != null)
+                {
+                    tmp.text = tabTokens[i].Localize();
+                }
+            }
         }
     }
 }

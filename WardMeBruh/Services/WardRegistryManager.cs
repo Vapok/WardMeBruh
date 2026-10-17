@@ -181,7 +181,7 @@ public sealed class WardRegistryManager
             WardMeBruh.Log.Debug($"[Registry] Unregistered Extension Ward {id}. Remaining Extensions: {_extensionWards.Count}");
         }
 
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
         {
             if (WardMainWindow.Instance.ActiveWardId == id)
             {

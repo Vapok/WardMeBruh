@@ -154,7 +154,15 @@ public class TabManagement
             int roleId = role.Id;
             bool isSelected = (role.Id == _selectedRoleId);
 
-            string title = role.Name.Localize();
+            string roleKey = role.Name switch
+            {
+                "Owner" => "$wmb_role_owner",
+                "Manager" => "$wmb_role_manager",
+                "Resident" => "$wmb_role_resident",
+                "Guest" => "$wmb_role_guest",
+                _ => role.Name
+            };
+            string title = roleKey.Localize();
             GameObject btnObj = GUIManager.Instance.CreateButton(
                 title,
                 card,

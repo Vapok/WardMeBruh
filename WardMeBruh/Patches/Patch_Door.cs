@@ -25,10 +25,10 @@ internal static class Patch_Door
         if (__instance == null || __instance.m_nview == null || !__instance.m_nview.IsValid())
             return true;
 
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
             return false;
 
-        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        if (EntityRenameDialog.HasInstanceAndOpen)
             return false;
 
         if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null)

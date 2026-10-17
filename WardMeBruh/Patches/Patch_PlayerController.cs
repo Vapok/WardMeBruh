@@ -9,13 +9,13 @@ internal static class Patch_PlayerController
     [HarmonyPrefix]
     private static bool Prefix(ref bool __result)
     {
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
         {
             __result = false;
             return false;
         }
 
-        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        if (EntityRenameDialog.HasInstanceAndOpen)
         {
             __result = false;
             return false;

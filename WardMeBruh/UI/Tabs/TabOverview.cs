@@ -69,10 +69,10 @@ public class TabOverview
         WardUIFactory.CreateScrollArea(_root.transform, out Transform listContainer);
 
         Transform card1 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_identity");
-        WardUIFactory.CreateInputRow(card1, "$wmb_overview_designation", "$wmb_default_ward_name".Localize(), "$wmb_save".Localize(), OnSaveNameClicked, out _setNameInput);
+        WardUIFactory.CreateInputRow(card1, "$wmb_overview_designation", "$wmb_default_ward_name".Localize(), "$wmb_save", OnSaveNameClicked, out _setNameInput);
         WardUIFactory.CreateBadgeRow(card1, "$wmb_overview_owner", "-", WardColorPalette.ValheimBeige, out _setOwnerBadge);
         WardUIFactory.CreateBadgeRow(card1, "$wmb_overview_clearance", "-", WardColorPalette.GoldAmber, out _setRoleBadge);
-        WardUIFactory.CreatePowerRow(card1, "$wmb_overview_power", "...", WardColorPalette.RunicGreen, "$wmb_toggle".Localize(), OnTogglePowerClicked, out _setPowerRow);
+        WardUIFactory.CreatePowerRow(card1, "$wmb_overview_power", "...", WardColorPalette.RunicGreen, "$wmb_toggle", OnTogglePowerClicked, out _setPowerRow);
 
         Transform card2 = WardUIFactory.CreateCard(listContainer, "$wmb_overview_card_granted");
         _grantedContainer = card2;
@@ -94,7 +94,7 @@ public class TabOverview
         _doorRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_perm_upkeep_autodoors_name", "...", WardColorPalette.TextMuted, out _setDoorBadge);
         _comfortRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_defenses_max_comfort", "...", WardColorPalette.TextMuted, out _setComfortBadge);
         _portalRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_badge_portal", "...", WardColorPalette.TextMuted, out _setPortalBadge);
-        _noProtectionsRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_no_attunements".Localize(), "-", WardColorPalette.TextMuted, out _);
+        _noProtectionsRow = WardUIFactory.CreateBadgeRow(card3, "$wmb_overview_no_attunements", "-", WardColorPalette.TextMuted, out _);
     }
 
     public void Bind(PrivateArea ward)
@@ -118,7 +118,7 @@ public class TabOverview
         _setNameInput?.Invoke(customName, canRename);
 
         long creatorId = zdo.GetLong(ZDOVars.s_creator, 0L);
-        string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "Unknown");
+        string creatorName = zdo.GetString(ZDOVars.s_creatorName, creatorId != 0L ? $"ID: {creatorId}" : "$wmb_creator_unknown".Localize());
         WardType wardType = (WardType)zdo.GetInt(WardZdoKeys.WardType, (int)WardType.Main);
         string ownerBadgeText = creatorName;
         if (wardType == WardType.SubWard)
@@ -136,7 +136,7 @@ public class TabOverview
         string roleText = $"[ {WardRoleManager.GetRoleName(role).Localize()} ]";
         if (isAdmin)
         {
-            roleText += "\n<size=80%><color=#f87171>[Server Admin]</color></size>";
+            roleText += $"\n<size=80%><color=#f87171>[{"$wmb_role_server_admin".Localize()}]</color></size>";
         }
         _setRoleBadge?.Invoke(roleText, roleColor);
 

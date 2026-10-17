@@ -162,6 +162,8 @@ public static class WardUIFactory
 
         WardTextElement htWte = headerTextObj.GetComponent<WardTextElement>();
         htWte.baseFontSize = 13;
+        htWte.localizationKey = title;
+        htWte.toUpper = true;
 
         GameObject bodyObj = new GameObject("CardBody", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
         bodyObj.transform.SetParent(cardObj.transform, false);
@@ -215,6 +217,8 @@ public static class WardUIFactory
 
         WardTextElement labelWte = labelObj.GetComponent<WardTextElement>();
         labelWte.baseFontSize = 13;
+        labelWte.localizationKey = labelText;
+        labelWte.toUpper = false;
 
         GameObject controlsObj = new GameObject("Controls", typeof(RectTransform), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
         controlsObj.transform.SetParent(rowObj.transform, false);
@@ -270,6 +274,10 @@ public static class WardUIFactory
                     existingWte = existingTmp.gameObject.AddComponent<WardTextElement>();
                 }
                 existingWte.baseFontSize = Mathf.RoundToInt(fontSize);
+                if (!string.IsNullOrEmpty(text) && text.StartsWith("$"))
+                {
+                    existingWte.localizationKey = text;
+                }
 
                 if (autoResizeWidth)
                 {
@@ -307,6 +315,10 @@ public static class WardUIFactory
             wte = textGo.AddComponent<WardTextElement>();
         }
         wte.baseFontSize = Mathf.RoundToInt(fontSize);
+        if (!string.IsNullOrEmpty(text) && text.StartsWith("$"))
+        {
+            wte.localizationKey = text;
+        }
 
         if (autoResizeWidth)
         {
@@ -853,6 +865,10 @@ public static class WardUIFactory
 
         WardTextElement badgeWte = badgeObj.GetComponent<WardTextElement>();
         badgeWte.baseFontSize = 13;
+        if (!string.IsNullOrEmpty(initialBadge) && initialBadge.StartsWith("$"))
+        {
+            badgeWte.localizationKey = initialBadge;
+        }
 
         setBadge = (text, color) =>
         {

@@ -1,3 +1,19 @@
+# 1.0.2 - Localization Support & UI Fixes
+
+### Localization & UI Architecture
+* **Full 35-Language Localization (`Translations/*.json`)**:
+  * Integrated comprehensive localization coverage across all 35 languages supported by Valheim.
+  * Added tokens for attunement rank footer status (`$wmb_footer_attunement_label`, `$wmb_attunement_none`) and boss progression requirements (`$wmb_boss_defeated`, `$wmb_boss_defeat_req`).
+* **Dynamic Re-Localization (`WardTextElement`, `WardUIFactory`)**:
+  * Added localization key tracking (`localizationKey`, `toUpper`) and `UpdateLocalization()` to `WardTextElement`.
+  * Updated `WardUIFactory.CreateCard`, `CreateSettingRow`, `CreateBadgeRow`, and `SetupButtonText` to register localization keys automatically.
+  * Implemented `WardMainWindow.LocalizeHierarchy` and `UpdateTabButtonLabels` to re-evaluate and update all UI labels, card headers, and navigation tabs each time the Ward Hub is opened.
+* **Role Migration & Display Fallbacks (`WardRoleManager`, `TabManagement`)**:
+  * Extended ZDO role migration in `WardRoleManager.GetRoleDefinitions` to remap legacy literal strings (`Owner`, `Manager`, `Resident`) to their respective tokens (`$wmb_role_owner`, `$wmb_role_manager`, `$wmb_role_resident`).
+  * Added fallback token resolution in `WardRoleManager.GetRoleDisplayName` and `TabManagement.BuildRoleList`.
+* **Premature UI Instantiation Prevention**:
+  * Replaced calls to `Instance != null && Instance.IsOpen` across patch hooks (`Patch_Menu`, `Patch_PlayerController`, `Patch_PlayerInput`, `Patch_Door`, `Patch_Container`, `Patch_TeleportWorld`, `Patch_PrivateArea`, `WardRegistryManager`) with `HasInstanceAndOpen` to prevent early instantiation during title screen ticks before game localization loads.
+
 # 1.0.1 - Controller Improvements & Dependency Updates
 * **Controller Navigation & UI Refinements**:
   * Refined management role readability, slider stepping, and modal escape navigation.

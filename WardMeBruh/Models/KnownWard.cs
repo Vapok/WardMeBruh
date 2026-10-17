@@ -1,4 +1,5 @@
 using UnityEngine;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Models;
 
@@ -29,10 +30,10 @@ public class KnownWard
     public KnownWard(ZDOID id, string name, Vector3 position, long creatorId, string creatorName, float radius, bool isEnabled, WardType type = WardType.Main, ZDOID parentId = default)
     {
         Id = id;
-        Name = string.IsNullOrEmpty(name) ? "Unnamed Ward" : name;
+        Name = string.IsNullOrEmpty(name) ? "$wmb_unnamed_ward".Localize() : name;
         Position = position;
         CreatorId = creatorId;
-        CreatorName = string.IsNullOrEmpty(creatorName) ? "Unknown" : creatorName;
+        CreatorName = string.IsNullOrEmpty(creatorName) ? "$wmb_creator_unknown".Localize() : creatorName;
         Radius = radius;
         IsEnabled = isEnabled;
         Type = type;

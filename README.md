@@ -194,6 +194,26 @@ Due to the nature of shared features and overlapping ward area management, WardM
 
 ---
 
+## 🌐 Supported Languages
+
+WardMeBruh includes localization support for all 35 languages supported by Valheim:
+
+<div align="center">
+
+🌲 **Abenaki** • 🇧🇬 **Bulgarian** • 🇨🇳 **Chinese (Simplified)** • 🇹🇼 **Chinese (Traditional)** • 🇭🇷 **Croatian**  
+🇨🇿 **Czech** • 🇩🇰 **Danish** • 🇳🇱 **Dutch** • 🇺🇸 **English** • 🇫🇮 **Finnish**  
+🇫🇷 **French** • 🇬🇪 **Georgian** • 🇩🇪 **German** • 🇬🇷 **Greek** • 🇮🇳 **Hindi**  
+🇭🇺 **Hungarian** • 🇮🇸 **Icelandic** • 🇮🇹 **Italian** • 🇯🇵 **Japanese** • 🇰🇷 **Korean**  
+🇱🇹 **Lithuanian** • 🇲🇰 **Macedonian** • 🇳🇴 **Norwegian** • 🇵🇱 **Polish** • 🇧🇷 **Portuguese (Brazilian)**  
+🇵🇹 **Portuguese (European)** • 🇷🇴 **Romanian** • 🇷🇺 **Russian** • 🇷🇸 **Serbian** • 🇸🇰 **Slovak**  
+🇪🇸 **Spanish** • 🇸🇪 **Swedish** • 🇹🇭 **Thai** • 🇹🇷 **Turkish** • 🇺🇦 **Ukrainian**
+
+</div>
+
+*Translations can be customized or added in the `Translations/` folder inside your WardMeBruh mod directory (`BepInEx/plugins/Vapok-WardMeBruh/Translations/`). Some translations updated by AI. Please let me know if you find any issues with the translations.*
+
+---
+
 ## 📦 Installation & Server Setup
 
 ### Mod Manager (Recommended)

@@ -211,6 +211,30 @@ public static class WardRoleManager
                         modified = true;
                     }
                 }
+                else if (roles[i].Id == (int)WardRole.Resident && (roles[i].Name == "Resident" || roles[i].Name == "$wmb_role_resident"))
+                {
+                    if (roles[i].Name != "$wmb_role_resident")
+                    {
+                        roles[i].Name = "$wmb_role_resident";
+                        modified = true;
+                    }
+                }
+                else if (roles[i].Id == (int)WardRole.Manager && (roles[i].Name == "Manager" || roles[i].Name == "$wmb_role_manager"))
+                {
+                    if (roles[i].Name != "$wmb_role_manager")
+                    {
+                        roles[i].Name = "$wmb_role_manager";
+                        modified = true;
+                    }
+                }
+                else if (roles[i].Id == (int)WardRole.Owner && (roles[i].Name == "Owner" || roles[i].Name == "$wmb_role_owner"))
+                {
+                    if (roles[i].Name != "$wmb_role_owner")
+                    {
+                        roles[i].Name = "$wmb_role_owner";
+                        modified = true;
+                    }
+                }
             }
 
             WardRoleDefinition residentRole = null;
@@ -926,7 +950,15 @@ public static class WardRoleManager
             {
                 if (roles[i].Id == roleId)
                 {
-                    return roles[i].Name.Localize();
+                    string roleKey = roles[i].Name switch
+                    {
+                        "Owner" => "$wmb_role_owner",
+                        "Manager" => "$wmb_role_manager",
+                        "Resident" => "$wmb_role_resident",
+                        "Guest" => "$wmb_role_guest",
+                        _ => roles[i].Name
+                    };
+                    return roleKey.Localize();
                 }
             }
         }

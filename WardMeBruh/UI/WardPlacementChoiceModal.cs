@@ -268,7 +268,7 @@ public class WardPlacementChoiceModal : MonoBehaviour
 
         _legendText = _gamepadLegend.GetComponent<TextMeshProUGUI>();
         _legendText.font = UIFonts.GetPrimaryFont();
-        _legendText.text = "<color=#e2d6b5><b>[D-Pad]</b> Navigate   <b>[A]</b> Extend   <b>[Y]</b> Sub-Ward   <b>[B]</b> Cancel</color>";
+        _legendText.text = $"<color=#e2d6b5><b>[D-Pad]</b> {"$wmb_legend_navigate".Localize()}   <b>[A]</b> {"$wmb_legend_extend".Localize()}   <b>[Y]</b> {"$wmb_legend_subward".Localize()}   <b>[B]</b> {"$wmb_legend_cancel".Localize()}</color>";
         _legendText.fontSize = 12f;
         _legendText.alignment = TextAlignmentOptions.Center;
         _legendText.color = WardColorPalette.ValheimBeige;

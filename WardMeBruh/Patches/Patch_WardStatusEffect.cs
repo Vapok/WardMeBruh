@@ -3,6 +3,7 @@ using UnityEngine;
 using WardMeBruh.Configuration;
 using WardMeBruh.Models;
 using WardMeBruh.Services;
+using WardMeBruh.UI;
 
 namespace WardMeBruh.Patches;
 
@@ -17,7 +18,7 @@ internal static class Patch_WardStatusEffect
         {
             _template = ScriptableObject.CreateInstance<SE_WardTerritory>();
             _template.name = "SE_WardTerritory";
-            _template.m_name = "Ward Territory";
+            _template.m_name = "$wmb_ward_territory".Localize();
             _template.m_icon = WardIconHelper.GetWardIcon();
         }
         return _template;

@@ -27,10 +27,10 @@ internal static class Patch_PlayerInput
         if (Console.IsVisible() || TextInput.IsVisible() || Menu.IsVisible() || Minimap.IsOpen())
             return;
 
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
             return;
 
-        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        if (EntityRenameDialog.HasInstanceAndOpen)
             return;
 
         if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
@@ -70,19 +70,19 @@ internal static class Patch_PlayerInput
     [HarmonyPrefix]
     private static bool TakeInputPrefix(ref bool __result)
     {
-        if (WardMainWindow.Instance != null && WardMainWindow.Instance.IsOpen)
+        if (WardMainWindow.HasInstanceAndOpen)
         {
             __result = false;
             return false;
         }
 
-        if (EntityRenameDialog.Instance != null && EntityRenameDialog.Instance.IsOpen)
+        if (EntityRenameDialog.HasInstanceAndOpen)
         {
             __result = false;
             return false;
         }
 
-        if (WardPlacementChoiceModal.Instance != null && WardPlacementChoiceModal.Instance.IsOpen)
+        if (WardPlacementChoiceModal.HasInstanceAndOpen)
         {
             __result = false;
             return false;

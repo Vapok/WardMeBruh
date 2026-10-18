@@ -1,3 +1,7 @@
+# 1.0.3 - API Patcher Resolution & Mod Interop
+* **API Patcher Compatibility**: Resolved an issue in the internal API patcher where downstream mods embedding the developer API stub could encounter an error during startup.
+* **Downstream Mod Interoperability**: Ensured smooth API linking for companion mods that integrate with WardMeBruh.
+
 # 1.0.2 - Localization Support & UI Fixes
 * **35 Language Support**: Added complete localization support across all 35 languages supported by Valheim.
 * **In-Game Translation Fixes**: Fixed an issue where static menu headers, tab buttons, and row labels remained in English when playing in other languages.

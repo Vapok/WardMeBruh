@@ -1,3 +1,9 @@
+# 1.0.3 - API Patcher Resolution & Mod Interop
+* **Internal API Patcher MethodDefinition Invariant (`APIManager/Patcher.cs`)**:
+  * In `Patcher.FixupModuleReferences.VisitMethod`, added guard check `!(method is MethodDefinition)` alongside `!(method is MethodSpecification)`.
+  * Prevents Mono.Cecil `InvalidCastException: Unable to cast object of type 'Mono.Cecil.TypeReference' to type 'Mono.Cecil.TypeDefinition'` when downstream mods embed and compile copies of WardMeBruh API stubs directly into their own assemblies.
+  * Rebuilt and synchronized internalized `APIManager.dll` across `References/APIManager/` and project binaries.
+
 # 1.0.2 - Localization Support & UI Fixes
 
 ### Localization & UI Architecture

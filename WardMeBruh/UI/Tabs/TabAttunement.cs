@@ -945,7 +945,68 @@ public class TabAttunement
 
             if (prefab != null)
             {
-                UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity);
+                bool wasActive = prefab.activeSelf;
+                prefab.SetActive(false);
+                GameObject instance = null;
+                try
+                {
+                    instance = UnityEngine.Object.Instantiate(prefab, position, Quaternion.identity);
+                }
+                finally
+                {
+                    prefab.SetActive(wasActive);
+                }
+
+                if (instance != null)
+                {
+                    Aoe[] aoes = instance.GetComponentsInChildren<Aoe>(true);
+                    for (int i = 0; i < aoes.Length; i++)
+                    {
+                        if (aoes[i] != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(aoes[i]);
+                        }
+                    }
+
+                    Collider[] colliders = instance.GetComponentsInChildren<Collider>(true);
+                    for (int i = 0; i < colliders.Length; i++)
+                    {
+                        if (colliders[i] != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(colliders[i]);
+                        }
+                    }
+
+                    TimedDestruction[] timedDestructions = instance.GetComponentsInChildren<TimedDestruction>(true);
+                    for (int i = 0; i < timedDestructions.Length; i++)
+                    {
+                        if (timedDestructions[i] != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(timedDestructions[i]);
+                        }
+                    }
+
+                    ZSyncTransform[] syncTransforms = instance.GetComponentsInChildren<ZSyncTransform>(true);
+                    for (int i = 0; i < syncTransforms.Length; i++)
+                    {
+                        if (syncTransforms[i] != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(syncTransforms[i]);
+                        }
+                    }
+
+                    ZNetView[] netViews = instance.GetComponentsInChildren<ZNetView>(true);
+                    for (int i = 0; i < netViews.Length; i++)
+                    {
+                        if (netViews[i] != null)
+                        {
+                            UnityEngine.Object.DestroyImmediate(netViews[i]);
+                        }
+                    }
+
+                    instance.SetActive(true);
+                    UnityEngine.Object.Destroy(instance, 5f);
+                }
             }
         }
         catch (Exception ex)

@@ -1,3 +1,12 @@
+# 1.0.4 - Attunement Lightning Fix & Valheim 1.0.21 Update
+* **Attunement Ceremony Non-Destructive VFX (`UI/Tabs/TabAttunement.cs`)**:
+  * In `TabAttunement.SpawnPrefab`, instantiated ceremony prefabs (`lightningAOE`, `sfx_staffthunderblood_thunder`, `sfx_staffthunderblood_cast`) while inactive and stripped `Aoe`, `Collider`, `TimedDestruction`, `ZSyncTransform`, and `ZNetView` components via `DestroyImmediate` before activation.
+  * Prevents `lightningAOE` from dealing structural/lightning AoE damage to the ward, surrounding base pieces, players, and tamed creatures, and eliminates duplicate networked ZDO spawns across multiplayer peers.
+* **Dependency & Engine Alignment**:
+  * Inherited `VapokModBase` to declare `[BepInIncompatibility("IAmOnTheInternetAndItIsScary.NoPopUpsInMyValheim")]`.
+  * Updated internalized dependency `Vapok.Valheim.Common` to 3.1021.2.
+  * Aligned game assembly references to Valheim 1.0.21 and BepInEx 5.4.2360.
+
 # 1.0.3 - API Patcher Resolution & Mod Interop
 * **Internal API Patcher MethodDefinition Invariant (`APIManager/Patcher.cs`)**:
   * In `Patcher.FixupModuleReferences.VisitMethod`, added guard check `!(method is MethodDefinition)` alongside `!(method is MethodSpecification)`.

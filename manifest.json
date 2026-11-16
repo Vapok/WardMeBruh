@@ -1,10 +1,10 @@
 {
   "name": "WardMeBruh",
-  "version_number": "1.0.3",
+  "version_number": "1.0.4",
   "website_url": "https://github.com/Vapok/WardMeBruh",
   "description": "Ward Me Bruh! expands the vanilla Valheim ward with role-based permissions, multi-ward compound linking, nested sub-wards, automated base upkeep, and configurable defense shields, as well as an optional progression system.",
   "dependencies": [
-    "denikson-BepInExPack_Valheim-5.4.2351",
+    "denikson-BepInExPack_Valheim-5.4.2360",
     "ValheimModding-Jotunn-2.30.2",
     "ValheimModding-YamlDotNet-16.3.1"
   ]

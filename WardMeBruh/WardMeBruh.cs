@@ -24,11 +24,11 @@ namespace WardMeBruh;
 [BepInDependency("com.ValheimModding.YamlDotNetDetector")]
 [BepInIncompatibility("Azumatt.WardIsLove")]
 [BepInIncompatibility("shudnal.ProtectiveWards")]
-public class WardMeBruh : BaseUnityPlugin, IPluginInfo
+public class WardMeBruh : VapokModBase, IPluginInfo
 {
     private const string _pluginId = "vapok.mods.wardmebruh";
     private const string _displayName = "WardMeBruh";
-    private const string _version = "1.0.3";
+    private const string _version = "1.0.4";
     public const int NexusId = 4434;
     public static bool ValheimAwake;
     public static Waiting Waiter;

@@ -249,6 +249,22 @@ Looking to integrate your mod with WardMeBruh or build compatibility?
 
 ---
 
+## 🤖 AI Disclosure & Transparency Audit
+
+In accordance with mod store's various AI policies, below is the full transparency breakdown for **WardMeBruh**:
+
+* **Audit Status**: `AI GENERATED`
+* **Weighted LLM Score**: `81.0%`
+
+| Category | Evaluated Surface | LLM Score | Status |
+| :--- | :--- | :--- | :--- |
+| **C# Assembly & Logic** | Decompiled C# source (193 files) | `100.0%` | 100.0% of the C# codebase is LLM-assisted, featuring systematic generative telemetry, clean structural patterns, and extensive service/UI architecture across 23 flagged substantive files. |
+| **Package Manifest & Structure** | Manifest, structure & icon (v1.0.4) | `50.0%` | manifest.json is human-crafted, but storefront icon.png (IMAGE 1) is an AI-generated digital illustration containing synthetic lighting, glowing runes, and baked-in typography. |
+| **Documentation & Copywriting** | Package documentation (20608 chars) | `95.0%` | The README.md is extensively structured and polished by an AI, featuring systematic emoji headers, comprehensive Markdown configuration tables, and detailed feature breakdown lists. |
+| **Visual & Audio Media** | In-package Unity & media assets | `60.0%` | The package contains 8 embedded AI-generated icon PNGs for Keystones along with procedural C# runtime texture/color generation in RuneTextureFactory and WardColorWheelPicker. |
+
+---
+
 ## 🔒 Anonymous Telemetry, Error Reporting & Privacy
 
 WardMeBruh includes lightweight, privacy-first telemetry and error reporting to help monitor mod stability, diagnose unhandled bugs, and track active version adoption across game updates.

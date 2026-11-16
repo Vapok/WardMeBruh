@@ -1,7 +1,7 @@
 # 1.0.4 - Attunement Lightning Fix & Valheim 1.0.21 Update
 * **Attunement Lightning Fix**: Fixed an issue where the lightning effect during ward attunement dealt damage to the ward and surrounding base pieces.
 * **Documentation**: Added AI transparency audit disclosure to README.
-* **Compatibility**: Marked incompatible with NoPopUpsInMyValheim, and updated dependencies for Valheim 1.0.21 and BepInEx 5.4.2360.
+* **Compatibility**: Updated dependencies for Valheim 1.0.21 and BepInEx 5.4.2360.
 
 # 1.0.3 - API Patcher Resolution & Mod Interop
 * **API Patcher Compatibility**: Resolved an issue in the internal API patcher where downstream mods embedding the developer API stub could encounter an error during startup.

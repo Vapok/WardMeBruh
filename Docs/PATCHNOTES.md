@@ -1,3 +1,13 @@
+# 1.0.5 - Valheim 1.0.30 Update & Session Reload Fix
+* **Runic Keystone One-Time Registration Guard (`Items/KeystoneItemFactory.cs`)**:
+  * Unsubscribed `PrefabManager.OnVanillaPrefabsAvailable -= RegisterKeystoneItems` after initial registration and added idempotency guards (`_customKeystones.ContainsKey(rune)` and `PrefabManager.Instance.GetPrefab(prefabName) != null`) in `RegisterKeystone`.
+  * Eliminates `Failed to clone prefab, name already exists: WMB_Keystone_*` and `CustomItem '' has no prefab` Jotunn errors when logging out to the main menu (`FejdStartup` scene reload).
+* **ShieldGenerator Teardown Passthrough (`Patches/Patch_ShieldGenerator_OnDestroy.cs`)**:
+  * Updated `Patch_ShieldGenerator_OnDestroy.Prefix` to return `true` for standard non-ward `ShieldGenerator` instances now that vanilla Valheim 1.0.30 natively guards `(bool)m_shieldDomeEffect` in `ShieldGenerator.OnDestroy`.
+* **Dependency & Engine Alignment**:
+  * Updated internalized dependency `Vapok.Valheim.Common` to 3.1030.1.
+  * Aligned game assembly references to Valheim 1.0.30.
+
 # 1.0.4 - Attunement Lightning Fix & Valheim 1.0.21 Update
 * **Attunement Ceremony Non-Destructive VFX (`UI/Tabs/TabAttunement.cs`)**:
   * In `TabAttunement.SpawnPrefab`, instantiated ceremony prefabs (`lightningAOE`, `sfx_staffthunderblood_thunder`, `sfx_staffthunderblood_cast`) while inactive and stripped `Aoe`, `Collider`, `TimedDestruction`, `ZSyncTransform`, and `ZNetView` components via `DestroyImmediate` before activation.

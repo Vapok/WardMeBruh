@@ -18,15 +18,6 @@ internal static class Patch_ShieldGenerator_OnDestroy
             return false;
         }
 
-        if (ShieldGenerator.m_shieldDomeEffect != null)
-        {
-            ShieldGenerator.m_shieldDomeEffect.RemoveShield(__instance);
-        }
-
-        ShieldGenerator.m_instances.Remove(__instance);
-        ShieldGenerator.m_instanceChangeID++;
-        Character.SetupContinuousEffect(__instance.transform, __instance.transform.position, false, __instance.m_shieldLowLoop, ref __instance.m_lowLoopInstances);
-
-        return false;
+        return true;
     }
 }

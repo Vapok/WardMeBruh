@@ -1,5 +1,5 @@
 <a name='assembly'></a>
-# WardMeBruhAPI
+# WardMeBruh
 
 ## Contents
 

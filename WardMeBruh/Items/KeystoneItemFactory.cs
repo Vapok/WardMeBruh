@@ -42,6 +42,8 @@ public static class KeystoneItemFactory
 
     private static void RegisterKeystoneItems()
     {
+        PrefabManager.OnVanillaPrefabsAvailable -= RegisterKeystoneItems;
+
         for (int r = 0; r <= 7; r++)
         {
             WardRune rune = (WardRune)r;
@@ -51,10 +53,15 @@ public static class KeystoneItemFactory
 
     private static void RegisterKeystone(WardRune rune)
     {
+        if (_customKeystones.ContainsKey(rune))
+            return;
+
         if (!ConfigRegistry.RuneConfigurations.TryGetValue(rune, out RuneConfigDefinition def))
             return;
 
         string prefabName = WardProgressionService.GetRunePrefabName(rune);
+        if (PrefabManager.Instance.GetPrefab(prefabName) != null || Jotunn.Managers.ItemManager.Instance.GetItem(prefabName) != null)
+            return;
         string nameKey = WardProgressionService.GetRuneNameLocalizationKey(rune);
         string descKey = WardProgressionService.GetRuneDescLocalizationKey(rune);
 

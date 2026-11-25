@@ -1,3 +1,7 @@
+# 1.0.5 - Valheim 1.0.30 Update & Session Reload Fix
+* **Session Reload Fix**: Fixed duplicate Runic Keystone registration errors in the log when logging out to the main menu and starting a new session.
+* **Compatibility**: Updated dependencies for Valheim 1.0.30.
+
 # 1.0.4 - Attunement Lightning Fix & Valheim 1.0.21 Update
 * **Attunement Lightning Fix**: Fixed an issue where the lightning effect during ward attunement dealt damage to the ward and surrounding base pieces.
 * **Documentation**: Added AI transparency audit disclosure to README.
